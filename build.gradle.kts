@@ -1,54 +1,117 @@
-plugins {
-    kotlin("multiplatform") version "1.9.0"
-    alias(libs.plugins.kotlinSerialization)
-    alias(libs.plugins.dokka)
-    alias(libs.plugins.mavenPublish)
+import com.vanniktech.maven.publish.MavenPublishBaseExtension
+import com.vanniktech.maven.publish.SonatypeHost
+import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
+import org.jetbrains.dokka.gradle.DokkaTaskPartial
+
+buildscript {
+    dependencies {
+        classpath(libs.gradleClasspath.dokka)
+        classpath(libs.gradleClasspath.ktlint)
+        classpath(libs.gradleClasspath.kotlin)
+        classpath(libs.gradleClasspath.mavenPublish)
+        classpath(libs.gradleClasspath.downloadFile)
+        classpath(libs.task.tree)
+    }
+
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+        google()
+    }
 }
 
-group = "me.uma"
-version = "1.0-SNAPSHOT"
+apply(plugin = "com.dorongold.task-tree")
+apply(plugin = "org.jetbrains.dokka")
+apply(plugin = "org.jlleitschuh.gradle.ktlint")
 
-repositories {
-    mavenCentral()
-}
+subprojects {
+    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+        outputToConsole.set(true)
+        verbose.set(true)
+        disabledRules.set(listOf("no-wildcard-imports"))
+    }
 
-kotlin {
-    jvm {
-        jvmToolchain(11)
-        withJava()
-        testRuns.named("test") {
-            executionTask.configure {
-                useJUnitPlatform()
+    tasks.create<Exec>("bumpAndTagVersion") {
+        group = "release"
+        description = "Tags the current version in git."
+        val cmd = mutableListOf("../scripts/versions.main.kts", "-f", "-t")
+        if (project.hasProperty("newVersion")) {
+            cmd.add(project.properties["newVersion"].toString())
+        }
+        commandLine(*cmd.toTypedArray())
+    }
+
+    tasks.create<Exec>("bumpVersion") {
+        group = "release"
+        description = "Tags the current version in git."
+        val cmd = mutableListOf("../scripts/versions.main.kts", "-f")
+        if (project.hasProperty("newVersion")) {
+            cmd.addAll(listOf("-v", project.properties["newVersion"].toString()))
+        }
+        commandLine(*cmd.toTypedArray())
+    }
+
+    tasks.withType<DokkaTaskPartial>().configureEach {
+        dokkaSourceSets.configureEach {
+            reportUndocumented.set(false)
+            skipDeprecated.set(true)
+            jdkVersion.set(11)
+            if (project.file("README.md").exists()) {
+                includes.from(project.file("README.md"))
+            }
+            externalDocumentationLink {
+                // TODO: Add link when API Reference docs are hosted publicly.
             }
         }
     }
 
-    // Will add other platforms as needed.
-
-    sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation(libs.kotlin.serialization.json)
-                implementation(libs.kotlinx.datetime)
-                implementation(libs.kotlinx.coroutines.core)
-                implementation(libs.ktor.client.core)
-                implementation(libs.acinq.secp256k1)
+    plugins.withId("com.vanniktech.maven.publish.base") {
+        configure<MavenPublishBaseExtension> {
+            publishToMavenCentral(SonatypeHost.S01, automaticRelease = true)
+            signAllPublications()
+            pom {
+                name.set(project.name)
+                packaging = "aar"
+                url.set("https://github.com/uma-universal-money-address/uma-kotlin-sdk")
+                licenses {
+                    license {
+                        name.set("The Apache Software License, Version 2.0")
+                        url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                        distribution.set("repo")
+                    }
+                }
+                scm {
+                    connection.set("scm:git:https://github.com/uma-universal-money-address/uma-kotlin-sdk.git")
+                    developerConnection.set("scm:git:ssh://git@github.com/uma-universal-money-address/uma-kotlin-sdk.git")
+                    url.set("https://github.com/uma-universal-money-address/uma-kotlin-sdk")
+                }
+                developers {
+                    developer {
+                        name.set("Lightspark Group, Inc.")
+                        id.set("uma-universal-money-address")
+                        url.set("https://github.com/uma-universal-money-address")
+                    }
+                }
             }
         }
-        val commonTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-                implementation(libs.kotlinx.coroutines.test)
-                implementation(libs.kotest.assertions)
-            }
-        }
-        val jvmMain by getting {
-            dependencies {
-                implementation(libs.acinq.secp256k1.jni.jvm)
-                implementation(libs.kotlinx.coroutines.jdk8)
-                implementation(libs.ktor.client.okhttp)
-            }
-        }
-        val jvmTest by getting
     }
+}
+
+tasks.named<DokkaMultiModuleTask>("dokkaHtmlMultiModule") {
+    moduleName.set("UMA Kotlin+Java SDKs")
+    pluginsMapConfiguration.set(
+        mapOf(
+            "org.jetbrains.dokka.base.DokkaBase" to """
+          {
+            "customStyleSheets": [
+              "${rootDir.resolve("docs/css/logo-styles.css")}"
+            ],
+            "customAssets" : [
+              "${rootDir.resolve("docs/images/uma-logo-white.svg")}"
+            ]
+          }
+            """.trimIndent(),
+        ),
+    )
 }
