@@ -1,8 +1,10 @@
-package me.uma
+package me.uma.protocol
 
 import io.ktor.http.Parameters
 import io.ktor.http.URLBuilder
 import io.ktor.http.URLProtocol
+import me.uma.UnsupportedVersionException
+import me.uma.isVersionSupported
 
 /**
  * The first request in the UMA protocol.

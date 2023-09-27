@@ -1,8 +1,9 @@
-package me.uma
+package me.uma.protocol
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import me.uma.utils.EnumSerializer
 
 @Serializable(with = KycStatusSerializer::class)
 enum class KycStatus(val rawValue: String) {

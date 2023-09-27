@@ -1,7 +1,6 @@
 [versions]
-acinqSecp256k1 = "0.10.0"
+acinqSecp256k1 = "0.10.1"
 dokka = "1.9.0"
-downloadFile = "5.4.0"
 jna = "5.13.0"
 kotest = "5.5.4"
 kotlin = "1.9.0"
@@ -11,7 +10,6 @@ kotlinSerializationJson = "1.4.1"
 krypt = "0.3.1"
 ktlint = "11.3.1"
 ktor = "2.2.3"
-lightsparkCrypto = "0.5.0"
 mavenPublish = "0.25.2"
 mockitoCore = "5.5.0"
 taskTree = "2.1.1"
@@ -22,7 +20,6 @@ gradleClasspath-dokka = { module = "org.jetbrains.dokka:dokka-gradle-plugin", ve
 gradleClasspath-ktlint = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlint" }
 gradleClasspath-kotlin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 gradleClasspath-mavenPublish = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "mavenPublish" }
-gradleClasspath-downloadFile = { module = "de.undercouch.download:de.undercouch.download.gradle.plugin", version.ref = "downloadFile" }
 
 acinq-secp256k1 = { module = "fr.acinq.secp256k1:secp256k1-kmp", version.ref = "acinqSecp256k1" }
 acinq-secp256k1-jni-jvm = { module = "fr.acinq.secp256k1:secp256k1-kmp-jni-jvm", version.ref = "acinqSecp256k1" }
@@ -48,8 +45,6 @@ kotest-assertions = { module = "io.kotest:kotest-assertions-core", version.ref =
 
 jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 
-lightspark-crypto = { module = "com.lightspark:lightspark-crypto", version.ref = "lightsparkCrypto" }
-
 junit = { module = "junit:junit", version.ref = "junit" }
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockitoCore" }
 
@@ -60,4 +55,3 @@ kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", versio
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
-downloadFile = { id = "de.undercouch.download", version.ref = "downloadFile" }

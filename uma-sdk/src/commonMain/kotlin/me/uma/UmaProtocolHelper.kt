@@ -19,6 +19,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import me.uma.*
+import me.uma.protocol.*
 
 /**
  * A helper class for interacting with the UMA protocol. It provides methods for creating and verifying UMA requests

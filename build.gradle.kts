@@ -2,6 +2,7 @@ import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
 import org.jetbrains.dokka.gradle.DokkaTaskPartial
+import java.net.URL
 
 buildscript {
     dependencies {
@@ -9,7 +10,6 @@ buildscript {
         classpath(libs.gradleClasspath.ktlint)
         classpath(libs.gradleClasspath.kotlin)
         classpath(libs.gradleClasspath.mavenPublish)
-        classpath(libs.gradleClasspath.downloadFile)
         classpath(libs.task.tree)
     }
 
@@ -61,7 +61,9 @@ subprojects {
                 includes.from(project.file("README.md"))
             }
             externalDocumentationLink {
-                // TODO: Add link when API Reference docs are hosted publicly.
+                // TODO: Update this link when API Reference docs are hosted publicly.
+                url.set(URL("https://app.lightspark.com/docs/reference/kotlin"))
+                packageListUrl.set(URL("https://app.lightspark.com/docs/reference/kotlin/package-list"))
             }
         }
     }

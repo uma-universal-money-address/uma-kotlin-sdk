@@ -1,8 +1,9 @@
-package me.uma
+package me.uma.protocol
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import me.uma.utils.ByteArrayAsHexSerializer
 
 /**
  * Response from another VASP when requesting public keys.

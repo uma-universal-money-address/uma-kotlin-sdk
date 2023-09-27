@@ -1,4 +1,4 @@
-package me.uma
+package me.uma.protocol
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

@@ -1,5 +1,7 @@
 package me.uma
 
+import me.uma.protocol.PubKeyResponse
+
 interface PublicKeyCache {
     fun getPublicKeysForVasp(vaspDomain: String): PubKeyResponse?
 

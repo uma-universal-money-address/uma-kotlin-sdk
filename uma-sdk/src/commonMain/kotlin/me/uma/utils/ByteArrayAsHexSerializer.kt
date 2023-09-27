@@ -1,4 +1,4 @@
-package me.uma
+package me.uma.utils
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ByteArraySerializer

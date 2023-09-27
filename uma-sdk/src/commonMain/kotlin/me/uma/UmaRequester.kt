@@ -5,10 +5,16 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
 
+/**
+ * Interface for making HTTP requests as part of the uma protocol.
+ */
 interface UmaRequester {
     suspend fun makeGetRequest(url: String): String
 }
 
+/**
+ * A Ktor-based implementation of [UmaRequester].
+ */
 class KtorUmaRequester @JvmOverloads constructor(private val client: HttpClient = HttpClient()) : UmaRequester {
     override suspend fun makeGetRequest(url: String): String {
         val response = client.get(url)

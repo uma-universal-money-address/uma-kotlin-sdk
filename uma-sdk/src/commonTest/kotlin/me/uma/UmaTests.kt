@@ -5,6 +5,7 @@ import kotlin.test.assertEquals
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import me.uma.protocol.PayerDataOptions
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UmaTests {

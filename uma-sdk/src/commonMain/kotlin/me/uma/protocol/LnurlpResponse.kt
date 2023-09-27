@@ -1,4 +1,4 @@
-package me.uma
+package me.uma.protocol
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.KSerializer
