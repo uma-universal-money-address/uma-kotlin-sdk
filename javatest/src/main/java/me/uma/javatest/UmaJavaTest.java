@@ -1,5 +1,5 @@
 package me.uma.javatest;
 
-public class LightsparkJavaTest {
+public class UmaJavaTest {
     // Doesn't do anything. Just need unit tests!
 }
