@@ -493,12 +493,14 @@ class UmaProtocolHelper @JvmOverloads constructor(
 
     @Throws(Exception::class)
     private fun signPayload(payload: ByteArray, privateKey: ByteArray): String {
-        return Secp256k1.sign(payload, privateKey).toHexString()
+        val hashedPayload = MessageDigest.getInstance("SHA-256").digest(payload)
+        return Secp256k1.sign(hashedPayload, privateKey).toHexString()
     }
 
     @Throws(Exception::class)
     private fun verifySignature(payload: ByteArray, signature: String, publicKey: ByteArray): Boolean {
-        return Secp256k1.verify(signature.hexToByteArray(), payload, publicKey)
+        val hashedPayload = MessageDigest.getInstance("SHA-256").digest(payload)
+        return Secp256k1.verify(signature.hexToByteArray(), hashedPayload, publicKey)
     }
 
     fun getVaspDomainFromUmaAddress(identifier: String): String {
