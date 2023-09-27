@@ -49,7 +49,7 @@ class UnsupportedVersionException(
 ) : Exception("Unsupported version: $unsupportedVersion. Supported major versions: $supportedMajorVersions") {
     fun toLnurlpResponseJson(): String {
         return buildJsonObject {
-            put("reason", "Unsupported version: ${unsupportedVersion}.")
+            put("reason", "Unsupported version: $unsupportedVersion.")
             put("supportedMajorVersions", Json.encodeToJsonElement(supportedMajorVersions))
             put("unsupportedVersion", unsupportedVersion)
         }.toString()

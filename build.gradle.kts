@@ -1,8 +1,8 @@
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SonatypeHost
+import java.net.URL
 import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
 import org.jetbrains.dokka.gradle.DokkaTaskPartial
-import java.net.URL
 
 buildscript {
     dependencies {
@@ -85,7 +85,9 @@ subprojects {
                 }
                 scm {
                     connection.set("scm:git:https://github.com/uma-universal-money-address/uma-kotlin-sdk.git")
-                    developerConnection.set("scm:git:ssh://git@github.com/uma-universal-money-address/uma-kotlin-sdk.git")
+                    developerConnection.set(
+                        "scm:git:ssh://git@github.com/uma-universal-money-address/uma-kotlin-sdk.git",
+                    )
                     url.set("https://github.com/uma-universal-money-address/uma-kotlin-sdk")
                 }
                 developers {
