@@ -29,7 +29,7 @@ kotlin {
                 implementation(libs.kotlinx.datetime)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.ktor.client.core)
-                implementation(libs.acinq.secp256k1)
+                implementation(libs.jna)
             }
         }
         val commonTest by getting {
@@ -41,7 +41,6 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
-                implementation(libs.acinq.secp256k1.jni.jvm)
                 implementation(libs.kotlinx.coroutines.jdk8)
                 implementation(libs.ktor.client.okhttp)
             }

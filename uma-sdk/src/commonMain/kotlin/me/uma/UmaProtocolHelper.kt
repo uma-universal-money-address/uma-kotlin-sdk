@@ -2,7 +2,6 @@
 
 package me.uma
 
-import fr.acinq.secp256k1.Secp256k1
 import java.security.MessageDigest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
@@ -19,6 +18,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import me.uma.*
+import me.uma.crypto.Secp256k1
 import me.uma.protocol.*
 
 /**
@@ -314,8 +314,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
 
 
     private fun encryptTravelRuleInfo(receiverEncryptionPubKey: ByteArray, travelRuleInfoJson: String): String {
-        TODO("Not yet implemented for kotlin. WIP.")
-        // return Secp256k1.encryptEcies(travelRuleInfoJson.encodeToByteArray(), receiverEncryptionPubKey).toHexString()
+         return Secp256k1.encryptEcies(travelRuleInfoJson.encodeToByteArray(), receiverEncryptionPubKey).toHexString()
     }
 
     /**
@@ -493,14 +492,12 @@ class UmaProtocolHelper @JvmOverloads constructor(
 
     @Throws(Exception::class)
     private fun signPayload(payload: ByteArray, privateKey: ByteArray): String {
-        val hashedPayload = MessageDigest.getInstance("SHA-256").digest(payload)
-        return Secp256k1.sign(hashedPayload, privateKey).toHexString()
+        return Secp256k1.signEcdsa(payload, privateKey).toHexString()
     }
 
     @Throws(Exception::class)
     private fun verifySignature(payload: ByteArray, signature: String, publicKey: ByteArray): Boolean {
-        val hashedPayload = MessageDigest.getInstance("SHA-256").digest(payload)
-        return Secp256k1.verify(signature.hexToByteArray(), hashedPayload, publicKey)
+        return Secp256k1.verifyEcdsa(payload, signature.hexToByteArray(), publicKey)
     }
 
     fun getVaspDomainFromUmaAddress(identifier: String): String {
