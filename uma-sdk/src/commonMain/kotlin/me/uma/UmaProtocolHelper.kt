@@ -17,7 +17,6 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import me.uma.*
 import me.uma.crypto.Secp256k1
 import me.uma.protocol.*
 
@@ -312,9 +311,8 @@ class UmaProtocolHelper @JvmOverloads constructor(
         return unsignedCompliancePayerData.signedWith(signature)
     }
 
-
     private fun encryptTravelRuleInfo(receiverEncryptionPubKey: ByteArray, travelRuleInfoJson: String): String {
-         return Secp256k1.encryptEcies(travelRuleInfoJson.encodeToByteArray(), receiverEncryptionPubKey).toHexString()
+        return Secp256k1.encryptEcies(travelRuleInfoJson.encodeToByteArray(), receiverEncryptionPubKey).toHexString()
     }
 
     /**
@@ -338,7 +336,11 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @return true if the signature is valid, false otherwise.
      */
     fun verifyPayReqSignature(payReq: PayRequest, pubKeyResponse: PubKeyResponse): Boolean {
-        return verifySignature(payReq.signablePayload(), payReq.payerData.compliance!!.signature, pubKeyResponse.signingPubKey)
+        return verifySignature(
+            payReq.signablePayload(),
+            payReq.payerData.compliance!!.signature,
+            pubKeyResponse.signingPubKey,
+        )
     }
 
     /**

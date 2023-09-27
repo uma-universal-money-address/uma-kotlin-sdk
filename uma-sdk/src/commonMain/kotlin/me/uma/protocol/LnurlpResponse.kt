@@ -1,8 +1,8 @@
 package me.uma.protocol
 
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.descriptors.element
@@ -76,19 +76,19 @@ class PayerDataOptionsSerializer : KSerializer<PayerDataOptions> {
                 descriptor,
                 1,
                 PayerDataJsonField.serializer(),
-                PayerDataJsonField(value.nameRequired)
+                PayerDataJsonField(value.nameRequired),
             )
             encodeSerializableElement(
                 descriptor,
                 2,
                 PayerDataJsonField.serializer(),
-                PayerDataJsonField(value.emailRequired)
+                PayerDataJsonField(value.emailRequired),
             )
             encodeSerializableElement(
                 descriptor,
                 3,
                 PayerDataJsonField.serializer(),
-                PayerDataJsonField(value.complianceRequired)
+                PayerDataJsonField(value.complianceRequired),
             )
         }
     }

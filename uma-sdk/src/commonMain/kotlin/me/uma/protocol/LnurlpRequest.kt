@@ -63,9 +63,9 @@ data class LnurlpRequest(
             if (urlBuilder.protocol != URLProtocol.HTTP && urlBuilder.protocol != URLProtocol.HTTPS) {
                 throw IllegalArgumentException("Invalid URL schema: $url")
             }
-            if (urlBuilder.pathSegments.size != 4
-                || urlBuilder.pathSegments[1] != ".well-known"
-                || urlBuilder.pathSegments[2] != "lnurlp"
+            if (urlBuilder.pathSegments.size != 4 ||
+                urlBuilder.pathSegments[1] != ".well-known" ||
+                urlBuilder.pathSegments[2] != "lnurlp"
             ) {
                 throw IllegalArgumentException("Invalid uma request path: $url")
             }
@@ -93,9 +93,14 @@ data class LnurlpRequest(
             }
 
             return LnurlpRequest(
-                receiverAddress, nonce, signature, isSubjectToTravelRule, vaspDomain, timestamp, umaVersion,
+                receiverAddress,
+                nonce,
+                signature,
+                isSubjectToTravelRule,
+                vaspDomain,
+                timestamp,
+                umaVersion,
             )
         }
     }
 }
-

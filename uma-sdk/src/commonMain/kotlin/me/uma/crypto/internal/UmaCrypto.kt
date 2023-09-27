@@ -1031,7 +1031,7 @@ class LightsparkSigner(
 
     @Throws(
         LightsparkSignerException::class,
-        )
+    )
     override fun `getMasterPublicKey`(): String =
         callWithPointer {
             rustCallWithError(LightsparkSignerException) { _status ->
@@ -1043,7 +1043,7 @@ class LightsparkSigner(
 
     @Throws(
         LightsparkSignerException::class,
-        )
+    )
     override fun `derivePublicKey`(`derivationPath`: String): String =
         callWithPointer {
             rustCallWithError(LightsparkSignerException) { _status ->
@@ -1059,7 +1059,7 @@ class LightsparkSigner(
 
     @Throws(
         LightsparkSignerException::class,
-        )
+    )
     override fun `derivePublicKeyHex`(`derivationPath`: String): String =
         callWithPointer {
             rustCallWithError(LightsparkSignerException) { _status ->
@@ -1075,7 +1075,7 @@ class LightsparkSigner(
 
     @Throws(
         LightsparkSignerException::class,
-        )
+    )
     override fun `derivePrivateKey`(`derivationPath`: String): String =
         callWithPointer {
             rustCallWithError(LightsparkSignerException) { _status ->
@@ -1091,11 +1091,15 @@ class LightsparkSigner(
 
     @Throws(
         LightsparkSignerException::class,
-        )
+    )
     override fun `ecdh`(`publicKey`: List<UByte>): List<UByte> =
         callWithPointer {
             rustCallWithError(LightsparkSignerException) { _status ->
-                _UniFFILib.INSTANCE.lightspark_crypto_420_LightsparkSigner_ecdh(it, FfiConverterSequenceUByte.lower(`publicKey`), _status)
+                _UniFFILib.INSTANCE.lightspark_crypto_420_LightsparkSigner_ecdh(
+                    it,
+                    FfiConverterSequenceUByte.lower(`publicKey`),
+                    _status,
+                )
             }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -1103,7 +1107,7 @@ class LightsparkSigner(
 
     @Throws(
         LightsparkSignerException::class,
-        )
+    )
     override fun `signInvoice`(`unsignedInvoice`: String): InvoiceSignature =
         callWithPointer {
             rustCallWithError(LightsparkSignerException) { _status ->
@@ -1119,7 +1123,7 @@ class LightsparkSigner(
 
     @Throws(
         LightsparkSignerException::class,
-        )
+    )
     override fun `signInvoiceHash`(`unsignedInvoice`: List<UByte>): InvoiceSignature =
         callWithPointer {
             rustCallWithError(LightsparkSignerException) { _status ->
@@ -1135,7 +1139,7 @@ class LightsparkSigner(
 
     @Throws(
         LightsparkSignerException::class,
-        )
+    )
     override fun `deriveKeyAndSign`(
         `message`: List<UByte>,
         `derivationPath`: String,
@@ -1161,7 +1165,7 @@ class LightsparkSigner(
 
     @Throws(
         LightsparkSignerException::class,
-        )
+    )
     override fun `getPerCommitmentPoint`(
         `derivationPath`: String,
         `perCommitmentPointIdx`: ULong,
@@ -1181,7 +1185,7 @@ class LightsparkSigner(
 
     @Throws(
         LightsparkSignerException::class,
-        )
+    )
     override fun `releasePerCommitmentSecret`(
         `derivationPath`: String,
         `perCommitmentPointIdx`: ULong,
@@ -1210,7 +1214,7 @@ class LightsparkSigner(
 
     @Throws(
         LightsparkSignerException::class,
-        )
+    )
     override fun `generatePreimage`(`nonce`: List<UByte>): List<UByte> =
         callWithPointer {
             rustCallWithError(LightsparkSignerException) { _status ->
@@ -1226,7 +1230,7 @@ class LightsparkSigner(
 
     @Throws(
         LightsparkSignerException::class,
-        )
+    )
     override fun `generatePreimageHash`(`nonce`: List<UByte>): List<UByte> =
         callWithPointer {
             rustCallWithError(LightsparkSignerException) { _status ->
@@ -1323,14 +1327,20 @@ class Mnemonic(
         fun `fromEntropy`(`entropy`: List<UByte>): Mnemonic =
             Mnemonic(
                 rustCallWithError(LightsparkSignerException) { _status ->
-                    _UniFFILib.INSTANCE.lightspark_crypto_420_Mnemonic_from_entropy(FfiConverterSequenceUByte.lower(`entropy`), _status)
+                    _UniFFILib.INSTANCE.lightspark_crypto_420_Mnemonic_from_entropy(
+                        FfiConverterSequenceUByte.lower(`entropy`),
+                        _status,
+                    )
                 },
             )
 
         fun `fromPhrase`(`phrase`: String): Mnemonic =
             Mnemonic(
                 rustCallWithError(LightsparkSignerException) { _status ->
-                    _UniFFILib.INSTANCE.lightspark_crypto_420_Mnemonic_from_phrase(FfiConverterString.lower(`phrase`), _status)
+                    _UniFFILib.INSTANCE.lightspark_crypto_420_Mnemonic_from_phrase(
+                        FfiConverterString.lower(`phrase`),
+                        _status,
+                    )
                 },
             )
     }
@@ -1402,7 +1412,10 @@ class Seed(
         fun `fromMnemonic`(`mnemonic`: Mnemonic): Seed =
             Seed(
                 rustCall { _status ->
-                    _UniFFILib.INSTANCE.lightspark_crypto_420_Seed_from_mnemonic(FfiConverterTypeMnemonic.lower(`mnemonic`), _status)
+                    _UniFFILib.INSTANCE.lightspark_crypto_420_Seed_from_mnemonic(
+                        FfiConverterTypeMnemonic.lower(`mnemonic`),
+                        _status,
+                    )
                 },
             )
     }
@@ -1449,8 +1462,8 @@ public object FfiConverterTypeRemoteSigningResponse : FfiConverterRustBuffer<Rem
     override fun allocationSize(value: RemoteSigningResponse) =
         (
             FfiConverterString.allocationSize(value.`query`) +
-                    FfiConverterString.allocationSize(value.`variables`)
-        )
+                FfiConverterString.allocationSize(value.`variables`)
+            )
 
     override fun write(
         value: RemoteSigningResponse,
@@ -1541,7 +1554,9 @@ sealed class LightsparkSignerException(message: String) : Exception(message) {
     class EntropyLengthException(message: String) : LightsparkSignerException(message)
 
     companion object ErrorHandler : CallStatusErrorHandler<LightsparkSignerException> {
-        override fun lift(error_buf: RustBuffer.ByValue): LightsparkSignerException = FfiConverterTypeLightsparkSignerError.lift(error_buf)
+        override fun lift(error_buf: RustBuffer.ByValue): LightsparkSignerException = FfiConverterTypeLightsparkSignerError.lift(
+            error_buf,
+        )
     }
 }
 
@@ -1602,7 +1617,9 @@ sealed class RemoteSigningException(message: String) : Exception(message) {
     class RemoteSigningHandlerException(message: String) : RemoteSigningException(message)
 
     companion object ErrorHandler : CallStatusErrorHandler<RemoteSigningException> {
-        override fun lift(error_buf: RustBuffer.ByValue): RemoteSigningException = FfiConverterTypeRemoteSigningError.lift(error_buf)
+        override fun lift(error_buf: RustBuffer.ByValue): RemoteSigningException = FfiConverterTypeRemoteSigningError.lift(
+            error_buf,
+        )
     }
 }
 
@@ -1795,7 +1812,9 @@ internal class ForeignCallbackTypeValidation : ForeignCallback {
         args: RustBuffer.ByValue,
     ): RustBuffer.ByValue =
         try {
-            val buf = args.asByteBuffer() ?: throw InternalException("No ByteBuffer in RustBuffer; this is a Uniffi bug")
+            val buf = args.asByteBuffer() ?: throw InternalException(
+                "No ByteBuffer in RustBuffer; this is a Uniffi bug",
+            )
             kotlinCallbackInterface.`shouldSign`(
                 FfiConverterString.read(buf),
             )

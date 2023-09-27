@@ -14,8 +14,8 @@ enum class KycStatus(val rawValue: String) {
 
     PENDING("PENDING"),
 
-    VERIFIED("VERIFIED");
-
+    VERIFIED("VERIFIED"),
+    ;
     fun toJson() = Json.encodeToString(this)
 }
 

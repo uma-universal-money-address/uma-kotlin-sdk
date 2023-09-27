@@ -48,3 +48,9 @@ kotlin {
         val jvmTest by getting
     }
 }
+
+ktlint {
+    filter {
+        exclude("**/internal/UmaCrypto.kt")
+    }
+}
