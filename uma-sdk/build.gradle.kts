@@ -5,9 +5,6 @@ plugins {
     id(libs.plugins.mavenPublish.get().pluginId)
 }
 
-group = "me.uma"
-version = "1.0-SNAPSHOT"
-
 kotlin {
     jvmToolchain(11)
     jvm {
