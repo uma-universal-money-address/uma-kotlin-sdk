@@ -165,13 +165,26 @@ fun getNextSnapshot(version: String): String {
 }
 
 fun setVersionInDocs(version: String, projectName: String) {
-    for (file in File("docs/source").walk() + File("README.md")) {
+    for (file in File("docs/source").walk() + File("../README.md")) {
         if (file.isDirectory || !(file.name.endsWith(".md") || file.name.endsWith(".mdx"))) continue
 
         val content = file.readText()
             // Dependencies
             .replace(Regex(""""me\.uma:(.+):.+"""")) {
                 """"me.uma:${it.groupValues[1]}:$version""""
+            }
+            .replace(Regex("""'me\.uma:(.+):.+'""")) {
+                """'me.uma:${it.groupValues[1]}:$version'"""
+            }
+            // Replace the maven example dep:
+            .replace(
+                Regex(
+                    "<artifactId>(.+)</artifactId>\n" +
+                        "    <version>.+</version>",
+                ),
+            ) {
+                "<artifactId>${it.groupValues[1]}</artifactId>\n" +
+                    "    <version>$version</version>"
             }
             // Badge link
             .replace(Regex("artifact/me.uma/(.+)/.+\\)")) {
@@ -181,7 +194,8 @@ fun setVersionInDocs(version: String, projectName: String) {
     }
     val libsFile = File("../gradle/libs.versions.toml")
     val currentContent = libsFile.readText()
-    val libRegexMatch = Regex("""uma-$projectName = \{ module = "me.uma:(.+)", version.ref = "(.+)"""").find(currentContent)
+    val libRegexMatch =
+        Regex("""uma-$projectName = \{ module = "me.uma:(.+)", version.ref = "(.+)"""").find(currentContent)
     if (libRegexMatch != null) {
         val currentLibVersionName = libRegexMatch.groupValues[2]
         val content = libsFile.readText()
