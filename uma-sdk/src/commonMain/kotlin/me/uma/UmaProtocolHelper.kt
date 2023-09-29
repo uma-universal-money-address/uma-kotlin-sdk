@@ -470,7 +470,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         val encodedPayerData = Json.encodeToString(query.payerData)
         val metadataWithPayerData = "$metadata$encodedPayerData"
         val invoice = invoiceCreator.createUmaInvoice(
-            amountMsats = query.amount * conversionRate,
+            amountMsats = query.amount * conversionRate + receiverFeesMillisats,
             metadata = metadataWithPayerData,
         ).await()
         return PayReqResponse(
