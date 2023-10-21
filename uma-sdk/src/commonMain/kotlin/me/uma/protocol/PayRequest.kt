@@ -104,4 +104,3 @@ class TravelRuleFormatSerializer : KSerializer<TravelRuleFormat> {
         encoder.encodeString("${value.type}${value.version?.let { "@$it" } ?: ""}")
     }
 }
-

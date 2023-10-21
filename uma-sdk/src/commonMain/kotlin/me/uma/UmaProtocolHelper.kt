@@ -273,7 +273,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             payerUtxos,
             payerNodePubKey,
             utxoCallback,
-            travelRuleFormat
+            travelRuleFormat,
         )
         val payerData = PayerData(
             identifier = payerIdentifier,
