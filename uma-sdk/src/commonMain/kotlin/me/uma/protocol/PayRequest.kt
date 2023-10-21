@@ -1,8 +1,13 @@
 package me.uma.protocol
 
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
 
 /**
@@ -50,6 +55,8 @@ data class PayerData @JvmOverloads constructor(
  * @property signature The signature of the sender on the signable payload.
  * @property signatureNonce The nonce used in the signature.
  * @property signatureTimestamp The timestamp used in the signature.
+ * @property travelRuleFormat An optional standardized format of the travel rule information (e.g. IVMS). Null
+ *     indicates raw json or a custom format.
  */
 @Serializable
 data class CompliancePayerData(
@@ -61,6 +68,39 @@ data class CompliancePayerData(
     val signature: String,
     val signatureNonce: String,
     val signatureTimestamp: Long,
+    val travelRuleFormat: TravelRuleFormat? = null,
 ) {
     fun signedWith(signature: String) = copy(signature = signature)
+}
+
+/**
+ * A standardized format of the travel rule information.
+ */
+@Serializable(with = TravelRuleFormatSerializer::class)
+data class TravelRuleFormat(
+    /** The type of the travel rule format (e.g. IVMS). */
+    val type: String,
+    /** The version of the travel rule format (e.g. 1.0). */
+    val version: String?,
+)
+
+/**
+ * Serializes the TravelRuleFormat to string in the format of "type@version". If there's no version, it will be
+ * serialized as "type".
+ */
+class TravelRuleFormatSerializer : KSerializer<TravelRuleFormat> {
+    override val descriptor = PrimitiveSerialDescriptor("TravelRuleFormat", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder): TravelRuleFormat {
+        val value = decoder.decodeString()
+        if (!value.contains("@")) {
+            return TravelRuleFormat(value, null)
+        }
+        val parts = value.split("@")
+        return TravelRuleFormat(parts[0], parts.getOrNull(1))
+    }
+
+    override fun serialize(encoder: Encoder, value: TravelRuleFormat) {
+        encoder.encodeString("${value.type}${value.version?.let { "@$it" } ?: ""}")
+    }
 }

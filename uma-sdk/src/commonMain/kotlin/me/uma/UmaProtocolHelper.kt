@@ -244,6 +244,8 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *     compliance provider, this will be used to pre-screen the sender's UTXOs for compliance purposes.
      * @param payerName The name of the sender (optional).
      * @param payerEmail The email of the sender (optional).
+     * @param travelRuleFormat An optional standardized format of the travel rule information (e.g. IVMS). Null
+     *    indicates raw json or a custom format.
      * @return The [PayRequest] that should be sent to the receiver.
      */
     @JvmOverloads
@@ -260,6 +262,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         payerNodePubKey: String? = null,
         payerName: String? = null,
         payerEmail: String? = null,
+        travelRuleFormat: TravelRuleFormat? = null,
     ): PayRequest {
         val compliancePayerData = getSignedCompliancePayerData(
             receiverEncryptionPubKey,
@@ -270,6 +273,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             payerUtxos,
             payerNodePubKey,
             utxoCallback,
+            travelRuleFormat,
         )
         val payerData = PayerData(
             identifier = payerIdentifier,
@@ -293,6 +297,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         payerUtxos: List<String>?,
         payerNodePubKey: String?,
         utxoCallback: String,
+        travelRuleFormat: TravelRuleFormat?,
     ): CompliancePayerData {
         val nonce = generateNonce()
         val timestamp = System.currentTimeMillis() / 1000
@@ -305,6 +310,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             signatureNonce = nonce,
             signatureTimestamp = timestamp,
             utxoCallback = utxoCallback,
+            travelRuleFormat = travelRuleFormat,
         )
         val signablePayload = "$payerIdentifier|$nonce|$timestamp".encodeToByteArray()
         val signature = signPayload(signablePayload, sendingVaspPrivateKey)
