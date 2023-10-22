@@ -2,8 +2,7 @@
 
 The UMA protocol implementation for Kotlin and Java!
 See [this repository](https://github.com/lightsparkdev/kotlin-sdk/tree/develop/umaserverdemo) for a sample
-implementation and check out
-the [full documentation](https://app.lightspark.com/docs/uma-sdk/introduction) for more info.
+implementation and check out the [full documentation](https://docs.uma.me) for more info.
 
 ## Installation
 
