@@ -3,11 +3,6 @@ package me.uma.javatest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import me.uma.InMemoryPublicKeyCache;
-import me.uma.UmaInvoiceCreator;
-import me.uma.UmaProtocolHelper;
-import me.uma.UmaRequester;
-import me.uma.protocol.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
@@ -16,6 +11,19 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import kotlin.coroutines.Continuation;
+import me.uma.InMemoryPublicKeyCache;
+import me.uma.UmaInvoiceCreator;
+import me.uma.UmaProtocolHelper;
+import me.uma.UmaRequester;
+import me.uma.protocol.Currency;
+import me.uma.protocol.KycStatus;
+import me.uma.protocol.LnurlpRequest;
+import me.uma.protocol.LnurlpResponse;
+import me.uma.protocol.PayReqResponse;
+import me.uma.protocol.PayRequest;
+import me.uma.protocol.PayerData;
+import me.uma.protocol.PayerDataOptions;
+import me.uma.protocol.PubKeyResponse;
 
 public class UmaTest {
     UmaProtocolHelper umaProtocolHelper = new UmaProtocolHelper(new InMemoryPublicKeyCache(), new TestUmaRequester());
@@ -77,7 +85,8 @@ public class UmaTest {
                                 "$",
                                 34_150,
                                 1,
-                                10_000_000
+                                10_000_000,
+                                2
                         )
                 ),
                 KycStatus.VERIFIED

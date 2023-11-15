@@ -6,7 +6,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 @Serializable
-data class Currency(
+data class Currency @JvmOverloads constructor(
     /**
      * The currency code, eg. "USD".
      */
