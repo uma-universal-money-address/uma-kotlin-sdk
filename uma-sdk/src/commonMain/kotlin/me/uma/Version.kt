@@ -6,7 +6,7 @@ import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
 
 const val MAJOR_VERSION = 0
-const val MINOR_VERSION = 1
+const val MINOR_VERSION = 2
 const val UMA_VERSION_STRING = "$MAJOR_VERSION.$MINOR_VERSION"
 
 /**
