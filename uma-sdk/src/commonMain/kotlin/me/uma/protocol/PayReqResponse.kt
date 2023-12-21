@@ -60,13 +60,15 @@ data class PayReqResponseCompliance(
  *
  * @property currencyCode The currency code that the receiver will receive for this payment.
  * @property multiplier The conversion rate. It is the number of millisatoshis that the receiver will receive for 1
- *     unit of the specified currency (eg: cents in USD)
+ *     unit of the specified currency (eg: cents in USD). In this context, this is just for convenience. The conversion
+ *     rate is also baked into the invoice amount itself. Specifically:
+ *     `invoiceAmount = amount * multiplier + exchangeFeesMillisatoshi`
  * @property exchangeFeesMillisatoshi The fees charged (in millisats) by the receiving VASP for this transaction. This
  * 	   is separate from the [multiplier].
  */
 @Serializable
 data class PayReqResponsePaymentInfo(
     val currencyCode: String,
-    val multiplier: Long,
+    val multiplier: Double,
     val exchangeFeesMillisatoshi: Long,
 )

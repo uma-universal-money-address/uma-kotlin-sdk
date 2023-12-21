@@ -19,6 +19,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import me.uma.crypto.Secp256k1
 import me.uma.protocol.*
+import kotlin.math.roundToLong
 
 /**
  * A helper class for interacting with the UMA protocol. It provides methods for creating and verifying UMA requests
@@ -376,7 +377,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         invoiceCreator: UmaInvoiceCreator,
         metadata: String,
         currencyCode: String,
-        conversionRate: Long,
+        conversionRate: Double,
         receiverFeesMillisats: Long,
         receiverChannelUtxos: List<String>,
         receiverNodePubKey: String?,
@@ -405,7 +406,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param invoiceCreator The [UmaInvoiceCreator] that will be used to create the invoice.
      * @param metadata The metadata that will be added to the invoice's metadata hash field.
      * @param currencyCode The code of the currency that the receiver will receive for this payment.
-     * @param conversionRate The conversion rate. It is the numer of milli-satoshis per the smallest unit of the
+     * @param conversionRate The conversion rate. It is the number of milli-satoshis per the smallest unit of the
      *     specified currency (for example: cents in USD). This rate is committed to by the receiving VASP until the
      *     invoice expires.
      * @param receiverFeesMillisats The fees charged (in millisats) by the receiving VASP for this transaction. This
@@ -423,7 +424,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         invoiceCreator: UmaInvoiceCreator,
         metadata: String,
         currencyCode: String,
-        conversionRate: Long,
+        conversionRate: Double,
         receiverFeesMillisats: Long,
         receiverChannelUtxos: List<String>,
         receiverNodePubKey: String?,
@@ -467,7 +468,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         invoiceCreator: UmaInvoiceCreator,
         metadata: String,
         currencyCode: String,
-        conversionRate: Long,
+        conversionRate: Double,
         receiverFeesMillisats: Long,
         receiverChannelUtxos: List<String>,
         receiverNodePubKey: String?,
@@ -476,7 +477,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         val encodedPayerData = Json.encodeToString(query.payerData)
         val metadataWithPayerData = "$metadata$encodedPayerData"
         val invoice = invoiceCreator.createUmaInvoice(
-            amountMsats = query.amount * conversionRate + receiverFeesMillisats,
+            amountMsats = (query.amount.toDouble() * conversionRate + receiverFeesMillisats).roundToLong(),
             metadata = metadataWithPayerData,
         ).await()
         return PayReqResponse(
