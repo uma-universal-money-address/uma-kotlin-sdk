@@ -59,6 +59,11 @@ data class PayReqResponseCompliance(
  * The payment info from the receiver.
  *
  * @property currencyCode The currency code that the receiver will receive for this payment.
+ * @property decimals Number of digits after the decimal point for the receiving currency. For example, in USD, by
+ *     convention, there are 2 digits for cents - $5.95. In this case, `decimals` would be 2. This should align with
+ *     the currency's `decimals` field in the LNURLP response. It is included here for convenience. See
+ *     [UMAD-04](https://github.com/uma-universal-money-address/protocol/blob/main/umad-04-lnurlp-response.md) for
+ *     details, edge cases, and examples.
  * @property multiplier The conversion rate. It is the number of millisatoshis that the receiver will receive for 1
  *     unit of the specified currency (eg: cents in USD). In this context, this is just for convenience. The conversion
  *     rate is also baked into the invoice amount itself. Specifically:
@@ -69,6 +74,7 @@ data class PayReqResponseCompliance(
 @Serializable
 data class PayReqResponsePaymentInfo(
     val currencyCode: String,
+    val decimals: Int,
     val multiplier: Double,
     val exchangeFeesMillisatoshi: Long,
 )
