@@ -2,9 +2,12 @@
 
 package me.uma
 
+import me.uma.crypto.Secp256k1
+import me.uma.protocol.*
 import java.security.MessageDigest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
+import kotlin.math.roundToLong
 import kotlin.random.Random
 import kotlin.random.nextULong
 import kotlinx.coroutines.CancellationException
@@ -17,9 +20,6 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import me.uma.crypto.Secp256k1
-import me.uma.protocol.*
-import kotlin.math.roundToLong
 
 /**
  * A helper class for interacting with the UMA protocol. It provides methods for creating and verifying UMA requests
