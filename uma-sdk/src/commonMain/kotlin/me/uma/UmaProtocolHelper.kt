@@ -2,12 +2,6 @@
 
 package me.uma
 
-import java.security.MessageDigest
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Future
-import kotlin.math.roundToLong
-import kotlin.random.Random
-import kotlin.random.nextULong
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +14,12 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import me.uma.crypto.Secp256k1
 import me.uma.protocol.*
+import java.security.MessageDigest
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Future
+import kotlin.math.roundToLong
+import kotlin.random.Random
+import kotlin.random.nextULong
 
 /**
  * A helper class for interacting with the UMA protocol. It provides methods for creating and verifying UMA requests
@@ -359,6 +359,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param invoiceCreator The [UmaInvoiceCreator] that will be used to create the invoice.
      * @param metadata The metadata that will be added to the invoice's metadata hash field.
      * @param currencyCode The code of the currency that the receiver will receive for this payment.
+     * @param currencyDecimals The number of digits after the decimal point for the receiving currency. For example,
+     *     USD has 2 decimal places. This should align with the `decimals` field returned for the chosen currency in the
+     *     LNURLP response.
      * @param conversionRate The conversion rate. It is the numer of milli-satoshis per the smallest unit of the
      *     specified currency (for example: cents in USD). This rate is committed to by the receiving VASP until the
      *     invoice expires.
@@ -377,6 +380,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         invoiceCreator: UmaInvoiceCreator,
         metadata: String,
         currencyCode: String,
+        currencyDecimals: Int,
         conversionRate: Double,
         receiverFeesMillisats: Long,
         receiverChannelUtxos: List<String>,
@@ -388,6 +392,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             invoiceCreator,
             metadata,
             currencyCode,
+            currencyDecimals,
             conversionRate,
             receiverFeesMillisats,
             receiverChannelUtxos,
@@ -406,6 +411,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param invoiceCreator The [UmaInvoiceCreator] that will be used to create the invoice.
      * @param metadata The metadata that will be added to the invoice's metadata hash field.
      * @param currencyCode The code of the currency that the receiver will receive for this payment.
+     * @param currencyDecimals The number of digits after the decimal point for the receiving currency. For example,
+     *     USD has 2 decimal places. This should align with the `decimals` field returned for the chosen currency in the
+     *     LNURLP response.
      * @param conversionRate The conversion rate. It is the number of milli-satoshis per the smallest unit of the
      *     specified currency (for example: cents in USD). This rate is committed to by the receiving VASP until the
      *     invoice expires.
@@ -424,6 +432,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         invoiceCreator: UmaInvoiceCreator,
         metadata: String,
         currencyCode: String,
+        currencyDecimals: Int,
         conversionRate: Double,
         receiverFeesMillisats: Long,
         receiverChannelUtxos: List<String>,
@@ -435,6 +444,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             invoiceCreator,
             metadata,
             currencyCode,
+            currencyDecimals,
             conversionRate,
             receiverFeesMillisats,
             receiverChannelUtxos,
@@ -450,6 +460,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param invoiceCreator The [UmaInvoiceCreator] that will be used to create the invoice.
      * @param metadata The metadata that will be added to the invoice's metadata hash field.
      * @param currencyCode The code of the currency that the receiver will receive for this payment.
+     * @param currencyDecimals The number of digits after the decimal point for the receiving currency. For example,
+     *     USD has 2 decimal places. This should align with the `decimals` field returned for the chosen currency in the
+     *     LNURLP response.
      * @param conversionRate The conversion rate. It is the numer of milli-satoshis per the smallest unit of the
      *     specified currency (for example: cents in USD). This rate is committed to by the receiving VASP until the
      *     invoice expires.
@@ -468,6 +481,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         invoiceCreator: UmaInvoiceCreator,
         metadata: String,
         currencyCode: String,
+        currencyDecimals: Int,
         conversionRate: Double,
         receiverFeesMillisats: Long,
         receiverChannelUtxos: List<String>,
@@ -489,6 +503,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             ),
             paymentInfo = PayReqResponsePaymentInfo(
                 currencyCode = currencyCode,
+                decimals = currencyDecimals,
                 multiplier = conversionRate,
                 exchangeFeesMillisatoshi = receiverFeesMillisats,
             ),
