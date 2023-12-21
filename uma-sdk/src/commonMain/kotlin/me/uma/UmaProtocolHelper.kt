@@ -179,8 +179,8 @@ class UmaProtocolHelper @JvmOverloads constructor(
         val umaVersion = minOf(Version.parse(query.umaVersion), Version.parse(UMA_VERSION_STRING)).toString()
         return LnurlpResponse(
             callback = callback,
-            minSendable = minSendableSats,
-            maxSendable = maxSendableSats,
+            minSendable = minSendableSats * 1000,
+            maxSendable = maxSendableSats * 1000,
             metadata = encodedMetadata,
             currencies = currencyOptions,
             requiredPayerData = payerDataOptions,
