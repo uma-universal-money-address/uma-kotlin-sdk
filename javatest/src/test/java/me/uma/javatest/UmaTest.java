@@ -2,6 +2,7 @@ package me.uma.javatest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -27,8 +28,8 @@ import me.uma.protocol.PubKeyResponse;
 
 public class UmaTest {
     UmaProtocolHelper umaProtocolHelper = new UmaProtocolHelper(new InMemoryPublicKeyCache(), new TestUmaRequester());
-    private static String PUBKEY_HEX = "02061e5634646e60cfbe2ca42e2be920b4deb749f0159ed7c428cdd8e3ea69c133";
-    private static String PRIVKEY_HEX = "0e120a3c9ff18d295c6452cbb7ee3bb0f3d9c34f4db9e62293d2773f338a3b9d";
+    private static String PUBKEY_HEX = "04f2998ab056897ddb91b5e6fad1e4bb6c4b7dda427409f667d0f4694b553e4feeeb08936c2993f7b931f6a3fa7e846f11165fae222de5e4a55c12def21a7c9fcf";
+    private static String PRIVKEY_HEX = "10fbbee8f689b207bb22df2dfa27827ae9ae02e265980ea09ef5101ed5fb508f";
 
 
     @Test
@@ -49,13 +50,15 @@ public class UmaTest {
     public void testGetLnurlpRequest() throws Exception {
         String lnurlpUrl = umaProtocolHelper.getSignedLnurlpRequestUrl(
                 privateKeyBytes(),
-                "$bob@vasp2.com",
-                "https://vasp.com",
-                true);
+                "$bob@uma-test.yourvasp.com",
+                /* senderVaspDomain */ "myvasp.com",
+                /* isSubjectToTravelRule */ true
+        );
         assertNotNull(lnurlpUrl);
         System.out.println(lnurlpUrl);
         LnurlpRequest request = umaProtocolHelper.parseLnurlpRequest(lnurlpUrl);
         assertNotNull(request);
+        assertTrue(umaProtocolHelper.verifyUmaLnurlpQuerySignature(request, new PubKeyResponse(publicKeyBytes(), publicKeyBytes())));
         System.out.println(request);
     }
 
