@@ -306,7 +306,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             utxos = payerUtxos ?: emptyList(),
             nodePubKey = payerNodePubKey,
             travelRuleInfo = travelRuleInfo?.let { encryptTravelRuleInfo(receiverEncryptionPubKey, it) },
-            senderKycStatus = payerKycStatus,
+            kycStatus = payerKycStatus,
             signature = "",
             signatureNonce = nonce,
             signatureTimestamp = timestamp,
