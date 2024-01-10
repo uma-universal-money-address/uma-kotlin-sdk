@@ -2,6 +2,8 @@
 
 package me.uma
 
+import me.uma.crypto.Secp256k1
+import me.uma.protocol.*
 import java.security.MessageDigest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
@@ -18,8 +20,6 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import me.uma.crypto.Secp256k1
-import me.uma.protocol.*
 
 /**
  * A helper class for interacting with the UMA protocol. It provides methods for creating and verifying UMA requests
@@ -429,7 +429,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
     @Throws(Exception::class, IllegalArgumentException::class, CancellationException::class)
     fun getPayReqResponseSync(
         query: PayRequest,
-        invoiceCreator: UmaInvoiceCreator,
+        invoiceCreator: SyncUmaInvoiceCreator,
         metadata: String,
         currencyCode: String,
         currencyDecimals: Int,
@@ -439,9 +439,14 @@ class UmaProtocolHelper @JvmOverloads constructor(
         receiverNodePubKey: String?,
         utxoCallback: String,
     ): PayReqResponse = runBlocking {
+        val futureInvoiceCreator = object : UmaInvoiceCreator {
+            override fun createUmaInvoice(amountMsats: Long, metadata: String): CompletableFuture<String> {
+                return coroutineScope.future { invoiceCreator.createUmaInvoice(amountMsats, metadata) }
+            }
+        }
         getPayReqResponse(
             query,
-            invoiceCreator,
+            futureInvoiceCreator,
             metadata,
             currencyCode,
             currencyDecimals,
@@ -543,4 +548,17 @@ interface UmaInvoiceCreator {
      *     [CompletableFuture].
      */
     fun createUmaInvoice(amountMsats: Long, metadata: String): CompletableFuture<String>
+}
+
+interface SyncUmaInvoiceCreator {
+    /**
+     * Synchronously creates an invoice with the given amount and encoded LNURL metadata.
+     *
+     * This method is synchronous and should only be used in cases where the caller is already on a background thread.
+     *
+     * @param amountMsats The amount of the invoice in millisatoshis.
+     * @param metadata The metadata that will be added to the invoice's metadata hash field.
+     * @return The encoded BOLT-11 invoice that should be returned to the sender for the given [PayRequest].
+     */
+    fun createUmaInvoice(amountMsats: Long, metadata: String): String
 }
