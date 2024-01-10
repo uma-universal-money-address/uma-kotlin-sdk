@@ -13,6 +13,7 @@ import java.util.concurrent.CompletableFuture;
 
 import kotlin.coroutines.Continuation;
 import me.uma.InMemoryPublicKeyCache;
+import me.uma.SyncUmaInvoiceCreator;
 import me.uma.UmaInvoiceCreator;
 import me.uma.UmaProtocolHelper;
 import me.uma.UmaRequester;
@@ -111,7 +112,7 @@ public class UmaTest {
         );
         PayReqResponse response = umaProtocolHelper.getPayReqResponseSync(
                 request,
-                new TestUmaInvoiceCreator(),
+                new TestSyncUmaInvoiceCreator(),
                 "metadata",
                 "USD",
                 2,
@@ -187,5 +188,13 @@ class TestUmaInvoiceCreator implements UmaInvoiceCreator {
     @Override
     public CompletableFuture<String> createUmaInvoice(long amountMsats, @NotNull String metadata) {
         return CompletableFuture.completedFuture("lnbc12345");
+    }
+}
+
+class TestSyncUmaInvoiceCreator implements SyncUmaInvoiceCreator {
+    @NotNull
+    @Override
+    public String createUmaInvoice(long amountMsats, @NotNull String metadata) {
+        return "lnbc12345";
     }
 }
