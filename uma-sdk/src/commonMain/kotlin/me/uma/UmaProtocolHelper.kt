@@ -2,7 +2,6 @@
 
 package me.uma
 
-import java.security.MessageDigest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 import kotlin.math.roundToLong
@@ -221,9 +220,11 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param pubKeyResponse The [PubKeyResponse] that contains the public key of the receiver.
      */
     fun verifyLnurlpResponseSignature(response: LnurlpResponse, pubKeyResponse: PubKeyResponse): Boolean {
-        val signablePayload = response.compliance.signablePayload()
-        val hashedPayload = MessageDigest.getInstance("SHA-256").digest(signablePayload)
-        return verifySignature(hashedPayload, response.compliance.signature, pubKeyResponse.signingPubKey)
+        return verifySignature(
+            response.compliance.signablePayload(),
+            response.compliance.signature,
+            pubKeyResponse.signingPubKey,
+        )
     }
 
     /**

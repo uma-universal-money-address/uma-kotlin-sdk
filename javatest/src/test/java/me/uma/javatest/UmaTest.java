@@ -101,6 +101,8 @@ public class UmaTest {
         LnurlpResponse parsedResponse = umaProtocolHelper.parseAsLnurlpResponse(responseJson);
         assertNotNull(parsedResponse);
         assertEquals(lnurlpResponse, parsedResponse);
+        assertTrue(umaProtocolHelper.verifyLnurlpResponseSignature(
+                parsedResponse, new PubKeyResponse(publicKeyBytes(), publicKeyBytes())));
     }
 
     @Test
