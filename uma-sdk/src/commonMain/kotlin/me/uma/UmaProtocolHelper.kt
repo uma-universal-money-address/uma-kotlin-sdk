@@ -306,7 +306,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         val unsignedCompliancePayerData = CompliancePayerData(
             utxos = payerUtxos ?: emptyList(),
             nodePubKey = payerNodePubKey,
-            travelRuleInfo = travelRuleInfo?.let { encryptTravelRuleInfo(receiverEncryptionPubKey, it) },
+            encryptedTravelRuleInfo = travelRuleInfo?.let { encryptTravelRuleInfo(receiverEncryptionPubKey, it) },
             kycStatus = payerKycStatus,
             signature = "",
             signatureNonce = nonce,

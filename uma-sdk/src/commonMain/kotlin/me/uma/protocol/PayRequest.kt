@@ -48,8 +48,8 @@ data class PayerData @JvmOverloads constructor(
  * @property nodePubKey If known, the public key of the sender's node. If supported by the receiver VASP's compliance
  *     provider, this will be used to pre-screen the sender's UTXOs for compliance purposes.
  * @property kycStatus Indicates whether VASP1 has KYC information about the sender.
- * @property travelRuleInfo The travel rule information of the sender. This is encrypted with the receiver's public
- *     encryption key.
+ * @property encryptedTravelRuleInfo The travel rule information of the sender. This is encrypted with the receiver's
+ *     public encryption key.
  * @property utxoCallback The URL that the receiver will call to send UTXOs of the channel that the receiver used to
  *     receive the payment once it completes.
  * @property signature The signature of the sender on the signable payload.
@@ -63,7 +63,7 @@ data class CompliancePayerData(
     val utxos: List<String>,
     val nodePubKey: String?,
     val kycStatus: KycStatus,
-    val travelRuleInfo: String?,
+    val encryptedTravelRuleInfo: String?,
     val utxoCallback: String,
     val signature: String,
     val signatureNonce: String,
