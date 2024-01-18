@@ -1,15 +1,15 @@
 package me.uma
 
-import me.uma.crypto.Secp256k1
-import me.uma.protocol.KycStatus
-import me.uma.protocol.PayerDataOptions
-import me.uma.protocol.TravelRuleFormat
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.fail
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import me.uma.crypto.Secp256k1
+import me.uma.protocol.KycStatus
+import me.uma.protocol.PayerDataOptions
+import me.uma.protocol.TravelRuleFormat
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UmaTests {
