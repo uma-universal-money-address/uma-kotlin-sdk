@@ -19,6 +19,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import me.uma.crypto.Secp256k1
 import me.uma.protocol.*
+import me.uma.utils.isDomainLocalhost
 
 /**
  * A helper class for interacting with the UMA protocol. It provides methods for creating and verifying UMA requests
@@ -70,7 +71,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             return cached
         }
 
-        val scheme = if (vaspDomain.startsWith("localhost:")) "http" else "https"
+        val scheme = if (isDomainLocalhost(vaspDomain)) "http" else "https"
         val response = umaRequester.makeGetRequest("$scheme://$vaspDomain/.well-known/lnurlpubkey")
         val pubKeyResponse = Json.decodeFromString<PubKeyResponse>(response)
         publicKeyCache.addPublicKeysForVasp(vaspDomain, pubKeyResponse)

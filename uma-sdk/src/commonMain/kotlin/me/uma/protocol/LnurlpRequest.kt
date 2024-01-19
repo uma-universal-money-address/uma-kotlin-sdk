@@ -5,6 +5,7 @@ import io.ktor.http.URLBuilder
 import io.ktor.http.URLProtocol
 import me.uma.UnsupportedVersionException
 import me.uma.isVersionSupported
+import me.uma.utils.isDomainLocalhost
 
 /**
  * The first request in the UMA protocol.
@@ -36,7 +37,7 @@ data class LnurlpRequest(
         if (receiverAddressParts.size != 2) {
             throw IllegalArgumentException("Invalid receiverAddress: $receiverAddress")
         }
-        val scheme = if (receiverAddressParts[1].startsWith("localhost:")) URLProtocol.HTTP else URLProtocol.HTTPS
+        val scheme = if (isDomainLocalhost(receiverAddressParts[1])) URLProtocol.HTTP else URLProtocol.HTTPS
         val url = URLBuilder(
             protocol = scheme,
             host = receiverAddressParts[1],
@@ -69,7 +70,7 @@ data class LnurlpRequest(
             ) {
                 throw IllegalArgumentException("Invalid uma request path: $url")
             }
-            val port = if (urlBuilder.host == "localhost") ":${urlBuilder.port}" else ""
+            val port = if (isDomainLocalhost(urlBuilder.host)) ":${urlBuilder.port}" else ""
             val receiverAddress = "${urlBuilder.pathSegments[3]}@${urlBuilder.host}$port"
             val vaspDomain = urlBuilder.parameters["vaspDomain"]
             val nonce = urlBuilder.parameters["nonce"]
