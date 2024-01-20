@@ -1,12 +1,9 @@
 package me.uma.protocol
 
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.descriptors.element
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
@@ -29,6 +26,7 @@ import kotlinx.serialization.json.Json
  *     support and VASP1's specified preference in the LnurlpRequest. For the version negotiation flow, see
  * 	   https://static.swimlanes.io/87f5d188e080cb8e0494e46f80f2ae74.png
  */
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class LnurlpResponse(
     val callback: String,
@@ -40,6 +38,7 @@ data class LnurlpResponse(
     val requiredPayerData: PayerDataOptions,
     val compliance: LnurlComplianceResponse,
     val umaVersion: String,
+    @EncodeDefault
     val tag: String = "payRequest",
 ) {
     fun toJson() = Json.encodeToString(this)
