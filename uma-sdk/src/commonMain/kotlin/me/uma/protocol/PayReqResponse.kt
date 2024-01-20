@@ -1,8 +1,6 @@
 package me.uma.protocol
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
+import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
 
 /**
@@ -14,12 +12,14 @@ import kotlinx.serialization.json.Json
  * @property compliance The compliance data from the receiver, including utxo info.
  * @property paymentInfo The payment info from the receiver, including currency and an updated conversion rate.
  */
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class PayReqResponse(
     @SerialName("pr")
     val encodedInvoice: String,
     val compliance: PayReqResponseCompliance,
     val paymentInfo: PayReqResponsePaymentInfo,
+    @EncodeDefault
     val routes: List<Route> = emptyList(),
 ) {
     fun toJson() = Json.encodeToString(this)

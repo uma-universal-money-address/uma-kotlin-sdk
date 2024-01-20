@@ -29,8 +29,8 @@ import me.uma.protocol.PubKeyResponse;
 
 public class UmaTest {
     UmaProtocolHelper umaProtocolHelper = new UmaProtocolHelper(new InMemoryPublicKeyCache(), new TestUmaRequester());
-    private static String PUBKEY_HEX = "04f2998ab056897ddb91b5e6fad1e4bb6c4b7dda427409f667d0f4694b553e4feeeb08936c2993f7b931f6a3fa7e846f11165fae222de5e4a55c12def21a7c9fcf";
-    private static String PRIVKEY_HEX = "10fbbee8f689b207bb22df2dfa27827ae9ae02e265980ea09ef5101ed5fb508f";
+    private static final String PUBKEY_HEX = "04f2998ab056897ddb91b5e6fad1e4bb6c4b7dda427409f667d0f4694b553e4feeeb08936c2993f7b931f6a3fa7e846f11165fae222de5e4a55c12def21a7c9fcf";
+    private static final String PRIVKEY_HEX = "10fbbee8f689b207bb22df2dfa27827ae9ae02e265980ea09ef5101ed5fb508f";
 
 
     @Test
