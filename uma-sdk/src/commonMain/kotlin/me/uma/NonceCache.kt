@@ -1,5 +1,7 @@
 package me.uma
 
+// NonceCache is an interface for a caching of nonces used in signatures. This is used to prevent replay attacks.
+// Implementations of this interface should be thread-safe.
 interface NonceCache {
     // Checks if the given nonce has been used before, and if not, saves it.
     // If the nonce has been used before, or if timestamp is too old, returns an error.
