@@ -140,8 +140,18 @@ class UmaProtocolHelper @JvmOverloads constructor(
 
     /**
      * Verifies the signature on an UMA Lnurlp query based on the public key of the VASP making the request.
+     *
+     * @param query The signed [LnurlpRequest] to verify.
+     * @param pubKeyResponse The [PubKeyResponse] that contains the public key of the receiver.
+     * @return true if the signature is valid, false otherwise.
+     * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
      */
-    fun verifyUmaLnurlpQuerySignature(query: LnurlpRequest, pubKeyResponse: PubKeyResponse): Boolean {
+    fun verifyUmaLnurlpQuerySignature(
+        query: LnurlpRequest,
+        pubKeyResponse: PubKeyResponse,
+        nonceCache: NonceCache
+    ): Boolean {
+        nonceCache.checkAndSaveNonce(query.nonce, query.timestamp)
         return verifySignature(query.signablePayload(), query.signature, pubKeyResponse.signingPubKey)
     }
 
@@ -219,8 +229,15 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *
      * @param response The signed [LnurlpResponse] sent by the receiver.
      * @param pubKeyResponse The [PubKeyResponse] that contains the public key of the receiver.
+     * @return true if the signature is valid, false otherwise.
+     * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
      */
-    fun verifyLnurlpResponseSignature(response: LnurlpResponse, pubKeyResponse: PubKeyResponse): Boolean {
+    fun verifyLnurlpResponseSignature(
+        response: LnurlpResponse,
+        pubKeyResponse: PubKeyResponse,
+        nonceCache: NonceCache
+    ): Boolean {
+        nonceCache.checkAndSaveNonce(response.compliance.signatureNonce, response.compliance.signatureTimestamp)
         return verifySignature(
             response.compliance.signablePayload(),
             response.compliance.signature,
@@ -343,11 +360,18 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param payReq The [PayRequest] sent by the sender.
      * @param pubKeyResponse The [PubKeyResponse] that contains the public key of the sender.
      * @return true if the signature is valid, false otherwise.
+     * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
      */
-    fun verifyPayReqSignature(payReq: PayRequest, pubKeyResponse: PubKeyResponse): Boolean {
+    fun verifyPayReqSignature(
+        payReq: PayRequest,
+        pubKeyResponse: PubKeyResponse,
+        nonceCache: NonceCache
+    ): Boolean {
+        val compliance = payReq.payerData.compliance ?: return false
+        nonceCache.checkAndSaveNonce(compliance.signatureNonce, compliance.signatureTimestamp)
         return verifySignature(
             payReq.signablePayload(),
-            payReq.payerData.compliance!!.signature,
+            compliance.signature,
             pubKeyResponse.signingPubKey,
         )
     }

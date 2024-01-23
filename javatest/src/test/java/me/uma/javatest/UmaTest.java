@@ -2,6 +2,7 @@ package me.uma.javatest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.jetbrains.annotations.NotNull;
@@ -12,7 +13,9 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import kotlin.coroutines.Continuation;
+import me.uma.InMemoryNonceCache;
 import me.uma.InMemoryPublicKeyCache;
+import me.uma.InvalidNonceException;
 import me.uma.SyncUmaInvoiceCreator;
 import me.uma.UmaInvoiceCreator;
 import me.uma.UmaProtocolHelper;
@@ -59,7 +62,9 @@ public class UmaTest {
         System.out.println(lnurlpUrl);
         LnurlpRequest request = umaProtocolHelper.parseLnurlpRequest(lnurlpUrl);
         assertNotNull(request);
-        assertTrue(umaProtocolHelper.verifyUmaLnurlpQuerySignature(request, new PubKeyResponse(publicKeyBytes(), publicKeyBytes())));
+        assertTrue(umaProtocolHelper.verifyUmaLnurlpQuerySignature(
+                request, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
+                new InMemoryNonceCache(1L)));
         System.out.println(request);
     }
 
@@ -102,7 +107,8 @@ public class UmaTest {
         assertNotNull(parsedResponse);
         assertEquals(lnurlpResponse, parsedResponse);
         assertTrue(umaProtocolHelper.verifyLnurlpResponseSignature(
-                parsedResponse, new PubKeyResponse(publicKeyBytes(), publicKeyBytes())));
+                parsedResponse, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
+                new InMemoryNonceCache(1L)));
     }
 
     @Test
@@ -151,6 +157,63 @@ public class UmaTest {
         assertNotNull(response);
         assertEquals("lnbc12345", response.getEncodedInvoice());
         System.out.println(response);
+    }
+
+    @Test
+    public void testVerifyUmaLnurlpQuerySignature_duplicateNonce() throws Exception {
+        String lnurlpUrl = umaProtocolHelper.getSignedLnurlpRequestUrl(
+                privateKeyBytes(),
+                "$bob@vasp2.com",
+                "https://vasp.com",
+                true);
+        LnurlpRequest request = umaProtocolHelper.parseLnurlpRequest(lnurlpUrl);
+        assertNotNull(request);
+
+        InMemoryNonceCache nonceCache = new InMemoryNonceCache(1L);
+        nonceCache.checkAndSaveNonce(request.getNonce(), 2L);
+
+        Exception exception = assertThrows(InvalidNonceException.class, () -> {
+            umaProtocolHelper.verifyUmaLnurlpQuerySignature(
+                    request, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()), nonceCache);
+        });
+        assertEquals("Nonce already used", exception.getMessage());
+    }
+
+    @Test
+    public void testVerifyUmaLnurlpQuerySignature_oldSignature() throws Exception {
+        String lnurlpUrl = umaProtocolHelper.getSignedLnurlpRequestUrl(
+                privateKeyBytes(),
+                "$bob@vasp2.com",
+                "https://vasp.com",
+                true);
+        LnurlpRequest request = umaProtocolHelper.parseLnurlpRequest(lnurlpUrl);
+        assertNotNull(request);
+
+        InMemoryNonceCache nonceCache = new InMemoryNonceCache(System.currentTimeMillis() / 1000 + 1000);
+
+        Exception exception = assertThrows(InvalidNonceException.class, () -> {
+            umaProtocolHelper.verifyUmaLnurlpQuerySignature(
+                    request, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()), nonceCache);
+        });
+        assertEquals("Timestamp too old", exception.getMessage());
+    }
+
+    @Test
+    public void testVerifyUmaLnurlpQuerySignature_purgeOlderNoncesAndStoreNonce() throws Exception {
+        String lnurlpUrl = umaProtocolHelper.getSignedLnurlpRequestUrl(
+                privateKeyBytes(),
+                "$bob@vasp2.com",
+                "https://vasp.com",
+                true);
+        LnurlpRequest request = umaProtocolHelper.parseLnurlpRequest(lnurlpUrl);
+        assertNotNull(request);
+
+        InMemoryNonceCache nonceCache = new InMemoryNonceCache(1L);
+        nonceCache.checkAndSaveNonce(request.getNonce(), 2L);
+        nonceCache.purgeNoncesOlderThan(3L);
+
+        assertTrue(umaProtocolHelper.verifyUmaLnurlpQuerySignature(
+                request, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()), nonceCache));
     }
 
     static byte[] hexToBytes(String hex) {
