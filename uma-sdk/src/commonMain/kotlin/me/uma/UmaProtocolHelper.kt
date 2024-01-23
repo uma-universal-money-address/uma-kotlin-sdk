@@ -149,7 +149,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
     fun verifyUmaLnurlpQuerySignature(
         query: LnurlpRequest,
         pubKeyResponse: PubKeyResponse,
-        nonceCache: NonceCache
+        nonceCache: NonceCache,
     ): Boolean {
         nonceCache.checkAndSaveNonce(query.nonce, query.timestamp)
         return verifySignature(query.signablePayload(), query.signature, pubKeyResponse.signingPubKey)
@@ -235,7 +235,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
     fun verifyLnurlpResponseSignature(
         response: LnurlpResponse,
         pubKeyResponse: PubKeyResponse,
-        nonceCache: NonceCache
+        nonceCache: NonceCache,
     ): Boolean {
         nonceCache.checkAndSaveNonce(response.compliance.signatureNonce, response.compliance.signatureTimestamp)
         return verifySignature(
@@ -365,7 +365,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
     fun verifyPayReqSignature(
         payReq: PayRequest,
         pubKeyResponse: PubKeyResponse,
-        nonceCache: NonceCache
+        nonceCache: NonceCache,
     ): Boolean {
         val compliance = payReq.payerData.compliance ?: return false
         nonceCache.checkAndSaveNonce(compliance.signatureNonce, compliance.signatureTimestamp)
