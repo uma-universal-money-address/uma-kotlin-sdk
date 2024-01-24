@@ -146,6 +146,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @return true if the signature is valid, false otherwise.
      * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
      */
+    @Throws(InvalidNonceException::class)
     fun verifyUmaLnurlpQuerySignature(
         query: LnurlpRequest,
         pubKeyResponse: PubKeyResponse,
@@ -232,6 +233,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @return true if the signature is valid, false otherwise.
      * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
      */
+    @Throws(InvalidNonceException::class)
     fun verifyLnurlpResponseSignature(
         response: LnurlpResponse,
         pubKeyResponse: PubKeyResponse,
@@ -362,6 +364,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @return true if the signature is valid, false otherwise.
      * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
      */
+    @Throws(InvalidNonceException::class)
     fun verifyPayReqSignature(
         payReq: PayRequest,
         pubKeyResponse: PubKeyResponse,

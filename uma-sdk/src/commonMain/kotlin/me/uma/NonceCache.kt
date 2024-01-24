@@ -1,21 +1,34 @@
 package me.uma
 
-// NonceCache is an interface for a caching of nonces used in signatures. This is used to prevent replay attacks.
-// Implementations of this interface should be thread-safe.
+/**
+ * An interface for caching of nonces used in signatures. This is used to prevent replay attacks.
+ * Implementations of this interface should be thread-safe.
+ */
 interface NonceCache {
-    // Checks if the given nonce has been used before, and if not, saves it.
-    // If the nonce has been used before, or if timestamp is too old, returns an error.
+    /**
+     * Checks if the given nonce has been used before, and if not, saves it.
+     * If the nonce has been used before, or if timestamp is too old, throws [InvalidNonceException].
+     *
+     * @param nonce The nonce to cache.
+     * @param timestamp Timestamp corresponding to the nonce in seconds since epoch.
+     */
     fun checkAndSaveNonce(nonce: String, timestamp: Long)
 
-    // Purges all nonces older than the given timestamp. This allows the cache to be pruned.
+    /**
+     * Purges all nonces older than the given timestamp. This allows the cache to be pruned.
+     *
+     * @param timestamp The timestamp before which nonces should be removed.
+     */
     fun purgeNoncesOlderThan(timestamp: Long)
 }
 
 class InvalidNonceException(message: String) : Exception(message)
 
-// InMemoryNonceCache is an in-memory implementation of NonceCache.
-// It is not recommended to use this in production, as it will not persist across restarts. You likely want to implement
-// your own NonceCache that persists to a database of some sort.
+/**
+ * InMemoryNonceCache is an in-memory implementation of NonceCache.
+ * It is not recommended to use this in production, as it will not persist across restarts. You likely want to implement
+ * your own NonceCache that persists to a database of some sort.
+ */
 class InMemoryNonceCache(private var oldestValidTimestamp: Long) : NonceCache {
     private val cache = mutableMapOf<String, Long>()
 
