@@ -49,6 +49,9 @@ subprojects {
         if (project.hasProperty("newVersion")) {
             cmd.addAll(listOf("-v", project.properties["newVersion"].toString()))
         }
+        if (project.hasProperty("noCommit")) {
+            cmd.add("--no-commit")
+        }
         commandLine(*cmd.toTypedArray())
     }
 

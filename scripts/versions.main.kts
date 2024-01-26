@@ -49,8 +49,10 @@ while (!force) {
 
 setCurrentVersion(tagVersion)
 setVersionInDocs(tagVersion, projectName)
-
-runCommand("git", "commit", "-a", "-m", "Bump $projectName to version $tagVersion")
+val noCommit = args.contains("--no-commit")
+if (!noCommit) {
+    runCommand("git", "commit", "-a", "-m", "Bump $projectName to version $tagVersion")
+}
 if (tagAndSnapshot) {
     runCommand("git", "tag", "$projectName-v$tagVersion")
 
