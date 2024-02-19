@@ -10,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import kotlin.coroutines.Continuation;
@@ -20,14 +21,15 @@ import me.uma.SyncUmaInvoiceCreator;
 import me.uma.UmaInvoiceCreator;
 import me.uma.UmaProtocolHelper;
 import me.uma.UmaRequester;
+import me.uma.protocol.CounterPartyData;
 import me.uma.protocol.Currency;
 import me.uma.protocol.KycStatus;
 import me.uma.protocol.LnurlpRequest;
 import me.uma.protocol.LnurlpResponse;
 import me.uma.protocol.PayReqResponse;
 import me.uma.protocol.PayRequest;
+import me.uma.protocol.PayeeData;
 import me.uma.protocol.PayerData;
-import me.uma.protocol.PayerDataOptions;
 import me.uma.protocol.PubKeyResponse;
 
 public class UmaTest {
@@ -86,7 +88,14 @@ public class UmaTest {
                 "encoded metadata",
                 1,
                 10_000_000,
-                new PayerDataOptions(false, false, true),
+                CounterPartyData.createCounterPartyDataOptions(
+                        Map.of(
+                                "name", false,
+                                "email", false,
+                                "identity", true,
+                                "compliance", true
+                        )
+                ),
                 List.of(
                         new Currency(
                                 "USD",
@@ -116,7 +125,15 @@ public class UmaTest {
         PayRequest request = new PayRequest(
                 "USD",
                 100,
-                new PayerData("$alice@vasp1.com")
+                PayerData.createPayerData("$alice@vasp1.com"),
+                CounterPartyData.createCounterPartyDataOptions(
+                        Map.of(
+                                "name", false,
+                                "email", false,
+                                "identity", true,
+                                "compliance", true
+                        )
+                )
         );
         PayReqResponse response = umaProtocolHelper.getPayReqResponseSync(
                 request,
@@ -128,7 +145,8 @@ public class UmaTest {
                 0L,
                 List.of(),
                 null,
-                ""
+                "",
+                PayeeData.createPayeeData(null, "$bob@vasp2.com")
         );
         assertNotNull(response);
         assertEquals("lnbc12345", response.getEncodedInvoice());
@@ -140,7 +158,7 @@ public class UmaTest {
         PayRequest request = new PayRequest(
                 "USD",
                 100,
-                new PayerData("$alice@vasp1.com")
+                PayerData.createPayerData("$alice@vasp1.com")
         );
         PayReqResponse response = umaProtocolHelper.getPayReqResponseFuture(
                 request,

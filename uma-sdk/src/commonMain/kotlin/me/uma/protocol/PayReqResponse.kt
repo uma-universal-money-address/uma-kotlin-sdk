@@ -1,6 +1,10 @@
 package me.uma.protocol
 
-import kotlinx.serialization.*
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 /**
@@ -17,8 +21,8 @@ import kotlinx.serialization.json.Json
 data class PayReqResponse(
     @SerialName("pr")
     val encodedInvoice: String,
-    val compliance: PayReqResponseCompliance,
     val paymentInfo: PayReqResponsePaymentInfo,
+    val payeeData: PayeeData,
     @EncodeDefault
     val routes: List<Route> = emptyList(),
 ) {
@@ -37,22 +41,6 @@ data class RouteHop(
     val channel: String,
     val fee: Long,
     val msatoshi: Long,
-)
-
-/**
- * The compliance data from the receiver, including utxo info.
- *
- * @property utxos A list of UTXOs of channels over which the receiver will likely receive the payment.
- * @property nodePubKey If known, the public key of the receiver's node. If supported by the sending VASP's compliance
- *     provider, this will be used to pre-screen the receiver's UTXOs for compliance purposes.
- * @property utxoCallback The URL that the sender VASP will call to send UTXOs of the channel that the sender used to
- *     send the payment once it completes.
- */
-@Serializable
-data class PayReqResponseCompliance(
-    val utxos: List<String>,
-    val nodePubKey: String?,
-    val utxoCallback: String,
 )
 
 /**

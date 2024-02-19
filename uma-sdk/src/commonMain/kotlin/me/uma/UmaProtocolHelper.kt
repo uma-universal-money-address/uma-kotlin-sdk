@@ -2,6 +2,9 @@
 
 package me.uma
 
+import me.uma.crypto.Secp256k1
+import me.uma.protocol.*
+import me.uma.utils.isDomainLocalhost
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 import kotlin.math.roundToLong
@@ -17,9 +20,8 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import me.uma.crypto.Secp256k1
-import me.uma.protocol.*
-import me.uma.utils.isDomainLocalhost
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.encodeToJsonElement
 
 /**
  * A helper class for interacting with the UMA protocol. It provides methods for creating and verifying UMA requests
@@ -182,7 +184,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         encodedMetadata: String,
         minSendableSats: Long,
         maxSendableSats: Long,
-        payerDataOptions: PayerDataOptions,
+        payerDataOptions: CounterPartyDataOptions,
         currencyOptions: List<Currency>,
         receiverKycStatus: KycStatus,
     ): LnurlpResponse {
@@ -285,6 +287,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         payerName: String? = null,
         payerEmail: String? = null,
         travelRuleFormat: TravelRuleFormat? = null,
+        requestedPayeeData: CounterPartyDataOptions? = null,
     ): PayRequest {
         val compliancePayerData = getSignedCompliancePayerData(
             receiverEncryptionPubKey,
@@ -297,7 +300,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             utxoCallback,
             travelRuleFormat,
         )
-        val payerData = PayerData(
+        val payerData = createPayerData(
             identifier = payerIdentifier,
             name = payerName,
             email = payerEmail,
@@ -307,6 +310,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             payerData = payerData,
             currencyCode = currencyCode,
             amount = amount,
+            requestedPayeeData = requestedPayeeData,
         )
     }
 
@@ -370,7 +374,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         pubKeyResponse: PubKeyResponse,
         nonceCache: NonceCache,
     ): Boolean {
-        val compliance = payReq.payerData.compliance ?: return false
+        val compliance = payReq.payerData.compliance() ?: return false
         nonceCache.checkAndSaveNonce(compliance.signatureNonce, compliance.signatureTimestamp)
         return verifySignature(
             payReq.signablePayload(),
@@ -401,8 +405,10 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *     compliance provider, this will be used to pre-screen the receiver's UTXOs for compliance purposes.
      * @param utxoCallback The URL that the receiving VASP will call to send UTXOs of the channel that the receiver
      *     used to receive the payment once it completes.
+     * @param payeeData The data requested by the sending VASP about the receiver.
      * @return A [CompletableFuture] [PayReqResponse] that should be returned to the sender for the given [PayRequest].
      */
+    @JvmOverloads
     @Throws(IllegalArgumentException::class, CancellationException::class)
     fun getPayReqResponseFuture(
         query: PayRequest,
@@ -415,6 +421,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         receiverChannelUtxos: List<String>,
         receiverNodePubKey: String?,
         utxoCallback: String,
+        payeeData: PayeeData? = null,
     ): CompletableFuture<PayReqResponse> = coroutineScope.future {
         getPayReqResponse(
             query,
@@ -427,6 +434,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             receiverChannelUtxos,
             receiverNodePubKey,
             utxoCallback,
+            payeeData,
         )
     }
 
@@ -453,8 +461,10 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *     compliance provider, this will be used to pre-screen the receiver's UTXOs for compliance purposes.
      * @param utxoCallback The URL that the receiving VASP will call to send UTXOs of the channel that the receiver
      *     used to receive the payment once it completes.
+     * @param payeeData The data requested by the sending VASP about the receiver.
      * @return A [PayReqResponse] that should be returned to the sender for the given [PayRequest].
      */
+    @JvmOverloads
     @Throws(Exception::class, IllegalArgumentException::class, CancellationException::class)
     fun getPayReqResponseSync(
         query: PayRequest,
@@ -467,6 +477,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         receiverChannelUtxos: List<String>,
         receiverNodePubKey: String?,
         utxoCallback: String,
+        payeeData: PayeeData? = null,
     ): PayReqResponse = runBlocking {
         val futureInvoiceCreator = object : UmaInvoiceCreator {
             override fun createUmaInvoice(amountMsats: Long, metadata: String): CompletableFuture<String> {
@@ -484,6 +495,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             receiverChannelUtxos,
             receiverNodePubKey,
             utxoCallback,
+            payeeData,
         )
     }
 
@@ -507,6 +519,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *     compliance provider, this will be used to pre-screen the receiver's UTXOs for compliance purposes.
      * @param utxoCallback The URL that the receiving VASP will call to send UTXOs of the channel that the receiver
      *     used to receive the payment once it completes.
+     * @param payeeData The data requested by the sending VASP about the receiver.
      * @return The [PayReqResponse] that should be returned to the sender for the given [PayRequest].
      */
     @JvmName("KotlinOnly-getPayReqResponseSuspended")
@@ -521,6 +534,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         receiverChannelUtxos: List<String>,
         receiverNodePubKey: String?,
         utxoCallback: String,
+        payeeData: PayeeData? = null,
     ): PayReqResponse {
         val encodedPayerData = Json.encodeToString(query.payerData)
         val metadataWithPayerData = "$metadata$encodedPayerData"
@@ -528,13 +542,17 @@ class UmaProtocolHelper @JvmOverloads constructor(
             amountMsats = (query.amount.toDouble() * conversionRate + receiverFeesMillisats).roundToLong(),
             metadata = metadataWithPayerData,
         ).await()
-        return PayReqResponse(
-            encodedInvoice = invoice,
-            compliance = PayReqResponseCompliance(
+        val mutablePayeeData = payeeData?.toMutableMap() ?: mutableMapOf()
+        mutablePayeeData["compliance"] = Json.encodeToJsonElement(
+            CompliancePayeeData(
                 utxos = receiverChannelUtxos,
                 nodePubKey = receiverNodePubKey,
                 utxoCallback = utxoCallback,
             ),
+        )
+        return PayReqResponse(
+            encodedInvoice = invoice,
+            payeeData = JsonObject(mutablePayeeData),
             paymentInfo = PayReqResponsePaymentInfo(
                 currencyCode = currencyCode,
                 decimals = currencyDecimals,
