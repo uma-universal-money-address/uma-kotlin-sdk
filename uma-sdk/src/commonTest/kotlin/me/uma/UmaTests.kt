@@ -1,15 +1,15 @@
 package me.uma
 
-import me.uma.crypto.Secp256k1
-import me.uma.protocol.KycStatus
-import me.uma.protocol.TravelRuleFormat
-import me.uma.protocol.compliance
-import me.uma.protocol.createCounterPartyDataOptions
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.fail
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import me.uma.crypto.Secp256k1
+import me.uma.protocol.KycStatus
+import me.uma.protocol.TravelRuleFormat
+import me.uma.protocol.compliance
+import me.uma.protocol.createCounterPartyDataOptions
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UmaTests {
@@ -30,7 +30,9 @@ class UmaTests {
             travelRuleInfo = "travel rule info",
             travelRuleFormat = TravelRuleFormat("someFormat", "1.0"),
             requestedPayeeData = createCounterPartyDataOptions(
-                "email" to true, "name" to false, "compliance" to true,
+                "email" to true,
+                "name" to false,
+                "compliance" to true,
             ),
         )
         val json = payreq.toJson()
