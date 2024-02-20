@@ -145,6 +145,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *
      * @param query The signed [LnurlpRequest] to verify.
      * @param pubKeyResponse The [PubKeyResponse] that contains the public key of the receiver.
+     * @param nonceCache The persistent [NonceCache] implementation that will cache previously seen nonces.
      * @return true if the signature is valid, false otherwise.
      * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
      */
@@ -232,6 +233,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *
      * @param response The signed [LnurlpResponse] sent by the receiver.
      * @param pubKeyResponse The [PubKeyResponse] that contains the public key of the receiver.
+     * @param nonceCache The persistent [NonceCache] implementation that will cache previously seen nonces.
      * @return true if the signature is valid, false otherwise.
      * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
      */
@@ -365,6 +367,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *
      * @param payReq The [PayRequest] sent by the sender.
      * @param pubKeyResponse The [PubKeyResponse] that contains the public key of the sender.
+     * @param nonceCache The persistent [NonceCache] implementation that will cache previously seen nonces.
      * @return true if the signature is valid, false otherwise.
      * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
      */
@@ -604,10 +607,12 @@ class UmaProtocolHelper @JvmOverloads constructor(
     }
 
     /**
-     * Verifies the signature of the [PayRequest] sent by the sender.
+     * Verifies the signature of the [PayReqResponse] sent by the receiver.
      *
-     * @param payReq The [PayRequest] sent by the sender.
-     * @param pubKeyResponse The [PubKeyResponse] that contains the public key of the sender.
+     * @param payReqResponse The [PayReqResponse] sent by the receiver.
+     * @param pubKeyResponse The [PubKeyResponse] that contains the public key of the receiver.
+     * @param payerIdentifier The identifier of the sender. For example, $alice@vasp1.com
+     * @param nonceCache The persistent [NonceCache] implementation that will cache previously seen nonces.
      * @return true if the signature is valid, false otherwise.
      * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
      */
