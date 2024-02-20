@@ -27,6 +27,13 @@ data class PayReqResponse(
     val routes: List<Route> = emptyList(),
 ) {
     fun toJson() = Json.encodeToString(this)
+
+    fun signablePayload(payerIdentifier: String): ByteArray {
+        val complianceData = payeeData.payeeCompliance() ?: throw IllegalArgumentException("Compliance data is required")
+        return complianceData.let {
+            "${payerIdentifier}|${payeeData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}".encodeToByteArray()
+        }
+    }
 }
 
 @Serializable
