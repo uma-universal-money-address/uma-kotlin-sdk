@@ -48,7 +48,7 @@ fun PayeeData.payeeCompliance(): CompliancePayeeData? {
  *     provider, this will be used to pre-screen the receiver's UTXOs for compliance purposes.
  * @property utxoCallback The URL that the sender VASP will call to send UTXOs of the channel that the sender used to
  *     send the payment once it completes.
- * @property signature The signature of the sender on the signable payload.
+ * @property signature The signature of the receiver on the signable payload.
  * @property signatureNonce The nonce used in the signature.
  * @property signatureTimestamp The timestamp used in the signature.
  */
