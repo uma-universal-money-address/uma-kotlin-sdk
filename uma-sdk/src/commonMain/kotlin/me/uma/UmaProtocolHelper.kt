@@ -143,6 +143,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *
      * @param query The signed [LnurlpRequest] to verify.
      * @param pubKeyResponse The [PubKeyResponse] that contains the public key of the receiver.
+     * @param nonceCache The persistent [NonceCache] implementation that will cache previously seen nonces.
      * @return true if the signature is valid, false otherwise.
      * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
      */
@@ -230,6 +231,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *
      * @param response The signed [LnurlpResponse] sent by the receiver.
      * @param pubKeyResponse The [PubKeyResponse] that contains the public key of the receiver.
+     * @param nonceCache The persistent [NonceCache] implementation that will cache previously seen nonces.
      * @return true if the signature is valid, false otherwise.
      * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
      */
@@ -361,6 +363,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *
      * @param payReq The [PayRequest] sent by the sender.
      * @param pubKeyResponse The [PubKeyResponse] that contains the public key of the sender.
+     * @param nonceCache The persistent [NonceCache] implementation that will cache previously seen nonces.
      * @return true if the signature is valid, false otherwise.
      * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
      */
