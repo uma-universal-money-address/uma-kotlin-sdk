@@ -145,6 +145,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *
      * @param query The signed [LnurlpRequest] to verify.
      * @param pubKeyResponse The [PubKeyResponse] that contains the public key of the receiver.
+     * @param nonceCache The persistent [NonceCache] implementation that will cache previously seen nonces.
      * @return true if the signature is valid, false otherwise.
      * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
      */
@@ -232,6 +233,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *
      * @param response The signed [LnurlpResponse] sent by the receiver.
      * @param pubKeyResponse The [PubKeyResponse] that contains the public key of the receiver.
+     * @param nonceCache The persistent [NonceCache] implementation that will cache previously seen nonces.
      * @return true if the signature is valid, false otherwise.
      * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
      */
@@ -365,6 +367,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *
      * @param payReq The [PayRequest] sent by the sender.
      * @param pubKeyResponse The [PubKeyResponse] that contains the public key of the sender.
+     * @param nonceCache The persistent [NonceCache] implementation that will cache previously seen nonces.
      * @return true if the signature is valid, false otherwise.
      * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
      */
@@ -405,6 +408,8 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *     compliance provider, this will be used to pre-screen the receiver's UTXOs for compliance purposes.
      * @param utxoCallback The URL that the receiving VASP will call to send UTXOs of the channel that the receiver
      *     used to receive the payment once it completes.
+     * @param receivingVaspPrivateKey The signing private key of the VASP that is receiving the payment. This will be
+     *      used to sign the response.
      * @param payeeData The data requested by the sending VASP about the receiver.
      * @return A [CompletableFuture] [PayReqResponse] that should be returned to the sender for the given [PayRequest].
      */
@@ -421,6 +426,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         receiverChannelUtxos: List<String>,
         receiverNodePubKey: String?,
         utxoCallback: String,
+        receivingVaspPrivateKey: ByteArray,
         payeeData: PayeeData? = null,
     ): CompletableFuture<PayReqResponse> = coroutineScope.future {
         getPayReqResponse(
@@ -434,6 +440,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             receiverChannelUtxos,
             receiverNodePubKey,
             utxoCallback,
+            receivingVaspPrivateKey,
             payeeData,
         )
     }
@@ -461,6 +468,8 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *     compliance provider, this will be used to pre-screen the receiver's UTXOs for compliance purposes.
      * @param utxoCallback The URL that the receiving VASP will call to send UTXOs of the channel that the receiver
      *     used to receive the payment once it completes.
+     * @param receivingVaspPrivateKey The signing private key of the VASP that is receiving the payment. This will be
+     *      used to sign the response.
      * @param payeeData The data requested by the sending VASP about the receiver.
      * @return A [PayReqResponse] that should be returned to the sender for the given [PayRequest].
      */
@@ -477,6 +486,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         receiverChannelUtxos: List<String>,
         receiverNodePubKey: String?,
         utxoCallback: String,
+        receivingVaspPrivateKey: ByteArray,
         payeeData: PayeeData? = null,
     ): PayReqResponse = runBlocking {
         val futureInvoiceCreator = object : UmaInvoiceCreator {
@@ -495,6 +505,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             receiverChannelUtxos,
             receiverNodePubKey,
             utxoCallback,
+            receivingVaspPrivateKey,
             payeeData,
         )
     }
@@ -519,6 +530,8 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *     compliance provider, this will be used to pre-screen the receiver's UTXOs for compliance purposes.
      * @param utxoCallback The URL that the receiving VASP will call to send UTXOs of the channel that the receiver
      *     used to receive the payment once it completes.
+     * @param receivingVaspPrivateKey The signing private key of the VASP that is receiving the payment. This will be
+     *      used to sign the response.
      * @param payeeData The data requested by the sending VASP about the receiver.
      * @return The [PayReqResponse] that should be returned to the sender for the given [PayRequest].
      */
@@ -534,6 +547,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         receiverChannelUtxos: List<String>,
         receiverNodePubKey: String?,
         utxoCallback: String,
+        receivingVaspPrivateKey: ByteArray,
         payeeData: PayeeData? = null,
     ): PayReqResponse {
         val encodedPayerData = Json.encodeToString(query.payerData)
@@ -544,11 +558,14 @@ class UmaProtocolHelper @JvmOverloads constructor(
         ).await()
         val mutablePayeeData = payeeData?.toMutableMap() ?: mutableMapOf()
         mutablePayeeData["compliance"] = Json.encodeToJsonElement(
-            CompliancePayeeData(
-                utxos = receiverChannelUtxos,
-                nodePubKey = receiverNodePubKey,
-                utxoCallback = utxoCallback,
-            ),
+            getSignedCompliancePayeeData(
+                receiverChannelUtxos,
+                receiverNodePubKey,
+                receivingVaspPrivateKey,
+                payerIdentifier = query.payerData.identifier(),
+                payeeIdentifier = payeeData?.identifier() ?: "",
+                utxoCallback
+            )
         )
         return PayReqResponse(
             encodedInvoice = invoice,
@@ -562,8 +579,57 @@ class UmaProtocolHelper @JvmOverloads constructor(
         )
     }
 
+    private fun getSignedCompliancePayeeData(
+        receiverChannelUtxos: List<String>,
+        receiverNodePubKey: String?,
+        receivingVaspPrivateKey: ByteArray,
+        payerIdentifier: String,
+        payeeIdentifier: String,
+        utxoCallback: String,
+    ): CompliancePayeeData {
+        val nonce = generateNonce()
+        val timestamp = System.currentTimeMillis() / 1000
+        val unsignedCompliancePayeeData = CompliancePayeeData(
+            utxos = receiverChannelUtxos,
+            nodePubKey = receiverNodePubKey,
+            utxoCallback = utxoCallback,
+            signature = "",
+            signatureNonce = nonce,
+            signatureTimestamp = timestamp,
+        )
+        val signablePayload = "$payerIdentifier|$payeeIdentifier|$nonce|$timestamp".encodeToByteArray()
+        val signature = signPayload(signablePayload, receivingVaspPrivateKey)
+        return unsignedCompliancePayeeData.signedWith(signature)
+    }
+
     fun parseAsPayReqResponse(response: String): PayReqResponse {
         return Json.decodeFromString(response)
+    }
+
+    /**
+     * Verifies the signature of the [PayReqResponse] sent by the receiver.
+     *
+     * @param payReqResponse The [PayReqResponse] sent by the receiver.
+     * @param pubKeyResponse The [PubKeyResponse] that contains the public key of the receiver.
+     * @param payerIdentifier The identifier of the sender. For example, $alice@vasp1.com
+     * @param nonceCache The persistent [NonceCache] implementation that will cache previously seen nonces.
+     * @return true if the signature is valid, false otherwise.
+     * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
+     */
+    @Throws(InvalidNonceException::class)
+    fun verifyPayReqResponseSignature(
+        payReqResponse: PayReqResponse,
+        pubKeyResponse: PubKeyResponse,
+        payerIdentifier: String,
+        nonceCache: NonceCache,
+    ): Boolean {
+        val compliance = payReqResponse.payeeData.payeeCompliance() ?: return false
+        nonceCache.checkAndSaveNonce(compliance.signatureNonce, compliance.signatureTimestamp)
+        return verifySignature(
+            payReqResponse.signablePayload(payerIdentifier),
+            compliance.signature,
+            pubKeyResponse.signingPubKey,
+        )
     }
 
     @Throws(Exception::class)

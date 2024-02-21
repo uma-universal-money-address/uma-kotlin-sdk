@@ -146,11 +146,15 @@ public class UmaTest {
                 List.of(),
                 null,
                 "",
+                privateKeyBytes(),
                 PayeeData.createPayeeData(null, "$bob@vasp2.com")
         );
         assertNotNull(response);
         assertEquals("lnbc12345", response.getEncodedInvoice());
         System.out.println(response);
+        assertTrue(umaProtocolHelper.verifyPayReqResponseSignature(
+                response, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
+                "$alice@vasp1.com", new InMemoryNonceCache(1L)));
     }
 
     @Test
@@ -170,11 +174,15 @@ public class UmaTest {
                 0L,
                 List.of(),
                 null,
-                ""
+                "",
+                privateKeyBytes()
         ).get();
         assertNotNull(response);
         assertEquals("lnbc12345", response.getEncodedInvoice());
         System.out.println(response);
+        assertTrue(umaProtocolHelper.verifyPayReqResponseSignature(
+                response, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
+                "$alice@vasp1.com", new InMemoryNonceCache(1L)));
     }
 
     @Test
