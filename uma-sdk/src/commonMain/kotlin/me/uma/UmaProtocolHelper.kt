@@ -565,7 +565,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
                 payerIdentifier = query.payerData.identifier(),
                 payeeIdentifier = payeeData?.identifier() ?: "",
                 utxoCallback,
-            )
+            ),
         )
         return PayReqResponse(
             encodedInvoice = invoice,
