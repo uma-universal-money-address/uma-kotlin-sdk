@@ -29,9 +29,11 @@ data class PayReqResponse(
     fun toJson() = Json.encodeToString(this)
 
     fun signablePayload(payerIdentifier: String): ByteArray {
-        val complianceData = payeeData.payeeCompliance() ?: throw IllegalArgumentException("Compliance data is required")
+        val complianceData = payeeData.payeeCompliance()
+            ?: throw IllegalArgumentException("Compliance data is required")
         return complianceData.let {
-            "${payerIdentifier}|${payeeData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}".encodeToByteArray()
+            "$payerIdentifier|${payeeData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}"
+                .encodeToByteArray()
         }
     }
 }
