@@ -564,7 +564,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
                 receivingVaspPrivateKey,
                 payerIdentifier = query.payerData.identifier(),
                 payeeIdentifier = payeeData?.identifier() ?: "",
-                utxoCallback
+                utxoCallback,
             )
         )
         return PayReqResponse(
