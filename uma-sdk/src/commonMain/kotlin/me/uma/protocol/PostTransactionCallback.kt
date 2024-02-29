@@ -1,7 +1,7 @@
 package me.uma.protocol
 
 /**
- * Post-payment callbacks exchanged among VASPs.
+ * Post-payment callbacks exchanged between VASPs.
  *
  * @property utxos UTXOs of the VASP that is sending the callback.
  * @property vaspDomain Domain name of the VASP sending the callback. Used to fetch keys for signature validation.

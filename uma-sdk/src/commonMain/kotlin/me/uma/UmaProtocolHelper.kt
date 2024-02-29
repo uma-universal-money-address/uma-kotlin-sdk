@@ -637,10 +637,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *
      * @param utxos UTXOs of the VASP sending the callback.
      * @param vaspDomain Domain name of the VASP sending the callback.
-     * @param vaspPrivateKey The private signing key of the VASP sending the callback. Used to signed the message.
+     * @param vaspPrivateKey The private signing key of the VASP sending the callback. Used to sign the message.
      * @return the [PostTransactionCallback] to be sent to the counterparty.
      */
-    @Throws(InvalidNonceException::class)
     fun getPostTransactionCallback(
         utxos: List<UtxoWithAmount>,
         vaspDomain: String,
