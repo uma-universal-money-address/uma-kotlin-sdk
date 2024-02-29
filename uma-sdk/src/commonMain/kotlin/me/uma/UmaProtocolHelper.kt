@@ -632,6 +632,60 @@ class UmaProtocolHelper @JvmOverloads constructor(
         )
     }
 
+    /**
+     * Creates a signed [PostTransactionCallback].
+     *
+     * @param utxos UTXOs of the VASP sending the callback.
+     * @param vaspDomain Domain name of the VASP sending the callback.
+     * @param vaspPrivateKey The private signing key of the VASP sending the callback. Used to signed the message.
+     * @return the [PostTransactionCallback] to be sent to the counterparty.
+     */
+    @Throws(InvalidNonceException::class)
+    fun getPostTransactionCallback(
+        utxos: List<UtxoWithAmount>,
+        vaspDomain: String,
+        signingPrivateKey: ByteArray
+    ): PostTransactionCallback {
+        val nonce = generateNonce()
+        val timestamp = System.currentTimeMillis() / 1000
+        val unsignedCallback = PostTransactionCallback(
+            utxos = utxos,
+            vaspDomain = vaspDomain,
+            signature = "",
+            signatureNonce = nonce,
+            signatureTimestamp = timestamp,
+        )
+        val signature = signPayload(unsignedCallback.signablePayload(), signingPrivateKey)
+        return unsignedCallback.signedWith(signature)
+    }
+
+    /**
+     * Verifies the signature of the [PostTransactionCallback] sent by the counterparty.
+     *
+     * @param postTransactionCallback The [PostTransactionCallback] sent by the counterparty.
+     * @param pubKeyResponse The [PubKeyResponse] that contains the public key of the counterparty.
+     * @param nonceCache The persistent [NonceCache] implementation that will cache previously seen nonces.
+     * @return true if the signature is valid, false otherwise.
+     * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
+     */
+    @Throws(InvalidNonceException::class)
+    fun verifyPostTransactionCallbackSignature(
+        postTransactionCallback: PostTransactionCallback,
+        pubKeyResponse: PubKeyResponse,
+        nonceCache: NonceCache,
+    ): Boolean {
+        nonceCache.checkAndSaveNonce(postTransactionCallback.signatureNonce, postTransactionCallback.signatureTimestamp)
+        return verifySignature(
+            postTransactionCallback.signablePayload(),
+            postTransactionCallback.signature,
+            pubKeyResponse.signingPubKey,
+        )
+    }
+
+    fun parseAsPostTransactionCallback(callback: String): PostTransactionCallback {
+        return Json.decodeFromString(callback)
+    }
+
     @Throws(Exception::class)
     private fun signPayload(payload: ByteArray, privateKey: ByteArray): String {
         return Secp256k1.signEcdsa(payload, privateKey).toHexString()
