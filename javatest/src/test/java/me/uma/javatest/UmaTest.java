@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -30,7 +31,9 @@ import me.uma.protocol.PayReqResponse;
 import me.uma.protocol.PayRequest;
 import me.uma.protocol.PayeeData;
 import me.uma.protocol.PayerData;
+import me.uma.protocol.PostTransactionCallback;
 import me.uma.protocol.PubKeyResponse;
+import me.uma.protocol.UtxoWithAmount;
 
 public class UmaTest {
     UmaProtocolHelper umaProtocolHelper = new UmaProtocolHelper(new InMemoryPublicKeyCache(), new TestUmaRequester());
@@ -240,6 +243,23 @@ public class UmaTest {
 
         assertTrue(umaProtocolHelper.verifyUmaLnurlpQuerySignature(
                 request, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()), nonceCache));
+    }
+
+    @Test
+    public void testGetAndVerifyPostTransactionCallback() throws Exception {
+        PostTransactionCallback callback = umaProtocolHelper.getPostTransactionCallback(
+                Arrays.asList(
+                        new UtxoWithAmount("utxo1", 1000),
+                        new UtxoWithAmount("utxo2", 2000)
+                ),
+                /* vaspDomain */ "myvasp.com",
+                /* signingPrivateKey */ privateKeyBytes()
+        );
+        assertNotNull(callback);
+        System.out.println(callback);
+        assertTrue(umaProtocolHelper.verifyPostTransactionCallbackSignature(
+                callback, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
+                new InMemoryNonceCache(1L)));
     }
 
     static byte[] hexToBytes(String hex) {
