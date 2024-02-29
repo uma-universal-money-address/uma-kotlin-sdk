@@ -643,7 +643,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
     fun getPostTransactionCallback(
         utxos: List<UtxoWithAmount>,
         vaspDomain: String,
-        signingPrivateKey: ByteArray
+        signingPrivateKey: ByteArray,
     ): PostTransactionCallback {
         val nonce = generateNonce()
         val timestamp = System.currentTimeMillis() / 1000
