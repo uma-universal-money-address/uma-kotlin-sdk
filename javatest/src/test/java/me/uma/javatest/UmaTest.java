@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import me.uma.protocol.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
@@ -22,18 +23,6 @@ import me.uma.SyncUmaInvoiceCreator;
 import me.uma.UmaInvoiceCreator;
 import me.uma.UmaProtocolHelper;
 import me.uma.UmaRequester;
-import me.uma.protocol.CounterPartyData;
-import me.uma.protocol.Currency;
-import me.uma.protocol.KycStatus;
-import me.uma.protocol.LnurlpRequest;
-import me.uma.protocol.LnurlpResponse;
-import me.uma.protocol.PayReqResponse;
-import me.uma.protocol.PayRequest;
-import me.uma.protocol.PayeeData;
-import me.uma.protocol.PayerData;
-import me.uma.protocol.PostTransactionCallback;
-import me.uma.protocol.PubKeyResponse;
-import me.uma.protocol.UtxoWithAmount;
 
 public class UmaTest {
     UmaProtocolHelper umaProtocolHelper = new UmaProtocolHelper(new InMemoryPublicKeyCache(), new TestUmaRequester());
@@ -105,8 +94,7 @@ public class UmaTest {
                                 "US Dollar",
                                 "$",
                                 34_150,
-                                1,
-                                10_000_000,
+                                new CurrencyConvertible(1, 10_000_000),
                                 2
                         )
                 ),
@@ -126,6 +114,7 @@ public class UmaTest {
     @Test
     public void testGetPayReqResponseSync() throws Exception {
         PayRequest request = new PayRequest(
+                "USD",
                 "USD",
                 100,
                 PayerData.createPayerData("$alice@vasp1.com"),
@@ -163,6 +152,7 @@ public class UmaTest {
     @Test
     public void testGetPayReqResponseFuture() throws Exception {
         PayRequest request = new PayRequest(
+                "USD",
                 "USD",
                 100,
                 PayerData.createPayerData("$alice@vasp1.com")

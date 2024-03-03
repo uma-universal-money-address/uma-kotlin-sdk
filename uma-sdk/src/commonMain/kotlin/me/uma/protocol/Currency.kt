@@ -29,16 +29,9 @@ data class Currency(
     val millisatoshiPerUnit: Double,
 
     /**
-     * Minimum amount that can be sent in this currency. This is in the smallest unit of the currency
-     * (eg. cents for USD).
+     * The minimum and maximum amounts that can be sent in this currency and converted from SATs by the receiver.
      */
-    val minSendable: Long,
-
-    /**
-     * Maximum amount that can be sent in this currency. This is in the smallest unit of the currency
-     * (eg. cents for USD).
-     */
-    val maxSendable: Long,
+    val convertible: CurrencyConvertible,
 
     /**
      * The number of digits after the decimal point for display on the sender side, and to add clarity
@@ -54,3 +47,20 @@ data class Currency(
 ) {
     fun toJson() = Json.encodeToString(this)
 }
+
+/**
+ * The `convertible` field of the [Currency] object.
+ */
+@Serializable
+data class CurrencyConvertible(
+    /**
+     * Minimum amount that can be sent in this currency. This is in the smallest unit of the currency
+     * (eg. cents for USD).
+     */
+    val min: Long,
+    /**
+     * Maximum amount that can be sent in this currency. This is in the smallest unit of the currency
+     * (eg. cents for USD).
+     */
+    val max: Long,
+)

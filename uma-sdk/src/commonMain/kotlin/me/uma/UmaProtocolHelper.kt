@@ -2,6 +2,9 @@
 
 package me.uma
 
+import me.uma.crypto.Secp256k1
+import me.uma.protocol.*
+import me.uma.utils.isDomainLocalhost
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 import kotlin.math.roundToLong
@@ -19,9 +22,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.encodeToJsonElement
-import me.uma.crypto.Secp256k1
-import me.uma.protocol.*
-import me.uma.utils.isDomainLocalhost
 
 /**
  * A helper class for interacting with the UMA protocol. It provides methods for creating and verifying UMA requests
@@ -258,8 +258,11 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *     information.
      * @param sendingVaspPrivateKey The private key of the VASP that is sending the payment. This will be used to sign
      *     the request.
-     * @param currencyCode The code of the currency that the receiver will receive for this payment.
-     * @param amount The amount of the payment in the smallest unit of the specified currency (i.e. cents for USD).
+     * @param receivingCurrencyCode The code of the currency that the receiver will receive for this payment.
+     * @param amount The amount that the receiver will receive in either the smallest unit of the receiving currency
+     *     (if `isAmountInReceivingCurrency` is True), or in msats (if false).
+     * @param isAmountInReceivingCurrency Whether the amount field is specified in the smallest unit of the receiving
+     *     currency or in msats (if false).
      * @param payerIdentifier The identifier of the sender. For example, $alice@vasp1.com
      * @param payerKycStatus Indicates whether VASP1 has KYC information about the sender.
      * @param utxoCallback The URL that the receiver will call to send UTXOs of the channel that the receiver used to
@@ -278,8 +281,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
     fun getPayRequest(
         receiverEncryptionPubKey: ByteArray,
         sendingVaspPrivateKey: ByteArray,
-        currencyCode: String,
+        receivingCurrencyCode: String,
         amount: Long,
+        isAmountInReceivingCurrency: Boolean,
         payerIdentifier: String,
         payerKycStatus: KycStatus,
         utxoCallback: String,
@@ -309,8 +313,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
             compliance = compliancePayerData,
         )
         return PayRequest(
+            sendingCurrencyCode = if (isAmountInReceivingCurrency) receivingCurrencyCode else null,
             payerData = payerData,
-            currencyCode = currencyCode,
+            receivingCurrencyCode = receivingCurrencyCode,
             amount = amount,
             requestedPayeeData = requestedPayeeData,
         )
@@ -552,8 +557,21 @@ class UmaProtocolHelper @JvmOverloads constructor(
     ): PayReqResponse {
         val encodedPayerData = Json.encodeToString(query.payerData)
         val metadataWithPayerData = "$metadata$encodedPayerData"
+        if (query.sendingCurrencyCode != null && query.sendingCurrencyCode != currencyCode) {
+            throw IllegalArgumentException("Currency code in the pay request must match the receiving currency if not null.")
+        }
+        val isAmountInMsats = query.sendingCurrencyCode == null
+        val receivingCurrencyAmount = if (isAmountInMsats) {
+            ((query.amount.toDouble() - receiverFeesMillisats) / conversionRate).roundToLong()
+        } else {
+            query.amount
+        }
         val invoice = invoiceCreator.createUmaInvoice(
-            amountMsats = (query.amount.toDouble() * conversionRate + receiverFeesMillisats).roundToLong(),
+            amountMsats = if (isAmountInMsats) {
+                query.amount
+            } else {
+                (query.amount.toDouble() * conversionRate + receiverFeesMillisats).roundToLong()
+            },
             metadata = metadataWithPayerData,
         ).await()
         val mutablePayeeData = payeeData?.toMutableMap() ?: mutableMapOf()
@@ -571,6 +589,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             encodedInvoice = invoice,
             payeeData = JsonObject(mutablePayeeData),
             paymentInfo = PayReqResponsePaymentInfo(
+                amount = receivingCurrencyAmount,
                 currencyCode = currencyCode,
                 decimals = currencyDecimals,
                 multiplier = conversionRate,
