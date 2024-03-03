@@ -2,18 +2,18 @@ package me.uma
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.fail
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import me.uma.crypto.Secp256k1
 import me.uma.protocol.KycStatus
 import me.uma.protocol.TravelRuleFormat
 import me.uma.protocol.compliance
 import me.uma.protocol.createCounterPartyDataOptions
-import kotlin.test.assertNull
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UmaTests {

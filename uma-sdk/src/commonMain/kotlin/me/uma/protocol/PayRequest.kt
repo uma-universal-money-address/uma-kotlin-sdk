@@ -39,12 +39,11 @@ data class PayRequest @JvmOverloads constructor(
     fun toJson() = Json.encodeToString(this)
 }
 
-
 @OptIn(ExperimentalSerializationApi::class)
 object PayRequestSerializer : KSerializer<PayRequest> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("PayRequest") {
         element<String>("convert")
-        element<String>("amount")  // Serialize and deserialize amount as a string
+        element<String>("amount") // Serialize and deserialize amount as a string
         element<PayerData>("payerData")
         element<CounterPartyDataOptions?>("payeeData")
     }
@@ -117,4 +116,3 @@ object PayRequestSerializer : KSerializer<PayRequest> {
         }
     }
 }
-

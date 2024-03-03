@@ -2,9 +2,6 @@
 
 package me.uma
 
-import me.uma.crypto.Secp256k1
-import me.uma.protocol.*
-import me.uma.utils.isDomainLocalhost
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 import kotlin.math.roundToLong
@@ -22,6 +19,9 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.encodeToJsonElement
+import me.uma.crypto.Secp256k1
+import me.uma.protocol.*
+import me.uma.utils.isDomainLocalhost
 
 /**
  * A helper class for interacting with the UMA protocol. It provides methods for creating and verifying UMA requests
@@ -558,7 +558,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
         val encodedPayerData = Json.encodeToString(query.payerData)
         val metadataWithPayerData = "$metadata$encodedPayerData"
         if (query.sendingCurrencyCode != null && query.sendingCurrencyCode != currencyCode) {
-            throw IllegalArgumentException("Currency code in the pay request must match the receiving currency if not null.")
+            throw IllegalArgumentException(
+                "Currency code in the pay request must match the receiving currency if not null.",
+            )
         }
         val isAmountInMsats = query.sendingCurrencyCode == null
         val receivingCurrencyAmount = if (isAmountInMsats) {
