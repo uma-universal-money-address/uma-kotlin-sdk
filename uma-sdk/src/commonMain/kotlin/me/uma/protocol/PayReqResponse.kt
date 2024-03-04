@@ -55,6 +55,7 @@ data class RouteHop(
 /**
  * The payment info from the receiver.
  *
+ * @property amount The amount that the receiver will receive in the smallest unit of the specified currency.
  * @property currencyCode The currency code that the receiver will receive for this payment.
  * @property decimals Number of digits after the decimal point for the receiving currency. For example, in USD, by
  *     convention, there are 2 digits for cents - $5.95. In this case, `decimals` would be 2. This should align with
@@ -70,8 +71,10 @@ data class RouteHop(
  */
 @Serializable
 data class PayReqResponsePaymentInfo(
+    val amount: Long,
     val currencyCode: String,
     val decimals: Int,
     val multiplier: Double,
+    @SerialName("fee")
     val exchangeFeesMillisatoshi: Long,
 )
