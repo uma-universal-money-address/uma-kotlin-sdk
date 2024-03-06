@@ -75,9 +75,13 @@ class UmaProtocolHelper @JvmOverloads constructor(
 
         val scheme = if (isDomainLocalhost(vaspDomain)) "http" else "https"
         val response = umaRequester.makeGetRequest("$scheme://$vaspDomain/.well-known/lnurlpubkey")
-        val pubKeyResponse = Json.decodeFromString<PubKeyResponse>(response)
+        val pubKeyResponse = parseAsPubKeyResponse(response)
         publicKeyCache.addPublicKeysForVasp(vaspDomain, pubKeyResponse)
         return pubKeyResponse
+    }
+
+    fun parseAsPubKeyResponse(response: String): PubKeyResponse {
+        return Json.decodeFromString(response)
     }
 
     private fun generateNonce(): String {

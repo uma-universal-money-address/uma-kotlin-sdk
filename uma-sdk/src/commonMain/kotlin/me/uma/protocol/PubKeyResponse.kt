@@ -6,8 +6,8 @@ import java.security.interfaces.ECPublicKey
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import me.uma.crypto.hexToByteArray
 import me.uma.utils.ByteArrayAsHexSerializer
+import me.uma.utils.X509CertificateSerializer
 
 /**
  * Response from another VASP when requesting public keys.
@@ -23,16 +23,20 @@ import me.uma.utils.ByteArrayAsHexSerializer
  */
 @Serializable
 data class PubKeyResponse internal constructor(
-    private val signingCertificate: String? = null,
-    private val encryptionCertificate: String? = null,
+    @Serializable(with = X509CertificateSerializer::class)
+    val signingCertificate: X509Certificate?,
+    @Serializable(with = X509CertificateSerializer::class)
+    val encryptionCertificate: X509Certificate?,
     @Serializable(with = ByteArrayAsHexSerializer::class)
-    private val signingPubKey: ByteArray? = null,
+    private val signingPubKey: ByteArray?,
     @Serializable(with = ByteArrayAsHexSerializer::class)
-    private val encryptionPubKey: ByteArray? = null,
-    val expirationTimestamp: Long?,
+    private val encryptionPubKey: ByteArray?,
+    val expirationTimestamp: Long? = null,
 ) {
     @JvmOverloads
     constructor(signingKey: ByteArray, encryptionKey: ByteArray, expirationTs: Long? = null) : this(
+        signingCertificate = null,
+        encryptionCertificate = null,
         signingPubKey = signingKey,
         encryptionPubKey = encryptionKey,
         expirationTimestamp = expirationTs,
@@ -40,40 +44,26 @@ data class PubKeyResponse internal constructor(
 
     @JvmOverloads
     constructor(signingCert: String, encryptionCert: String, expirationTs: Long? = null) : this(
-        signingCertificate = signingCert,
-        encryptionCertificate = encryptionCert,
+        signingCertificate = signingCert.toX509Certificate(),
+        encryptionCertificate = encryptionCert.toX509Certificate(),
+        signingPubKey = signingCert.toX509Certificate().getPubKeyBytes(),
+        encryptionPubKey = encryptionCert.toX509Certificate().getPubKeyBytes(),
         expirationTimestamp = expirationTs,
     )
 
     fun getSigningPubKey(): ByteArray {
-        val signingCertificate = getSigningCertificate()
         return if (signingCertificate != null) {
-            (signingCertificate.publicKey as ECPublicKey).toHexByteArray()
+            signingCertificate.getPubKeyBytes()
         } else {
             signingPubKey ?: throw IllegalStateException("No signing public key")
         }
     }
 
     fun getEncryptionPubKey(): ByteArray {
-        val encryptionCertificate = getEncryptionCertificate()
         return if (encryptionCertificate != null) {
-            (encryptionCertificate.publicKey as ECPublicKey).toHexByteArray()
+            encryptionCertificate.getPubKeyBytes()
         } else {
             encryptionPubKey ?: throw IllegalStateException("No encryption public key")
-        }
-    }
-
-    fun getSigningCertificate(): X509Certificate? {
-        return signingCertificate?.let {
-            CertificateFactory.getInstance("X509")
-                .generateCertificate(signingCertificate.byteInputStream()) as X509Certificate
-        }
-    }
-
-    fun getEncryptionCertificate(): X509Certificate? {
-        return encryptionCertificate?.let {
-            CertificateFactory.getInstance("X509")
-                .generateCertificate(encryptionCertificate.byteInputStream()) as X509Certificate
         }
     }
 
@@ -103,8 +93,20 @@ data class PubKeyResponse internal constructor(
 
     fun toJson() = Json.encodeToString(this)
 }
-fun ECPublicKey.toHexByteArray(): ByteArray {
-    val xHex = this.w.affineX.toString(16)
-    val yHex = this.w.affineY.toString(16)
-    return "04$xHex$yHex".hexToByteArray()
+
+private fun String.toX509Certificate(): X509Certificate {
+    return CertificateFactory.getInstance("X.509")
+        .generateCertificate(byteInputStream()) as? X509Certificate
+        ?: throw IllegalStateException("Could not be parsed as X.509 certificate")
+}
+
+private fun X509Certificate.getPubKeyBytes(): ByteArray {
+    if (publicKey !is ECPublicKey ||
+        !(publicKey as ECPublicKey).params.toString().contains("secp256k1")
+    ) {
+        throw IllegalStateException("Public key extracted from certificate is not EC/secp256k1")
+    }
+    // encryptionPubKey.publicKey is an ASN.1/DER encoded X.509/SPKI key, the last 65
+    // bytes are the uncompressed public key
+    return publicKey.encoded.takeLast(65).toByteArray()
 }
