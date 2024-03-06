@@ -75,9 +75,13 @@ class UmaProtocolHelper @JvmOverloads constructor(
 
         val scheme = if (isDomainLocalhost(vaspDomain)) "http" else "https"
         val response = umaRequester.makeGetRequest("$scheme://$vaspDomain/.well-known/lnurlpubkey")
-        val pubKeyResponse = Json.decodeFromString<PubKeyResponse>(response)
+        val pubKeyResponse = parseAsPubKeyResponse(response)
         publicKeyCache.addPublicKeysForVasp(vaspDomain, pubKeyResponse)
         return pubKeyResponse
+    }
+
+    fun parseAsPubKeyResponse(response: String): PubKeyResponse {
+        return Json.decodeFromString(response)
     }
 
     private fun generateNonce(): String {
@@ -156,7 +160,11 @@ class UmaProtocolHelper @JvmOverloads constructor(
         nonceCache: NonceCache,
     ): Boolean {
         nonceCache.checkAndSaveNonce(query.nonce, query.timestamp)
-        return verifySignature(query.signablePayload(), query.signature, pubKeyResponse.signingPubKey)
+        return verifySignature(
+            query.signablePayload(),
+            query.signature,
+            pubKeyResponse.getSigningPublicKey(),
+        )
     }
 
     /**
@@ -247,7 +255,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         return verifySignature(
             response.compliance.signablePayload(),
             response.compliance.signature,
-            pubKeyResponse.signingPubKey,
+            pubKeyResponse.getSigningPublicKey(),
         )
     }
 
@@ -387,7 +395,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         return verifySignature(
             payReq.signablePayload(),
             compliance.signature,
-            pubKeyResponse.signingPubKey,
+            pubKeyResponse.getSigningPublicKey(),
         )
     }
 
@@ -649,7 +657,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         return verifySignature(
             payReqResponse.signablePayload(payerIdentifier),
             compliance.signature,
-            pubKeyResponse.signingPubKey,
+            pubKeyResponse.getSigningPublicKey(),
         )
     }
 
@@ -698,7 +706,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         return verifySignature(
             postTransactionCallback.signablePayload(),
             postTransactionCallback.signature,
-            pubKeyResponse.signingPubKey,
+            pubKeyResponse.getSigningPublicKey(),
         )
     }
 

@@ -1,5 +1,6 @@
 package me.uma.javatest;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -26,9 +27,21 @@ import me.uma.UmaRequester;
 
 public class UmaTest {
     UmaProtocolHelper umaProtocolHelper = new UmaProtocolHelper(new InMemoryPublicKeyCache(), new TestUmaRequester());
-    private static final String PUBKEY_HEX = "04f2998ab056897ddb91b5e6fad1e4bb6c4b7dda427409f667d0f4694b553e4feeeb08936c2993f7b931f6a3fa7e846f11165fae222de5e4a55c12def21a7c9fcf";
-    private static final String PRIVKEY_HEX = "10fbbee8f689b207bb22df2dfa27827ae9ae02e265980ea09ef5101ed5fb508f";
+    private static final String PUBKEY_HEX = "04419c5467ea563f0010fd614f85e885ac99c21b8e8d416241175fdd5efd2244fe907e2e6fa3dd6631b1b17cd28798da8d882a34c4776d44cc4090781c7aadea1b";
+    private static final String PRIVKEY_HEX = "77e891f0ecd265a3cda435eaa73792233ebd413aeb0dbb66f2940babfc9a2667";
 
+    private static final String CERT = "-----BEGIN CERTIFICATE-----\n" +
+            "MIIB1zCCAXygAwIBAgIUGN3ihBj1RnKoeTM/auDFnNoThR4wCgYIKoZIzj0EAwIw\n" +
+            "QjELMAkGA1UEBhMCVVMxEzARBgNVBAgMCmNhbGlmb3JuaWExDjAMBgNVBAcMBWxv\n" +
+            "cyBhMQ4wDAYDVQQKDAVsaWdodDAeFw0yNDAzMDUyMTAzMTJaFw0yNDAzMTkyMTAz\n" +
+            "MTJaMEIxCzAJBgNVBAYTAlVTMRMwEQYDVQQIDApjYWxpZm9ybmlhMQ4wDAYDVQQH\n" +
+            "DAVsb3MgYTEOMAwGA1UECgwFbGlnaHQwVjAQBgcqhkjOPQIBBgUrgQQACgNCAARB\n" +
+            "nFRn6lY/ABD9YU+F6IWsmcIbjo1BYkEXX91e/SJE/pB+Lm+j3WYxsbF80oeY2o2I\n" +
+            "KjTEd21EzECQeBx6reobo1MwUTAdBgNVHQ4EFgQUU87LnQdiP6XIE6LoKU1PZnbt\n" +
+            "bMwwHwYDVR0jBBgwFoAUU87LnQdiP6XIE6LoKU1PZnbtbMwwDwYDVR0TAQH/BAUw\n" +
+            "AwEB/zAKBggqhkjOPQQDAgNJADBGAiEAvsrvoeo3rbgZdTHxEUIgP0ArLyiO34oz\n" +
+            "NlwL4gk5GpgCIQCvRx4PAyXNV9T6RRE+3wFlqwluOc/pPOjgdRw/wpoNPQ==\n" +
+            "-----END CERTIFICATE-----";
 
     @Test
     public void testFetchPublicKeySync() throws Exception {
@@ -250,6 +263,25 @@ public class UmaTest {
         assertTrue(umaProtocolHelper.verifyPostTransactionCallbackSignature(
                 callback, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
                 new InMemoryNonceCache(1L)));
+    }
+
+    @Test
+    public void serializeAndDeserializePubKeyResponse() {
+        PubKeyResponse keysOnlyResponse =
+                new PubKeyResponse(UmaTest.hexToBytes("02d5fe"), UmaTest.hexToBytes("123456"));
+        String json = keysOnlyResponse.toJson();
+        PubKeyResponse parsedResponse = umaProtocolHelper.parseAsPubKeyResponse(json);
+        assertNotNull(parsedResponse);
+        assertEquals(keysOnlyResponse, parsedResponse);
+
+        PubKeyResponse certsOnlyResponse =
+                new PubKeyResponse(CERT, CERT);
+        json = certsOnlyResponse.toJson();
+        parsedResponse = umaProtocolHelper.parseAsPubKeyResponse(json);
+        assertNotNull(parsedResponse);
+        assertEquals(certsOnlyResponse, parsedResponse);
+        assertArrayEquals(UmaTest.hexToBytes(PUBKEY_HEX), parsedResponse.getSigningPublicKey());
+        assertArrayEquals(UmaTest.hexToBytes(PUBKEY_HEX), parsedResponse.getEncryptionPublicKey());
     }
 
     static byte[] hexToBytes(String hex) {
