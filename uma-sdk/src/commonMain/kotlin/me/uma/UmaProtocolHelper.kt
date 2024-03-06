@@ -163,7 +163,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         return verifySignature(
             query.signablePayload(),
             query.signature,
-            pubKeyResponse.getSigningPublicKey()
+            pubKeyResponse.getSigningPublicKey(),
         )
     }
 
