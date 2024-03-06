@@ -51,7 +51,7 @@ data class PubKeyResponse internal constructor(
         expirationTimestamp = expirationTs,
     )
 
-    fun getSigningPubKey(): ByteArray {
+    fun getSigningPublicKey(): ByteArray {
         return if (signingCertificate != null) {
             signingCertificate.getPubKeyBytes()
         } else {
@@ -59,7 +59,7 @@ data class PubKeyResponse internal constructor(
         }
     }
 
-    fun getEncryptionPubKey(): ByteArray {
+    fun getEncryptionPublicKey(): ByteArray {
         return if (encryptionCertificate != null) {
             encryptionCertificate.getPubKeyBytes()
         } else {

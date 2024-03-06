@@ -160,7 +160,11 @@ class UmaProtocolHelper @JvmOverloads constructor(
         nonceCache: NonceCache,
     ): Boolean {
         nonceCache.checkAndSaveNonce(query.nonce, query.timestamp)
-        return verifySignature(query.signablePayload(), query.signature, pubKeyResponse.getSigningPubKey())
+        return verifySignature(
+            query.signablePayload(),
+            query.signature,
+            pubKeyResponse.getSigningPublicKey()
+        )
     }
 
     /**
@@ -251,7 +255,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         return verifySignature(
             response.compliance.signablePayload(),
             response.compliance.signature,
-            pubKeyResponse.getSigningPubKey(),
+            pubKeyResponse.getSigningPublicKey(),
         )
     }
 
@@ -391,7 +395,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         return verifySignature(
             payReq.signablePayload(),
             compliance.signature,
-            pubKeyResponse.getSigningPubKey(),
+            pubKeyResponse.getSigningPublicKey(),
         )
     }
 
@@ -653,7 +657,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         return verifySignature(
             payReqResponse.signablePayload(payerIdentifier),
             compliance.signature,
-            pubKeyResponse.getSigningPubKey(),
+            pubKeyResponse.getSigningPublicKey(),
         )
     }
 
@@ -702,7 +706,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         return verifySignature(
             postTransactionCallback.signablePayload(),
             postTransactionCallback.signature,
-            pubKeyResponse.getSigningPubKey(),
+            pubKeyResponse.getSigningPublicKey(),
         )
     }
 
