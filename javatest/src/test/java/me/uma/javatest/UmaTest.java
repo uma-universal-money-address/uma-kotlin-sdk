@@ -1,11 +1,7 @@
 package me.uma.javatest;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import kotlin.coroutines.Continuation;
+import me.uma.*;
 import me.uma.protocol.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -16,14 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import kotlin.coroutines.Continuation;
-import me.uma.InMemoryNonceCache;
-import me.uma.InMemoryPublicKeyCache;
-import me.uma.InvalidNonceException;
-import me.uma.SyncUmaInvoiceCreator;
-import me.uma.UmaInvoiceCreator;
-import me.uma.UmaProtocolHelper;
-import me.uma.UmaRequester;
+import static java.util.Objects.requireNonNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class UmaTest {
     UmaProtocolHelper umaProtocolHelper = new UmaProtocolHelper(new InMemoryPublicKeyCache(), new TestUmaRequester());
@@ -70,7 +60,7 @@ public class UmaTest {
         LnurlpRequest request = umaProtocolHelper.parseLnurlpRequest(lnurlpUrl);
         assertNotNull(request);
         assertTrue(umaProtocolHelper.verifyUmaLnurlpQuerySignature(
-                request, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
+                requireNonNull(request.asUmaRequest()), new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
                 new InMemoryNonceCache(1L)));
         System.out.println(request);
     }
@@ -120,25 +110,21 @@ public class UmaTest {
         assertNotNull(parsedResponse);
         assertEquals(lnurlpResponse, parsedResponse);
         assertTrue(umaProtocolHelper.verifyLnurlpResponseSignature(
-                parsedResponse, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
+                requireNonNull(parsedResponse.asUmaResponse()), new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
                 new InMemoryNonceCache(1L)));
     }
 
     @Test
     public void testGetPayReqResponseSync() throws Exception {
-        PayRequest request = new PayRequest(
+        PayRequest request = umaProtocolHelper.getPayRequest(
+                publicKeyBytes(),
+                privateKeyBytes(),
                 "USD",
-                "USD",
-                100,
-                PayerData.createPayerData("$alice@vasp1.com"),
-                CounterPartyData.createCounterPartyDataOptions(
-                        Map.of(
-                                "name", false,
-                                "email", false,
-                                "identity", true,
-                                "compliance", true
-                        )
-                )
+                100L,
+                true,
+                "$alice@vasp1.com",
+                KycStatus.VERIFIED,
+                ""
         );
         PayReqResponse response = umaProtocolHelper.getPayReqResponseSync(
                 request,
@@ -146,7 +132,7 @@ public class UmaTest {
                 "metadata",
                 "USD",
                 2,
-                12345L,
+                12345.0,
                 0L,
                 List.of(),
                 null,
@@ -164,11 +150,15 @@ public class UmaTest {
 
     @Test
     public void testGetPayReqResponseFuture() throws Exception {
-        PayRequest request = new PayRequest(
+        PayRequest request = umaProtocolHelper.getPayRequest(
+                publicKeyBytes(),
+                privateKeyBytes(),
                 "USD",
-                "USD",
-                100,
-                PayerData.createPayerData("$alice@vasp1.com")
+                100L,
+                true,
+                "$alice@vasp1.com",
+                KycStatus.VERIFIED,
+                ""
         );
         PayReqResponse response = umaProtocolHelper.getPayReqResponseFuture(
                 request,
@@ -176,12 +166,13 @@ public class UmaTest {
                 "metadata",
                 "USD",
                 2,
-                12345L,
+                12345.0,
                 0L,
                 List.of(),
                 null,
                 "",
-                privateKeyBytes()
+                privateKeyBytes(),
+                PayeeData.createPayeeData(null, "$bob@vasp2.com")
         ).get();
         assertNotNull(response);
         assertEquals("lnbc12345", response.getEncodedInvoice());
@@ -202,11 +193,11 @@ public class UmaTest {
         assertNotNull(request);
 
         InMemoryNonceCache nonceCache = new InMemoryNonceCache(1L);
-        nonceCache.checkAndSaveNonce(request.getNonce(), 2L);
+        nonceCache.checkAndSaveNonce(requireNonNull(request.getNonce()), 2L);
 
         Exception exception = assertThrows(InvalidNonceException.class, () -> {
             umaProtocolHelper.verifyUmaLnurlpQuerySignature(
-                    request, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()), nonceCache);
+                    requireNonNull(request.asUmaRequest()), new PubKeyResponse(publicKeyBytes(), publicKeyBytes()), nonceCache);
         });
         assertEquals("Nonce already used", exception.getMessage());
     }
@@ -225,7 +216,8 @@ public class UmaTest {
 
         Exception exception = assertThrows(InvalidNonceException.class, () -> {
             umaProtocolHelper.verifyUmaLnurlpQuerySignature(
-                    request, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()), nonceCache);
+                    requireNonNull(request.asUmaRequest()), new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
+                    nonceCache);
         });
         assertEquals("Timestamp too old", exception.getMessage());
     }
@@ -241,11 +233,11 @@ public class UmaTest {
         assertNotNull(request);
 
         InMemoryNonceCache nonceCache = new InMemoryNonceCache(1L);
-        nonceCache.checkAndSaveNonce(request.getNonce(), 2L);
+        nonceCache.checkAndSaveNonce(requireNonNull(request.getNonce()), 2L);
         nonceCache.purgeNoncesOlderThan(3L);
 
         assertTrue(umaProtocolHelper.verifyUmaLnurlpQuerySignature(
-                request, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()), nonceCache));
+                requireNonNull(request.asUmaRequest()), new PubKeyResponse(publicKeyBytes(), publicKeyBytes()), nonceCache));
     }
 
     @Test

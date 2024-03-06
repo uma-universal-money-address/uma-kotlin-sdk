@@ -20,21 +20,29 @@ import kotlinx.serialization.json.Json
  *     or in msats (if sendingCurrencyCode is null).
  * @property payerData The data that the sender will send to the receiver to identify themselves.
  * @property requestedPayeeData The data that the sender requests the receiver to send to identify themselves.
+ * @property comment A comment that the sender would like to include with the payment. This can only be included
+ *     if the receiver included the `commentAllowed` field in the lnurlp response. The length of
+ *     the comment must be less than or equal to the value of `commentAllowed`.
  */
 @Serializable(with = PayRequestSerializer::class)
 data class PayRequest @JvmOverloads constructor(
     val sendingCurrencyCode: String?,
-    val receivingCurrencyCode: String,
+    val receivingCurrencyCode: String?,
     val amount: Long,
-    val payerData: PayerData,
+    val payerData: PayerData?,
     val requestedPayeeData: CounterPartyDataOptions? = null,
+    val comment: String? = null,
 ) {
     fun signablePayload(): ByteArray {
+        if (payerData == null) throw IllegalArgumentException("Payer data is required for UMA")
+        if (payerData.identifier() == null) throw IllegalArgumentException("Payer identifier is required for UMA")
         val complianceData = payerData.compliance() ?: throw IllegalArgumentException("Compliance data is required")
         return complianceData.let {
             "${payerData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}".encodeToByteArray()
         }
     }
+
+    fun isUmaRequest() = payerData != null && payerData.compliance() != null && payerData.identifier() != null
 
     fun toJson() = Json.encodeToString(this)
 }
@@ -42,15 +50,16 @@ data class PayRequest @JvmOverloads constructor(
 @OptIn(ExperimentalSerializationApi::class)
 object PayRequestSerializer : KSerializer<PayRequest> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("PayRequest") {
-        element<String>("convert")
+        element<String?>("convert")
         element<String>("amount") // Serialize and deserialize amount as a string
         element<PayerData>("payerData")
         element<CounterPartyDataOptions?>("payeeData")
+        element<String?>("comment")
     }
 
     override fun serialize(encoder: Encoder, value: PayRequest) {
         encoder.encodeStructure(descriptor) {
-            encodeStringElement(descriptor, 0, value.receivingCurrencyCode)
+            value.receivingCurrencyCode?.let { encodeStringElement(descriptor, 0, it) }
             encodeStringElement(
                 descriptor,
                 1,
@@ -60,13 +69,14 @@ object PayRequestSerializer : KSerializer<PayRequest> {
                     value.amount.toString()
                 },
             )
-            encodeSerializableElement(descriptor, 2, PayerData.serializer(), value.payerData)
+            encodeNullableSerializableElement(descriptor, 2, PayerData.serializer(), value.payerData)
             encodeNullableSerializableElement(
                 descriptor,
                 3,
                 MapSerializer(String.serializer(), CounterPartyDataOption.serializer()),
                 value.requestedPayeeData,
             )
+            value.comment?.let { encodeStringElement(descriptor, 4, it) }
         }
     }
 
@@ -76,6 +86,7 @@ object PayRequestSerializer : KSerializer<PayRequest> {
         var amount: String? = null
         var payerData: PayerData? = null
         var requestedPayeeData: CounterPartyDataOptions? = null
+        var comment: String? = null
 
         return decoder.decodeStructure(descriptor) {
             while (true) {
@@ -93,6 +104,7 @@ object PayRequestSerializer : KSerializer<PayRequest> {
                             CounterPartyDataOption.serializer(),
                         ).nullable,
                     )
+                    4 -> comment = decodeStringElement(descriptor, index)
                 }
             }
 
@@ -108,10 +120,11 @@ object PayRequestSerializer : KSerializer<PayRequest> {
 
             PayRequest(
                 sendingCurrencyCode,
-                requireNotNull(receivingCurrencyCode) { "Receiving Currency code is required." },
+                receivingCurrencyCode,
                 parsedAmount,
-                requireNotNull(payerData) { "Payer data is required." },
+                payerData,
                 requestedPayeeData,
+                comment,
             )
         }
     }

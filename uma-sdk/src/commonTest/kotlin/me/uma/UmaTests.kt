@@ -50,7 +50,7 @@ class UmaTests {
         assertEquals(payreq, decodedPayReq)
 
         val encryptedTravelRuleInfo =
-            decodedPayReq.payerData.compliance()?.encryptedTravelRuleInfo ?: fail("travel rule info not found")
+            decodedPayReq.payerData?.compliance()?.encryptedTravelRuleInfo ?: fail("travel rule info not found")
         assertEquals(
             travelRuleInfo,
             String(Secp256k1.decryptEcies(encryptedTravelRuleInfo.hexToByteArray(), keys.privateKey)),

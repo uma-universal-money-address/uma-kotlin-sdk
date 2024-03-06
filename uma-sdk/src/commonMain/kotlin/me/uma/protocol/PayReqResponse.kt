@@ -1,34 +1,41 @@
 package me.uma.protocol
 
-import kotlinx.serialization.EncodeDefault
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
+import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
 
 /**
  * The response sent by the receiver to the sender to provide an invoice.
  *
  * @property encodedInvoice The BOLT11 invoice that the sender will pay.
+ * @property paymentInfo Information about the payment that the receiver will receive. Includes
+ *     Final currency-related information for the payment. Required for UMA.
+ * @property payeeData The data about the receiver that the sending VASP requested in the payreq request.
+ *     Required for UMA.
  * @property routes Usually just an empty list from legacy LNURL, which was replaced by route hints in the BOLT11
  *     invoice.
- * @property compliance The compliance data from the receiver, including utxo info.
- * @property paymentInfo The payment info from the receiver, including currency and an updated conversion rate.
+ * @property disposable This field may be used by a WALLET to decide whether the initial LNURL link will
+ *     be stored locally for later reuse or erased. If disposable is null, it should be
+ *     interpreted as true, so if SERVICE intends its LNURL links to be stored it must
+ *     return `disposable: false`. UMA should always return `disposable: false`. See LUD-11.
+ * @property successAction Defines a struct which can be stored and shown to the user on payment success. See LUD-09.
  */
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class PayReqResponse(
     @SerialName("pr")
     val encodedInvoice: String,
-    val paymentInfo: PayReqResponsePaymentInfo,
-    val payeeData: PayeeData,
+    val paymentInfo: PayReqResponsePaymentInfo?,
+    val payeeData: PayeeData?,
     @EncodeDefault
     val routes: List<Route> = emptyList(),
+    val disposable: Boolean? = null,
+    val successAction: Map<String, String>? = null,
 ) {
     fun toJson() = Json.encodeToString(this)
 
     fun signablePayload(payerIdentifier: String): ByteArray {
+        if (payeeData == null) throw IllegalArgumentException("Payee data is required for UMA")
+        if (payeeData.identifier() == null) throw IllegalArgumentException("Payee identifier is required for UMA")
         val complianceData = payeeData.payeeCompliance()
             ?: throw IllegalArgumentException("Compliance data is required")
         return complianceData.let {
@@ -36,6 +43,11 @@ data class PayReqResponse(
                 .encodeToByteArray()
         }
     }
+
+    fun isUmaResponse() = payeeData != null &&
+        payeeData.payeeCompliance() != null &&
+        payeeData.identifier() != null &&
+        paymentInfo != null
 }
 
 @Serializable
