@@ -1,7 +1,11 @@
 package me.uma.protocol
 
-import kotlinx.serialization.*
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import me.uma.utils.serialFormat
 
 /**
  * The response sent by the receiver to the sender to provide an invoice.
@@ -31,7 +35,7 @@ data class PayReqResponse(
     val disposable: Boolean? = null,
     val successAction: Map<String, String>? = null,
 ) {
-    fun toJson() = Json.encodeToString(this)
+    fun toJson() = serialFormat.encodeToString(this)
 
     fun signablePayload(payerIdentifier: String): ByteArray {
         if (payeeData == null) throw IllegalArgumentException("Payee data is required for UMA")

@@ -3,7 +3,7 @@ package me.uma.protocol
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import me.uma.utils.serialFormat
 
 @Serializable
 data class Currency(
@@ -45,7 +45,7 @@ data class Currency(
      */
     val decimals: Int,
 ) {
-    fun toJson() = Json.encodeToString(this)
+    fun toJson() = serialFormat.encodeToString(this)
 }
 
 /**

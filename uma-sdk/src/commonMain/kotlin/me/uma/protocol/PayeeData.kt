@@ -3,12 +3,12 @@
 package me.uma.protocol
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
+import me.uma.utils.serialFormat
 
 typealias PayeeData = JsonObject
 
@@ -21,7 +21,7 @@ fun createPayeeData(
 ): PayerData {
     val payerDataMap = mutableMapOf<String, JsonElement>()
     if (compliance != null) {
-        payerDataMap["compliance"] = Json.encodeToJsonElement(compliance)
+        payerDataMap["compliance"] = serialFormat.encodeToJsonElement(compliance)
     }
     if (identifier != null) {
         payerDataMap["identifier"] = JsonPrimitive(identifier)
@@ -37,7 +37,7 @@ fun createPayeeData(
 
 fun PayeeData.payeeCompliance(): CompliancePayeeData? {
     val jsonCompliance = get("compliance") ?: return null
-    return Json.decodeFromJsonElement(jsonCompliance)
+    return serialFormat.decodeFromJsonElement(jsonCompliance)
 }
 
 /**

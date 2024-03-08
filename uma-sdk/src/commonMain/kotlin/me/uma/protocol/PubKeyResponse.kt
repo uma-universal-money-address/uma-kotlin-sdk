@@ -5,9 +5,9 @@ import java.security.cert.X509Certificate
 import java.security.interfaces.ECPublicKey
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import me.uma.utils.ByteArrayAsHexSerializer
 import me.uma.utils.X509CertificateSerializer
+import me.uma.utils.serialFormat
 
 /**
  * Response from another VASP when requesting public keys.
@@ -91,7 +91,7 @@ data class PubKeyResponse internal constructor(
         return result
     }
 
-    fun toJson() = Json.encodeToString(this)
+    fun toJson() = serialFormat.encodeToString(this)
 }
 
 private fun String.toX509Certificate(): X509Certificate {
