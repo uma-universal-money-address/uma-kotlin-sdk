@@ -9,7 +9,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeStructure
-import kotlinx.serialization.json.Json
+import me.uma.utils.serialFormat
 
 /**
  * Response from VASP2 to the [LnurlpRequest].
@@ -41,7 +41,7 @@ data class LnurlpResponse(
     @EncodeDefault
     val tag: String = "payRequest",
 ) {
-    fun toJson() = Json.encodeToString(this)
+    fun toJson() = serialFormat.encodeToString(this)
 }
 
 @Serializable(with = PayerDataOptionsSerializer::class)
@@ -50,7 +50,7 @@ data class PayerDataOptions(
     val emailRequired: Boolean,
     val complianceRequired: Boolean,
 ) {
-    fun toJson() = Json.encodeToString(this)
+    fun toJson() = serialFormat.encodeToString(this)
 }
 
 @Serializable

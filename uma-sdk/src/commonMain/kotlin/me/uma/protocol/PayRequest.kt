@@ -8,7 +8,7 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.Json
+import me.uma.utils.serialFormat
 
 /**
  * The request sent by the sender to the receiver to retrieve an invoice.
@@ -30,7 +30,7 @@ data class PayRequest(
             "${payerData.identifier}|${it.signatureNonce}|${it.signatureTimestamp}".encodeToByteArray()
         } ?: payerData.identifier.encodeToByteArray()
 
-    fun toJson() = Json.encodeToString(this)
+    fun toJson() = serialFormat.encodeToString(this)
 }
 
 @Serializable

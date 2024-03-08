@@ -1,7 +1,7 @@
 package me.uma.protocol
 
 import kotlinx.serialization.*
-import kotlinx.serialization.json.Json
+import me.uma.utils.serialFormat
 
 /**
  * The response sent by the receiver to the sender to provide an invoice.
@@ -22,7 +22,7 @@ data class PayReqResponse(
     @EncodeDefault
     val routes: List<Route> = emptyList(),
 ) {
-    fun toJson() = Json.encodeToString(this)
+    fun toJson() = serialFormat.encodeToString(this)
 }
 
 @Serializable
