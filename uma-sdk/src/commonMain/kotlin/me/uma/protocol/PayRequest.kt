@@ -51,7 +51,7 @@ data class PayRequest @JvmOverloads constructor(
 
     fun toQueryParamMap(): Map<String, List<String>> {
         val amountStr = if (sendingCurrencyCode != null) {
-            "${amount}.${sendingCurrencyCode}"
+            "$amount.$sendingCurrencyCode"
         } else {
             amount.toString()
         }
@@ -95,7 +95,6 @@ data class PayRequest @JvmOverloads constructor(
                 comment,
             )
         }
-
     }
 }
 
