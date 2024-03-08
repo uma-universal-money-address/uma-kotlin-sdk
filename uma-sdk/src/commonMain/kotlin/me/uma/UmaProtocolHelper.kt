@@ -440,7 +440,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param receivingCurrencyDecimals The number of digits after the decimal point for the receiving currency. For example,
      *     USD has 2 decimal places. This should align with the `decimals` field returned for the chosen currency in the
      *     LNURLP response.
-     * @param conversionRate The conversion rate. It is the numer of milli-satoshis per the smallest unit of the
+     * @param conversionRate The conversion rate. It is the number of milli-satoshis per the smallest unit of the
      *     specified currency (for example: cents in USD). This rate is committed to by the receiving VASP until the
      *     invoice expires.
      * @param receiverFeesMillisats The fees charged (in millisats) by the receiving VASP for this transaction. This
@@ -509,7 +509,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param receivingCurrencyDecimals The number of digits after the decimal point for the receiving currency. For example,
      *     USD has 2 decimal places. This should align with the `decimals` field returned for the chosen currency in the
      *     LNURLP response.
-     * @param conversionRate The conversion rate. It is the numer of milli-satoshis per the smallest unit of the
+     * @param conversionRate The conversion rate. It is the number of milli-satoshis per the smallest unit of the
      *     specified currency (for example: cents in USD). This rate is committed to by the receiving VASP until the
      *     invoice expires.
      * @param receiverFeesMillisats The fees charged (in millisats) by the receiving VASP for this transaction. This
@@ -580,7 +580,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param receivingCurrencyDecimals The number of digits after the decimal point for the receiving currency. For example,
      *     USD has 2 decimal places. This should align with the `decimals` field returned for the chosen currency in the
      *     LNURLP response.
-     * @param conversionRate The conversion rate. It is the numer of milli-satoshis per the smallest unit of the
+     * @param conversionRate The conversion rate. It is the number of milli-satoshis per the smallest unit of the
      *     specified currency (for example: cents in USD). This rate is committed to by the receiving VASP until the
      *     invoice expires.
      * @param receiverFeesMillisats The fees charged (in millisats) by the receiving VASP for this transaction. This

@@ -1,12 +1,15 @@
 package me.uma.protocol
 
-import kotlinx.serialization.*
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.descriptors.element
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.encoding.*
 import kotlinx.serialization.json.Json
 
@@ -45,6 +48,55 @@ data class PayRequest @JvmOverloads constructor(
     fun isUmaRequest() = payerData != null && payerData.compliance() != null && payerData.identifier() != null
 
     fun toJson() = Json.encodeToString(this)
+
+    fun toQueryParamMap(): Map<String, List<String>> {
+        val amountStr = if (sendingCurrencyCode != null) {
+            "${amount}.${sendingCurrencyCode}"
+        } else {
+            amount.toString()
+        }
+        val map = mutableMapOf(
+            "amount" to listOf(amountStr),
+        )
+        receivingCurrencyCode?.let { map["convert"] = listOf(it) }
+        payerData?.let { map["payerData"] = listOf(Json.encodeToString(it)) }
+        requestedPayeeData?.let {
+            map["payeeData"] = listOf(Json.encodeToString(it))
+        }
+        comment?.let { map["comment"] = listOf(it) }
+        return map
+    }
+
+    companion object {
+        fun fromQueryParamMap(queryMap: Map<String, List<String>>): PayRequest {
+            val receivingCurrencyCode = queryMap["convert"]?.firstOrNull()
+
+            val amountStr = queryMap["amount"]?.firstOrNull()
+                ?: throw IllegalArgumentException("Amount is required")
+            val parts = amountStr.split(".")
+            val sendingCurrencyCode = if (parts.size == 2) parts[1] else null
+            val amount = parts[0].toLong()
+
+            val payerData =
+                queryMap["payerData"]?.firstOrNull()?.let { Json.decodeFromString(PayerData.serializer(), it) }
+            val requestedPayeeData = queryMap["payeeData"]?.firstOrNull()?.let {
+                Json.decodeFromString(
+                    MapSerializer(String.serializer(), CounterPartyDataOption.serializer()),
+                    it,
+                )
+            }
+            val comment = queryMap["comment"]?.firstOrNull()
+            return PayRequest(
+                sendingCurrencyCode,
+                receivingCurrencyCode,
+                amount,
+                payerData,
+                requestedPayeeData,
+                comment,
+            )
+        }
+
+    }
 }
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -104,6 +156,7 @@ object PayRequestSerializer : KSerializer<PayRequest> {
                             CounterPartyDataOption.serializer(),
                         ).nullable,
                     )
+
                     4 -> comment = decodeStringElement(descriptor, index)
                 }
             }
