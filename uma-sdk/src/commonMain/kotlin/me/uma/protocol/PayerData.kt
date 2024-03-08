@@ -42,7 +42,7 @@ fun PayerData.compliance(): CompliancePayerData? {
     return Json.decodeFromJsonElement(jsonCompliance)
 }
 
-fun PayerData.identifier(): String = get("identifier")?.jsonPrimitive?.content ?: ""
+fun PayerData.identifier(): String? = get("identifier")?.jsonPrimitive?.content
 
 /**
  * The compliance data from the sender, including utxo info.
