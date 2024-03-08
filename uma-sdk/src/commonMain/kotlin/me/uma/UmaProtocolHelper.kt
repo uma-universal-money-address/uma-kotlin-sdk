@@ -16,10 +16,10 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import me.uma.crypto.Secp256k1
 import me.uma.protocol.*
 import me.uma.utils.isDomainLocalhost
+import me.uma.utils.serialFormat
 
 /**
  * A helper class for interacting with the UMA protocol. It provides methods for creating and verifying UMA requests
@@ -73,7 +73,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
 
         val scheme = if (isDomainLocalhost(vaspDomain)) "http" else "https"
         val response = umaRequester.makeGetRequest("$scheme://$vaspDomain/.well-known/lnurlpubkey")
-        val pubKeyResponse = Json.decodeFromString<PubKeyResponse>(response)
+        val pubKeyResponse = serialFormat.decodeFromString<PubKeyResponse>(response)
         publicKeyCache.addPublicKeysForVasp(vaspDomain, pubKeyResponse)
         return pubKeyResponse
     }
@@ -223,7 +223,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
     }
 
     fun parseAsLnurlpResponse(response: String): LnurlpResponse {
-        return Json.decodeFromString(response)
+        return serialFormat.decodeFromString(response)
     }
 
     /**
@@ -355,7 +355,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      */
     @Throws(IllegalArgumentException::class)
     fun parseAsPayRequest(request: String): PayRequest {
-        return Json.decodeFromString(request)
+        return serialFormat.decodeFromString(request)
     }
 
     /**
@@ -525,7 +525,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         receiverNodePubKey: String?,
         utxoCallback: String,
     ): PayReqResponse {
-        val encodedPayerData = Json.encodeToString(query.payerData)
+        val encodedPayerData = serialFormat.encodeToString(query.payerData)
         val metadataWithPayerData = "$metadata$encodedPayerData"
         val invoice = invoiceCreator.createUmaInvoice(
             amountMsats = (query.amount.toDouble() * conversionRate + receiverFeesMillisats).roundToLong(),
@@ -548,7 +548,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
     }
 
     fun parseAsPayReqResponse(response: String): PayReqResponse {
-        return Json.decodeFromString(response)
+        return serialFormat.decodeFromString(response)
     }
 
     @Throws(Exception::class)
