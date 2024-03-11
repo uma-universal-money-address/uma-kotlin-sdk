@@ -12,10 +12,10 @@ import me.uma.utils.X509CertificateSerializer
 /**
  * Response from another VASP when requesting public keys.
  *
- * @property signingCertificate PEM encoded X.509 certificate string.
- *     Used to verify signatures from the VASP.
- * @property encryptionCertificate PEM encoded X.509 certificate string.
- *     Used to encrypt TR info sent to the VASP.
+ * @property signingCertChain list of X.509 certificates. The order of the certificates is from the
+ *     leaf to the root. Used to verify signatures from the VASP.
+ * @property encryptionCertChain list of X.509 certificates. The order of the certificates is from the
+ *     leaf to the root. Used to encrypt TR info sent to the VASP.
  * @property signingPubKey The public key used to verify signatures from the VASP.
  * @property encryptionPubKey The public key used to encrypt TR info sent to the VASP.
  * @property expirationTimestamp Seconds since epoch at which these pub keys must be refreshed.
@@ -23,10 +23,8 @@ import me.uma.utils.X509CertificateSerializer
  */
 @Serializable
 data class PubKeyResponse internal constructor(
-    @Serializable(with = X509CertificateSerializer::class)
-    val signingCertificate: X509Certificate?,
-    @Serializable(with = X509CertificateSerializer::class)
-    val encryptionCertificate: X509Certificate?,
+    val signingCertChain: List<@Serializable(with = X509CertificateSerializer::class) X509Certificate>?,
+    val encryptionCertChain: List<@Serializable(with = X509CertificateSerializer::class) X509Certificate>?,
     @Serializable(with = ByteArrayAsHexSerializer::class)
     private val signingPubKey: ByteArray?,
     @Serializable(with = ByteArrayAsHexSerializer::class)
@@ -35,33 +33,33 @@ data class PubKeyResponse internal constructor(
 ) {
     @JvmOverloads
     constructor(signingKey: ByteArray, encryptionKey: ByteArray, expirationTs: Long? = null) : this(
-        signingCertificate = null,
-        encryptionCertificate = null,
+        signingCertChain = null,
+        encryptionCertChain = null,
         signingPubKey = signingKey,
         encryptionPubKey = encryptionKey,
         expirationTimestamp = expirationTs,
     )
 
     @JvmOverloads
-    constructor(signingCert: String, encryptionCert: String, expirationTs: Long? = null) : this(
-        signingCertificate = signingCert.toX509Certificate(),
-        encryptionCertificate = encryptionCert.toX509Certificate(),
-        signingPubKey = signingCert.toX509Certificate().getPubKeyBytes(),
-        encryptionPubKey = encryptionCert.toX509Certificate().getPubKeyBytes(),
+    constructor(signingCertChain: String, encryptionCertChain: String, expirationTs: Long? = null) : this(
+        signingCertChain = signingCertChain.toX509CertChain(),
+        encryptionCertChain = encryptionCertChain.toX509CertChain(),
+        signingPubKey = signingCertChain.toX509CertChain().getPubKeyBytes(),
+        encryptionPubKey = encryptionCertChain.toX509CertChain().getPubKeyBytes(),
         expirationTimestamp = expirationTs,
     )
 
     fun getSigningPublicKey(): ByteArray {
-        return if (signingCertificate != null) {
-            signingCertificate.getPubKeyBytes()
+        return if (signingCertChain != null) {
+            signingCertChain.getPubKeyBytes()
         } else {
             signingPubKey ?: throw IllegalStateException("No signing public key")
         }
     }
 
     fun getEncryptionPublicKey(): ByteArray {
-        return if (encryptionCertificate != null) {
-            encryptionCertificate.getPubKeyBytes()
+        return if (encryptionCertChain != null) {
+            encryptionCertChain.getPubKeyBytes()
         } else {
             encryptionPubKey ?: throw IllegalStateException("No encryption public key")
         }
@@ -76,8 +74,8 @@ data class PubKeyResponse internal constructor(
         if (!signingPubKey.contentEquals(other.signingPubKey)) return false
         if (!encryptionPubKey.contentEquals(other.encryptionPubKey)) return false
         if (expirationTimestamp != other.expirationTimestamp) return false
-        if (signingCertificate != other.signingCertificate) return false
-        if (encryptionCertificate != other.encryptionCertificate) return false
+        if (signingCertChain != other.signingCertChain) return false
+        if (encryptionCertChain != other.encryptionCertChain) return false
 
         return true
     }
@@ -86,24 +84,27 @@ data class PubKeyResponse internal constructor(
         var result = signingPubKey.contentHashCode()
         result = 31 * result + encryptionPubKey.contentHashCode()
         result = 31 * result + expirationTimestamp.hashCode()
-        result = 31 * result + signingCertificate.hashCode()
-        result = 31 * result + encryptionCertificate.hashCode()
+        result = 31 * result + signingCertChain.hashCode()
+        result = 31 * result + encryptionCertChain.hashCode()
         return result
     }
 
     fun toJson() = Json.encodeToString(this)
 }
 
-private fun String.toX509Certificate(): X509Certificate {
+private fun String.toX509CertChain(): List<X509Certificate> {
     return CertificateFactory.getInstance("X.509")
-        .generateCertificate(byteInputStream()) as? X509Certificate
-        ?: throw IllegalStateException("Could not be parsed as X.509 certificate")
+        .generateCertificates(byteInputStream())
+        .map {
+            it as? X509Certificate
+                ?: throw IllegalStateException("Could not be parsed as X.509 certificate")
+        }
 }
 
-private fun X509Certificate.getPubKeyBytes(): ByteArray {
-    if (publicKey !is ECPublicKey ||
-        !(publicKey as ECPublicKey).params.toString().contains("secp256k1")
-    ) {
+private fun List<X509Certificate>.getPubKeyBytes(): ByteArray {
+    val publicKey = firstOrNull()?.publicKey
+        ?: throw IllegalStateException("Certificate chain is empty")
+    if (publicKey !is ECPublicKey || !publicKey.params.toString().contains("secp256k1")) {
         throw IllegalStateException("Public key extracted from certificate is not EC/secp256k1")
     }
     // encryptionPubKey.publicKey is an ASN.1/DER encoded X.509/SPKI key, the last 65
