@@ -2,8 +2,8 @@ package me.uma.protocol
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import me.uma.utils.EnumSerializer
+import me.uma.utils.serialFormat
 
 @Serializable(with = KycStatusSerializer::class)
 enum class KycStatus(val rawValue: String) {
@@ -16,7 +16,7 @@ enum class KycStatus(val rawValue: String) {
 
     VERIFIED("VERIFIED"),
     ;
-    fun toJson() = Json.encodeToString(this)
+    fun toJson() = serialFormat.encodeToString(this)
 }
 
 object KycStatusSerializer :

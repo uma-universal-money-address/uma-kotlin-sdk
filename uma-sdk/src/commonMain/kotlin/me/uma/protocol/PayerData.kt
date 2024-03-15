@@ -8,12 +8,12 @@ import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonPrimitive
+import me.uma.utils.serialFormat
 
 typealias PayerData = JsonObject
 
@@ -26,7 +26,7 @@ fun createPayerData(
 ): PayerData {
     val payerDataMap = mutableMapOf(
         "identifier" to JsonPrimitive(identifier),
-        "compliance" to Json.encodeToJsonElement(compliance),
+        "compliance" to serialFormat.encodeToJsonElement(compliance),
     )
     if (name != null) {
         payerDataMap["name"] = JsonPrimitive(name)
@@ -39,7 +39,7 @@ fun createPayerData(
 
 fun PayerData.compliance(): CompliancePayerData? {
     val jsonCompliance = get("compliance") ?: return null
-    return Json.decodeFromJsonElement(jsonCompliance)
+    return serialFormat.decodeFromJsonElement(jsonCompliance)
 }
 
 fun PayerData.identifier(): String? = get("identifier")?.jsonPrimitive?.content

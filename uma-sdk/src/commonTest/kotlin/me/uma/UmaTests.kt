@@ -6,7 +6,6 @@ import kotlin.test.assertNull
 import kotlin.test.fail
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import me.uma.crypto.Secp256k1
@@ -14,6 +13,7 @@ import me.uma.protocol.KycStatus
 import me.uma.protocol.TravelRuleFormat
 import me.uma.protocol.compliance
 import me.uma.protocol.createCounterPartyDataOptions
+import me.uma.utils.serialFormat
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UmaTests {
@@ -43,7 +43,7 @@ class UmaTests {
         assertEquals("USD", payreq.receivingCurrencyCode)
         assertEquals("USD", payreq.sendingCurrencyCode)
         val json = payreq.toJson()
-        val jsonObject = Json.decodeFromString(JsonObject.serializer(), json)
+        val jsonObject = serialFormat.decodeFromString(JsonObject.serializer(), json)
         assertEquals("100.USD", jsonObject["amount"]?.jsonPrimitive?.content)
         assertEquals("USD", jsonObject["convert"]?.jsonPrimitive?.content)
         val decodedPayReq = UmaProtocolHelper().parseAsPayRequest(json)
@@ -72,7 +72,7 @@ class UmaTests {
         )
         assertNull(payreq.sendingCurrencyCode)
         val json = payreq.toJson()
-        val jsonObject = Json.decodeFromString(JsonObject.serializer(), json)
+        val jsonObject = serialFormat.decodeFromString(JsonObject.serializer(), json)
         assertEquals("100", jsonObject["amount"]?.jsonPrimitive?.content)
         assertEquals("USD", jsonObject["convert"]?.jsonPrimitive?.content)
         val decodedPayReq = UmaProtocolHelper().parseAsPayRequest(json)

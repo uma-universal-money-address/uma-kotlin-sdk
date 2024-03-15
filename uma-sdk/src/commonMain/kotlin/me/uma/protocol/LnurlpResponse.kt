@@ -1,7 +1,7 @@
 package me.uma.protocol
 
 import kotlinx.serialization.*
-import kotlinx.serialization.json.Json
+import me.uma.utils.serialFormat
 
 /**
  * Response from VASP2 to the [LnurlpRequest].
@@ -67,7 +67,7 @@ data class LnurlpResponse(
             null
         }
 
-    fun toJson() = Json.encodeToString(this)
+    fun toJson() = serialFormat.encodeToString(this)
 }
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -89,5 +89,5 @@ data class UmaLnurlpResponse(
     @EncodeDefault
     val tag: String = "payRequest",
 ) {
-    fun toJson() = Json.encodeToString(this)
+    fun toJson() = serialFormat.encodeToString(this)
 }

@@ -16,12 +16,12 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import me.uma.crypto.Secp256k1
 import me.uma.protocol.*
 import me.uma.utils.isDomainLocalhost
+import me.uma.utils.serialFormat
 
 /**
  * A helper class for interacting with the UMA protocol. It provides methods for creating and verifying UMA requests
@@ -81,7 +81,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
     }
 
     fun parseAsPubKeyResponse(response: String): PubKeyResponse {
-        return Json.decodeFromString(response)
+        return serialFormat.decodeFromString(response)
     }
 
     private fun generateNonce(): String {
@@ -255,7 +255,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
     }
 
     fun parseAsLnurlpResponse(response: String): LnurlpResponse {
-        return Json.decodeFromString(response)
+        return serialFormat.decodeFromString(response)
     }
 
     /**
@@ -400,7 +400,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      */
     @Throws(IllegalArgumentException::class)
     fun parseAsPayRequest(request: String): PayRequest {
-        return Json.decodeFromString(request)
+        return serialFormat.decodeFromString(request)
     }
 
     /**
@@ -617,7 +617,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         disposable: Boolean? = null,
         successAction: Map<String, String>? = null,
     ): PayReqResponse {
-        val encodedPayerData = query.payerData?.let { Json.encodeToString(query.payerData) } ?: ""
+        val encodedPayerData = query.payerData?.let { serialFormat.encodeToString(query.payerData) } ?: ""
         val metadataWithPayerData = "$metadata$encodedPayerData"
         if (query.sendingCurrencyCode != null && query.sendingCurrencyCode != receivingCurrencyCode) {
             throw IllegalArgumentException(
@@ -655,7 +655,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         ).await()
         val mutablePayeeData = payeeData?.toMutableMap() ?: mutableMapOf()
         if (query.isUmaRequest()) {
-            mutablePayeeData["compliance"] = Json.encodeToJsonElement(
+            mutablePayeeData["compliance"] = serialFormat.encodeToJsonElement(
                 getSignedCompliancePayeeData(
                     receiverChannelUtxos ?: emptyList(),
                     receiverNodePubKey,
@@ -713,7 +713,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
     }
 
     fun parseAsPayReqResponse(response: String): PayReqResponse {
-        return Json.decodeFromString(response)
+        return serialFormat.decodeFromString(response)
     }
 
     /**
@@ -793,7 +793,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
     }
 
     fun parseAsPostTransactionCallback(callback: String): PostTransactionCallback {
-        return Json.decodeFromString(callback)
+        return serialFormat.decodeFromString(callback)
     }
 
     @Throws(Exception::class)

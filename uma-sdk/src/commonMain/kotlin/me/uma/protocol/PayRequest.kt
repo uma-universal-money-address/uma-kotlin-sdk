@@ -11,7 +11,7 @@ import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.descriptors.element
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.encoding.*
-import kotlinx.serialization.json.Json
+import me.uma.utils.serialFormat
 
 /**
  * The request sent by the sender to the receiver to retrieve an invoice.
@@ -47,7 +47,7 @@ data class PayRequest @JvmOverloads constructor(
 
     fun isUmaRequest() = payerData != null && payerData.compliance() != null && payerData.identifier() != null
 
-    fun toJson() = Json.encodeToString(this)
+    fun toJson() = serialFormat.encodeToString(this)
 
     fun toQueryParamMap(): Map<String, List<String>> {
         val amountStr = if (sendingCurrencyCode != null) {
@@ -59,9 +59,9 @@ data class PayRequest @JvmOverloads constructor(
             "amount" to listOf(amountStr),
         )
         receivingCurrencyCode?.let { map["convert"] = listOf(it) }
-        payerData?.let { map["payerData"] = listOf(Json.encodeToString(it)) }
+        payerData?.let { map["payerData"] = listOf(serialFormat.encodeToString(it)) }
         requestedPayeeData?.let {
-            map["payeeData"] = listOf(Json.encodeToString(it))
+            map["payeeData"] = listOf(serialFormat.encodeToString(it))
         }
         comment?.let { map["comment"] = listOf(it) }
         return map
@@ -78,9 +78,9 @@ data class PayRequest @JvmOverloads constructor(
             val amount = parts[0].toLong()
 
             val payerData =
-                queryMap["payerData"]?.firstOrNull()?.let { Json.decodeFromString(PayerData.serializer(), it) }
+                queryMap["payerData"]?.firstOrNull()?.let { serialFormat.decodeFromString(PayerData.serializer(), it) }
             val requestedPayeeData = queryMap["payeeData"]?.firstOrNull()?.let {
-                Json.decodeFromString(
+                serialFormat.decodeFromString(
                     MapSerializer(String.serializer(), CounterPartyDataOption.serializer()),
                     it,
                 )

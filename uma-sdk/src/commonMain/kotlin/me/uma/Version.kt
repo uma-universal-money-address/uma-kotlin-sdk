@@ -1,9 +1,9 @@
 package me.uma
 
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
+import me.uma.utils.serialFormat
 
 const val MAJOR_VERSION = 0
 const val MINOR_VERSION = 3
@@ -50,7 +50,7 @@ class UnsupportedVersionException(
     fun toLnurlpResponseJson(): String {
         return buildJsonObject {
             put("reason", "Unsupported version: $unsupportedVersion.")
-            put("supportedMajorVersions", Json.encodeToJsonElement(supportedMajorVersions))
+            put("supportedMajorVersions", serialFormat.encodeToJsonElement(supportedMajorVersions))
             put("unsupportedVersion", unsupportedVersion)
         }.toString()
     }
