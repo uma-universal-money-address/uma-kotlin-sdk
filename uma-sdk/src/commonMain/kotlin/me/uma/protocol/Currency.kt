@@ -1,6 +1,5 @@
 package me.uma.protocol
 
-import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
@@ -39,42 +38,43 @@ sealed interface Currency {
      * For details on edge cases and examples, see https://github.com/uma-universal-money-address/protocol/blob/main/umad-04-lnurlp-response.md.
      */
     val decimals: Int
-
-    @Serializable
-    data class CurrencyV1(
-        override val code: String,
-        override val name: String,
-        override val symbol: String,
-        @SerialName("multiplier")
-        override val millisatoshiPerUnit: Double,
-        /**
-         * The minimum and maximum amounts that can be sent in this currency and converted from SATs by the receiver.
-         */
-        val convertible: CurrencyConvertible,
-        override val decimals: Int,
-    ) : Currency
-
-    @Serializable
-    data class CurrencyV0(
-        override val code: String,
-        override val name: String,
-        override val symbol: String,
-        @SerialName("multiplier")
-        override val millisatoshiPerUnit: Double,
-        /**
-         * Minimum amount that can be sent in this currency. This is in the smallest unit of the currency
-         * (eg. cents for USD).
-         */
-        val minSendable: Long,
-
-        /**
-         * Maximum amount that can be sent in this currency. This is in the smallest unit of the currency
-         * (eg. cents for USD).
-         */
-        val maxSendable: Long,
-        override val decimals: Int,
-    ) : Currency
 }
+
+
+@Serializable
+data class CurrencyV1(
+    override val code: String,
+    override val name: String,
+    override val symbol: String,
+    @SerialName("multiplier")
+    override val millisatoshiPerUnit: Double,
+    /**
+     * The minimum and maximum amounts that can be sent in this currency and converted from SATs by the receiver.
+     */
+    val convertible: CurrencyConvertible,
+    override val decimals: Int,
+) : Currency
+
+@Serializable
+data class CurrencyV0(
+    override val code: String,
+    override val name: String,
+    override val symbol: String,
+    @SerialName("multiplier")
+    override val millisatoshiPerUnit: Double,
+    /**
+     * Minimum amount that can be sent in this currency. This is in the smallest unit of the currency
+     * (eg. cents for USD).
+     */
+    val minSendable: Long,
+
+    /**
+     * Maximum amount that can be sent in this currency. This is in the smallest unit of the currency
+     * (eg. cents for USD).
+     */
+    val maxSendable: Long,
+    override val decimals: Int,
+) : Currency
 
 /**
  * The `convertible` field of the [Currency] object.
@@ -95,7 +95,7 @@ data class CurrencyConvertible(
 
 object CurrencySerializer : JsonContentPolymorphicSerializer<Currency>(Currency::class) {
     override fun selectDeserializer(element: JsonElement) = when {
-        "minSendable" in element.jsonObject -> Currency.CurrencyV0.serializer()
-        else -> Currency.CurrencyV1.serializer()
+        "minSendable" in element.jsonObject -> CurrencyV0.serializer()
+        else -> CurrencyV1.serializer()
     }
 }

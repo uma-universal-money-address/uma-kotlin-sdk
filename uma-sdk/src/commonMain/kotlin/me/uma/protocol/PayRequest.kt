@@ -2,6 +2,7 @@ package me.uma.protocol
 
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.nullable
@@ -11,7 +12,22 @@ import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.descriptors.element
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.encoding.*
+import kotlinx.serialization.json.JsonContentPolymorphicSerializer
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonObject
 import me.uma.utils.serialFormat
+
+sealed interface PayRequest {
+    val amount: Long
+    val payerData: PayerData?
+    fun sendingCurrencyCode(): String?
+
+    fun receivingCurrencyCode(): String?
+
+    fun isUmaRequest(): Boolean
+
+    fun signablePayload(): ByteArray
+}
 
 /**
  * The request sent by the sender to the receiver to retrieve an invoice.
@@ -27,16 +43,20 @@ import me.uma.utils.serialFormat
  *     if the receiver included the `commentAllowed` field in the lnurlp response. The length of
  *     the comment must be less than or equal to the value of `commentAllowed`.
  */
-@Serializable(with = PayRequestSerializer::class)
-data class PayRequest @JvmOverloads constructor(
+@Serializable
+data class PayRequestV1(
     val sendingCurrencyCode: String?,
     val receivingCurrencyCode: String?,
-    val amount: Long,
-    val payerData: PayerData?,
+    override val amount: Long,
+    override val payerData: PayerData?,
     val requestedPayeeData: CounterPartyDataOptions? = null,
     val comment: String? = null,
-) {
-    fun signablePayload(): ByteArray {
+) : PayRequest {
+
+    override fun receivingCurrencyCode() = receivingCurrencyCode
+    override fun sendingCurrencyCode() = sendingCurrencyCode
+
+    override fun signablePayload(): ByteArray {
         if (payerData == null) throw IllegalArgumentException("Payer data is required for UMA")
         if (payerData.identifier() == null) throw IllegalArgumentException("Payer identifier is required for UMA")
         val complianceData = payerData.compliance() ?: throw IllegalArgumentException("Compliance data is required")
@@ -45,7 +65,7 @@ data class PayRequest @JvmOverloads constructor(
         }
     }
 
-    fun isUmaRequest() = payerData != null && payerData.compliance() != null && payerData.identifier() != null
+    override fun isUmaRequest() = payerData != null && payerData.compliance() != null && payerData.identifier() != null
 
     fun toJson() = serialFormat.encodeToString(this)
 
@@ -86,7 +106,7 @@ data class PayRequest @JvmOverloads constructor(
                 )
             }
             val comment = queryMap["comment"]?.firstOrNull()
-            return PayRequest(
+            return PayRequestV1(
                 sendingCurrencyCode,
                 receivingCurrencyCode,
                 amount,
@@ -98,9 +118,27 @@ data class PayRequest @JvmOverloads constructor(
     }
 }
 
+@Serializable
+data class PayRequestV0(
+    @SerialName("currency")
+    val currencyCode: String,
+    override val amount: Long,
+    override val payerData: PayerData,
+): PayRequest {
+    override fun receivingCurrencyCode() = currencyCode
+    override fun sendingCurrencyCode() = null
+    override fun isUmaRequest() = true
+    override fun signablePayload() =
+        payerData.compliance()?.let {
+            "${payerData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}".encodeToByteArray()
+        } ?: payerData.identifier()?.encodeToByteArray() ?: throw IllegalArgumentException("Payer identifier is required for UMA")
+
+    fun toJson() = serialFormat.encodeToString(this)
+}
+
 @OptIn(ExperimentalSerializationApi::class)
-object PayRequestSerializer : KSerializer<PayRequest> {
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("PayRequest") {
+object PayRequestV1Serializer : KSerializer<PayRequestV1> {
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("PayRequestV1") {
         element<String?>("convert")
         element<String>("amount") // Serialize and deserialize amount as a string
         element<PayerData>("payerData")
@@ -108,7 +146,7 @@ object PayRequestSerializer : KSerializer<PayRequest> {
         element<String?>("comment")
     }
 
-    override fun serialize(encoder: Encoder, value: PayRequest) {
+    override fun serialize(encoder: Encoder, value: PayRequestV1) {
         encoder.encodeStructure(descriptor) {
             value.receivingCurrencyCode?.let { encodeStringElement(descriptor, 0, it) }
             encodeStringElement(
@@ -131,7 +169,7 @@ object PayRequestSerializer : KSerializer<PayRequest> {
         }
     }
 
-    override fun deserialize(decoder: Decoder): PayRequest {
+    override fun deserialize(decoder: Decoder): PayRequestV1 {
         var sendingCurrencyCode: String? = null
         var receivingCurrencyCode: String? = null
         var amount: String? = null
@@ -170,7 +208,7 @@ object PayRequestSerializer : KSerializer<PayRequest> {
                 }
             } ?: throw IllegalArgumentException("Amount is required")
 
-            PayRequest(
+            PayRequestV1(
                 sendingCurrencyCode,
                 receivingCurrencyCode,
                 parsedAmount,
@@ -179,5 +217,12 @@ object PayRequestSerializer : KSerializer<PayRequest> {
                 comment,
             )
         }
+    }
+}
+
+object PayRequestSerializer : JsonContentPolymorphicSerializer<PayRequest>(PayRequest::class) {
+    override fun selectDeserializer(element: JsonElement) = when {
+        "currency" in element.jsonObject -> PayRequestV0.serializer()
+        else -> PayRequestV1Serializer
     }
 }
