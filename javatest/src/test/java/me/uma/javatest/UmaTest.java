@@ -108,7 +108,16 @@ public class UmaTest {
                         )
                 ),
                 List.of(
-                        new Currency(
+//                        new Currency.CurrencyV0(
+//                                "USD",
+//                                "US Dollar",
+//                                "$",
+//                                34_150,
+//                                1,
+//                                10_000_000,
+//                                2
+//                        )
+                        new Currency.CurrencyV1(
                                 "USD",
                                 "US Dollar",
                                 "$",
@@ -122,12 +131,66 @@ public class UmaTest {
         assertNotNull(lnurlpResponse);
         String responseJson = lnurlpResponse.toJson();
         System.out.println(responseJson);
+        System.out.println(lnurlpResponse.getCurrencies());
         LnurlpResponse parsedResponse = umaProtocolHelper.parseAsLnurlpResponse(responseJson);
         assertNotNull(parsedResponse);
         assertEquals(lnurlpResponse, parsedResponse);
         assertTrue(umaProtocolHelper.verifyLnurlpResponseSignature(
                 requireNonNull(parsedResponse.asUmaResponse()), new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
                 new InMemoryNonceCache(1L)));
+    }
+
+    @Test
+    public void testGetCurrency() throws Exception {
+        String lnurlpUrl = umaProtocolHelper.getSignedLnurlpRequestUrl(
+                privateKeyBytes(),
+                "$bob@vasp2.com",
+                "https://vasp.com",
+                true);
+        LnurlpRequest request = umaProtocolHelper.parseLnurlpRequest(lnurlpUrl);
+        assertNotNull(request);
+
+        Currency currency = new Currency.CurrencyV1(
+                "USD",
+                "US Dollar",
+                "$",
+                34_150,
+                new CurrencyConvertible(1, 10_000_000),
+                2
+        );
+
+        Currency currencyv0 = new Currency.CurrencyV0(
+                "USD",
+                "US Dollar",
+                "$",
+                34_150,
+                1,
+                10_000_000,
+                2
+        );
+        String responseJson = umaProtocolHelper.encodeAsCurrency(currencyv0);
+        System.out.println("hi" + responseJson);
+        Currency parsedResponse = umaProtocolHelper.parseAsCurrency(responseJson);
+        assertNotNull(parsedResponse);
+        assertEquals(currencyv0, parsedResponse);
+    }
+
+    @Test
+    public void testGetCurrencyV0() throws Exception {
+        Currency currencyv0 = new Currency.CurrencyV0(
+                "USD",
+                "US Dollar",
+                "$",
+                34_150,
+                1,
+                10_000_000,
+                2
+        );
+        String responseJson = "{\"code\":\"USD\",\"name\":\"US Dollar\",\"symbol\":\"$\",\"multiplier\":34150.0,\"minSendable\":1,\"maxSendable\":10000000,\"decimals\":2}";
+        System.out.println("hi" + responseJson);
+        Currency parsedResponse = umaProtocolHelper.parseAsCurrency(responseJson);
+        assertNotNull(parsedResponse);
+        assertEquals(currencyv0, parsedResponse);
     }
 
     @Test

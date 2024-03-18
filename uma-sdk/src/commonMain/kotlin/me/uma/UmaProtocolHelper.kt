@@ -16,6 +16,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import me.uma.crypto.Secp256k1
@@ -256,6 +257,14 @@ class UmaProtocolHelper @JvmOverloads constructor(
 
     fun parseAsLnurlpResponse(response: String): LnurlpResponse {
         return serialFormat.decodeFromString(response)
+    }
+
+    fun parseAsCurrency(response: String): Currency {
+        return serialFormat.decodeFromString(CurrencySerializer, response)
+    }
+
+    fun encodeAsCurrency(currency: Currency): String {
+        return serialFormat.encodeToString(CurrencySerializer, currency)
     }
 
     /**
