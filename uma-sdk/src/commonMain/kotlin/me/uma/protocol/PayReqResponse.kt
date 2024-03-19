@@ -60,7 +60,7 @@ data class PayReqResponseV1(
      * Defines a struct which can be stored and shown to the user on payment success. See LUD-09.
      */
     val successAction: Map<String, String>? = null,
-): PayReqResponse {
+) : PayReqResponse {
     override fun toJson() = serialFormat.encodeToString(this)
 
     override fun isUmaResponse() = payeeData != null &&
@@ -93,7 +93,7 @@ data class PayReqResponseV0(
     override val paymentInfo: PayReqResponsePaymentInfo,
     @EncodeDefault
     override val routes: List<Route> = emptyList(),
-): PayReqResponse {
+) : PayReqResponse {
     override fun isUmaResponse() = true
 
     override fun toJson() = serialFormat.encodeToString(this)

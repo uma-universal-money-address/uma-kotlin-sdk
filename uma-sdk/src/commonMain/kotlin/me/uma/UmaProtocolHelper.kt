@@ -231,9 +231,13 @@ class UmaProtocolHelper @JvmOverloads constructor(
                         maxSendable = it.convertible.max,
                         decimals = it.decimals,
                     )
-                } else it
+                } else {
+                    it
+                }
             }
-        } else currencyOptions
+        } else {
+            currencyOptions
+        }
         return LnurlpResponse(
             callback = callback,
             minSendable = minSendableSats * 1000,

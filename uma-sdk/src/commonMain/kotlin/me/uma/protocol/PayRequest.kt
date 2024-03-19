@@ -146,7 +146,7 @@ data class PayRequestV0(
 
     override val amount: Long,
     override val payerData: PayerData,
-): PayRequest {
+) : PayRequest {
     override fun receivingCurrencyCode() = currencyCode
 
     override fun sendingCurrencyCode() = null
@@ -157,7 +157,7 @@ data class PayRequestV0(
         payerData.compliance()?.let {
             "${payerData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}".encodeToByteArray()
         } ?: payerData.identifier()?.encodeToByteArray()
-        ?: throw IllegalArgumentException("Payer identifier is required for UMA")
+            ?: throw IllegalArgumentException("Payer identifier is required for UMA")
 
     override fun toJson() = serialFormat.encodeToString(this)
 }
