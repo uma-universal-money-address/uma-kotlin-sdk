@@ -17,43 +17,61 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
 import me.uma.utils.serialFormat
 
+/**
+ * The request sent by the sender to the receiver to retrieve an invoice.
+ */
 sealed interface PayRequest {
+    /**
+     * The amount that the receiver will receive in either the smallest unit of the
+     * sendingCurrencyCode or in msats (if sendingCurrencyCode is null).
+     */
     val amount: Long
+
+    /**
+     * The data that the sender will send to the receiver to identify themselves.
+     */
     val payerData: PayerData?
+
+    /**
+     * The currency code in which the amount field is specified. If null, the
+     * amount is assumed to be specified in msats.
+     */
     fun sendingCurrencyCode(): String?
 
+    /**
+     * The currency code that the receiver will receive for this payment.
+     */
     fun receivingCurrencyCode(): String?
 
     fun isUmaRequest(): Boolean
 
     fun signablePayload(): ByteArray
+
+    fun toJson(): String
 }
 
-/**
- * The request sent by the sender to the receiver to retrieve an invoice.
- *
- * @property sendingCurrencyCode The currency code in which the amount field is specified. If null, the
- *     amount is assumed to be specified in msats.
- * @property receivingCurrencyCode The currency code that the receiver will receive for this payment.
- * @property amount The amount that the receiver will receive in either the smallest unit of the sendingCurrencyCode
- *     or in msats (if sendingCurrencyCode is null).
- * @property payerData The data that the sender will send to the receiver to identify themselves.
- * @property requestedPayeeData The data that the sender requests the receiver to send to identify themselves.
- * @property comment A comment that the sender would like to include with the payment. This can only be included
- *     if the receiver included the `commentAllowed` field in the lnurlp response. The length of
- *     the comment must be less than or equal to the value of `commentAllowed`.
- */
 @Serializable
 data class PayRequestV1(
     val sendingCurrencyCode: String?,
     val receivingCurrencyCode: String?,
     override val amount: Long,
     override val payerData: PayerData?,
+
+    /**
+     * The data that the sender requests the receiver to send to identify themselves.
+     */
     val requestedPayeeData: CounterPartyDataOptions? = null,
+
+    /**
+     * A comment that the sender would like to include with the payment. This can only be included
+     * if the receiver included the `commentAllowed` field in the lnurlp response. The length of
+     * the comment must be less than or equal to the value of `commentAllowed`.
+     */
     val comment: String? = null,
 ) : PayRequest {
 
     override fun receivingCurrencyCode() = receivingCurrencyCode
+
     override fun sendingCurrencyCode() = sendingCurrencyCode
 
     override fun signablePayload(): ByteArray {
@@ -67,7 +85,7 @@ data class PayRequestV1(
 
     override fun isUmaRequest() = payerData != null && payerData.compliance() != null && payerData.identifier() != null
 
-    fun toJson() = serialFormat.encodeToString(this)
+    override fun toJson() = serialFormat.encodeToString(this)
 
     fun toQueryParamMap(): Map<String, List<String>> {
         val amountStr = if (sendingCurrencyCode != null) {
@@ -120,20 +138,28 @@ data class PayRequestV1(
 
 @Serializable
 data class PayRequestV0(
+    /**
+     * The currency code that the receiver will receive for this payment.
+     */
     @SerialName("currency")
     val currencyCode: String,
+
     override val amount: Long,
     override val payerData: PayerData,
 ): PayRequest {
     override fun receivingCurrencyCode() = currencyCode
+
     override fun sendingCurrencyCode() = null
+
     override fun isUmaRequest() = true
+
     override fun signablePayload() =
         payerData.compliance()?.let {
             "${payerData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}".encodeToByteArray()
-        } ?: payerData.identifier()?.encodeToByteArray() ?: throw IllegalArgumentException("Payer identifier is required for UMA")
+        } ?: payerData.identifier()?.encodeToByteArray()
+        ?: throw IllegalArgumentException("Payer identifier is required for UMA")
 
-    fun toJson() = serialFormat.encodeToString(this)
+    override fun toJson() = serialFormat.encodeToString(this)
 }
 
 @OptIn(ExperimentalSerializationApi::class)

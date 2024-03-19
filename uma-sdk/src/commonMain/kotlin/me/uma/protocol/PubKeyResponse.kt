@@ -14,8 +14,8 @@ import me.uma.utils.serialFormat
  *
  * @property signingCertChain list of X.509 certificates. The order of the certificates is from the
  *     leaf to the root. Used to verify signatures from the VASP.
- * @property encryptionCertChain list of X.509 certificates. The order of the certificates is from
- *     the leaf to the root. Used to encrypt TR info sent to the VASP.
+ * @property encryptionCertChain list of X.509 certificates. The order of the certificates is from the
+ *     leaf to the root. Used to encrypt TR info sent to the VASP.
  * @property signingPubKey The public key used to verify signatures from the VASP.
  * @property encryptionPubKey The public key used to encrypt TR info sent to the VASP.
  * @property expirationTimestamp Seconds since epoch at which these pub keys must be refreshed.

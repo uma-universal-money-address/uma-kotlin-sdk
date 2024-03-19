@@ -6,44 +6,67 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
 import me.uma.utils.serialFormat
 
+/**
+ * The response sent by the receiver to the sender to provide an invoice.
+ */
 sealed interface PayReqResponse {
+    /**
+     * The BOLT11 invoice that the sender will pay.
+     */
     val encodedInvoice: String
-    val routes: List<Route>
+
+    /**
+     * Information about the payment that the receiver will receive. Includes final currency-related
+     * information for the payment. Required for UMA.
+     */
     val paymentInfo: PayReqResponsePaymentInfo?
 
+    /**
+     * Usually just an empty list from legacy LNURL, which was replaced by route hints in the BOLT11
+     * invoice.
+     */
+    val routes: List<Route>
+
     fun isUmaResponse(): Boolean
+
     fun toJson(): String
 }
 
-/**
- * The response sent by the receiver to the sender to provide an invoice.
- *
- * @property encodedInvoice The BOLT11 invoice that the sender will pay.
- * @property paymentInfo Information about the payment that the receiver will receive. Includes
- *     Final currency-related information for the payment. Required for UMA.
- * @property payeeData The data about the receiver that the sending VASP requested in the payreq request.
- *     Required for UMA.
- * @property routes Usually just an empty list from legacy LNURL, which was replaced by route hints in the BOLT11
- *     invoice.
- * @property disposable This field may be used by a WALLET to decide whether the initial LNURL link will
- *     be stored locally for later reuse or erased. If disposable is null, it should be
- *     interpreted as true, so if SERVICE intends its LNURL links to be stored it must
- *     return `disposable: false`. UMA should always return `disposable: false`. See LUD-11.
- * @property successAction Defines a struct which can be stored and shown to the user on payment success. See LUD-09.
- */
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class PayReqResponseV1(
     @SerialName("pr")
     override val encodedInvoice: String,
     override val paymentInfo: PayReqResponsePaymentInfo?,
+
+    /**
+     * The data about the receiver that the sending VASP requested in the payreq request.
+     * Required for UMA.
+     */
     val payeeData: PayeeData?,
+
     @EncodeDefault
     override val routes: List<Route> = emptyList(),
+
+    /**
+     * This field may be used by a WALLET to decide whether the initial LNURL link will
+     *  be stored locally for later reuse or erased. If disposable is null, it should be
+     *  interpreted as true, so if SERVICE intends its LNURL links to be stored it must
+     *  return `disposable: false`. UMA should always return `disposable: false`. See LUD-11.
+     */
     val disposable: Boolean? = null,
+
+    /**
+     * Defines a struct which can be stored and shown to the user on payment success. See LUD-09.
+     */
     val successAction: Map<String, String>? = null,
 ): PayReqResponse {
     override fun toJson() = serialFormat.encodeToString(this)
+
+    override fun isUmaResponse() = payeeData != null &&
+        payeeData.payeeCompliance() != null &&
+        payeeData.identifier() != null &&
+        paymentInfo != null
 
     fun signablePayload(payerIdentifier: String): ByteArray {
         if (payeeData == null) throw IllegalArgumentException("Payee data is required for UMA")
@@ -55,23 +78,24 @@ data class PayReqResponseV1(
                 .encodeToByteArray()
         }
     }
-
-    override fun isUmaResponse() = payeeData != null &&
-        payeeData.payeeCompliance() != null &&
-        payeeData.identifier() != null &&
-        paymentInfo != null
 }
 
 @Serializable
 data class PayReqResponseV0(
     @SerialName("pr")
     override val encodedInvoice: String,
+
+    /**
+     * The compliance data from the receiver, including utxo info.
+     */
     val compliance: PayReqResponseCompliance,
+
     override val paymentInfo: PayReqResponsePaymentInfo,
     @EncodeDefault
     override val routes: List<Route> = emptyList(),
 ): PayReqResponse {
     override fun isUmaResponse() = true
+
     override fun toJson() = serialFormat.encodeToString(this)
 }
 

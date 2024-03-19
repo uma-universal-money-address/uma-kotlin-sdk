@@ -273,14 +273,6 @@ class UmaProtocolHelper @JvmOverloads constructor(
         return serialFormat.decodeFromString(response)
     }
 
-    fun parseAsCurrency(response: String): Currency {
-        return serialFormat.decodeFromString(CurrencySerializer, response)
-    }
-
-    fun encodeAsCurrency(currency: Currency): String {
-        return serialFormat.encodeToString(CurrencySerializer, currency)
-    }
-
     /**
      * Verifies the signature on an UMA Lnurlp response based on the public key of the VASP making the request.
      *
@@ -332,6 +324,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param comment A comment that the sender would like to include with the payment. This can only be included
      *    if the receiver included the `commentAllowed` field in the lnurlp response. The length of the comment must be
      *    less than or equal to the value of `commentAllowed`.
+     * @param receiverUmaVersion The UMA version of the receiver VASP. This information can be obtained from the [LnurlpResponse]
      * @return The [PayRequest] that should be sent to the receiver.
      */
     @JvmOverloads
@@ -435,10 +428,6 @@ class UmaProtocolHelper @JvmOverloads constructor(
         return serialFormat.decodeFromString(PayRequestSerializer, request)
     }
 
-    fun encodePayReq(payReq: PayRequest): String {
-        return serialFormat.encodeToString(PayRequestSerializer, payReq)
-    }
-
     /**
      * Verifies the signature of the [PayRequest] sent by the sender.
      *
@@ -494,6 +483,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *      intends its LNURL links to be stored it must return `disposable: false`. UMA should always return
      *      `disposable: false`. See LUD-11.
      * @param successAction An action that the wallet should take once the payment is complete. See LUD-09.
+     * @param senderUmaVersion The UMA version of the sender VASP. This information can be obtained from the [LnurlpRequest].
      * @return A [CompletableFuture] [PayReqResponse] that should be returned to the sender for the given [PayRequest].
      */
     @JvmOverloads
@@ -565,6 +555,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *      intends its LNURL links to be stored it must return `disposable: false`. UMA should always return
      *      `disposable: false`. See LUD-11.
      * @param successAction An action that the wallet should take once the payment is complete. See LUD-09.
+     * @param senderUmaVersion The UMA version of the sender VASP. This information can be obtained from the [LnurlpRequest].
      * @return A [PayReqResponse] that should be returned to the sender for the given [PayRequest].
      */
     @JvmOverloads
@@ -638,6 +629,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *      intends its LNURL links to be stored it must return `disposable: false`. UMA should always return
      *      `disposable: false`. See LUD-11.
      * @param successAction An action that the wallet should take once the payment is complete. See LUD-09.
+     * @param senderUmaVersion The UMA version of the sender VASP. This information can be obtained from the [LnurlpRequest].
      * @return The [PayReqResponse] that should be returned to the sender for the given [PayRequest].
      */
     @JvmName("KotlinOnly-getPayReqResponseSuspended")
@@ -767,10 +759,6 @@ class UmaProtocolHelper @JvmOverloads constructor(
 
     fun parseAsPayReqResponse(response: String): PayReqResponse {
         return serialFormat.decodeFromString(PayReqResponseSerializer, response)
-    }
-
-    fun encodePayReqResponse(payReqResponse: PayReqResponse): String {
-        return serialFormat.encodeToString(PayReqResponseSerializer, payReqResponse)
     }
 
     /**

@@ -40,7 +40,6 @@ sealed interface Currency {
     val decimals: Int
 }
 
-
 @Serializable
 data class CurrencyV1(
     override val code: String,
@@ -48,10 +47,13 @@ data class CurrencyV1(
     override val symbol: String,
     @SerialName("multiplier")
     override val millisatoshiPerUnit: Double,
+
     /**
-     * The minimum and maximum amounts that can be sent in this currency and converted from SATs by the receiver.
+     * The minimum and maximum amounts that can be sent in this currency and converted from SATs by
+     * the receiver.
      */
     val convertible: CurrencyConvertible,
+
     override val decimals: Int,
 ) : Currency
 
@@ -62,15 +64,15 @@ data class CurrencyV0(
     override val symbol: String,
     @SerialName("multiplier")
     override val millisatoshiPerUnit: Double,
-    /**
-     * Minimum amount that can be sent in this currency. This is in the smallest unit of the currency
-     * (eg. cents for USD).
-     */
-    val minSendable: Long,
 
     /**
-     * Maximum amount that can be sent in this currency. This is in the smallest unit of the currency
-     * (eg. cents for USD).
+     * Minimum amount that can be sent in this currency. This is in the smallest unit of the
+     * currency (eg. cents for USD).
+     */
+    val minSendable: Long,
+    /**
+     * Maximum amount that can be sent in this currency. This is in the smallest unit of the
+     * currency (eg. cents for USD).
      */
     val maxSendable: Long,
     override val decimals: Int,

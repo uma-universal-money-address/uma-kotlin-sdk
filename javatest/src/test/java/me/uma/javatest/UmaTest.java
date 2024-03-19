@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +83,7 @@ public class UmaTest {
     }
 
     @Test
-    public void testGetLnurlpResponse() throws Exception {
+    public void testGetLnurlpResponse_umaV1() throws Exception {
         String lnurlpUrl = umaProtocolHelper.getSignedLnurlpRequestUrl(
                 privateKeyBytes(),
                 "$bob@vasp2.com",
@@ -108,16 +109,7 @@ public class UmaTest {
                         )
                 ),
                 List.of(
-//                        new Currency.CurrencyV0(
-//                                "USD",
-//                                "US Dollar",
-//                                "$",
-//                                34_150,
-//                                1,
-//                                10_000_000,
-//                                2
-//                        )
-                        new Currency.CurrencyV1(
+                        new CurrencyV1(
                                 "USD",
                                 "US Dollar",
                                 "$",
@@ -131,7 +123,6 @@ public class UmaTest {
         assertNotNull(lnurlpResponse);
         String responseJson = lnurlpResponse.toJson();
         System.out.println(responseJson);
-        System.out.println(lnurlpResponse.getCurrencies());
         LnurlpResponse parsedResponse = umaProtocolHelper.parseAsLnurlpResponse(responseJson);
         assertNotNull(parsedResponse);
         assertEquals(lnurlpResponse, parsedResponse);
@@ -141,7 +132,7 @@ public class UmaTest {
     }
 
     @Test
-    public void testGetCurrency() throws Exception {
+    public void testGetLnurlpResponse_umaV0() throws Exception {
         String lnurlpUrl = umaProtocolHelper.getSignedLnurlpRequestUrl(
                 privateKeyBytes(),
                 "$bob@vasp2.com",
@@ -149,52 +140,48 @@ public class UmaTest {
                 true);
         LnurlpRequest request = umaProtocolHelper.parseLnurlpRequest(lnurlpUrl);
         assertNotNull(request);
-
-        Currency currency = new Currency.CurrencyV1(
-                "USD",
-                "US Dollar",
-                "$",
-                34_150,
-                new CurrencyConvertible(1, 10_000_000),
-                2
-        );
-
-        Currency currencyv0 = new Currency.CurrencyV0(
-                "USD",
-                "US Dollar",
-                "$",
-                34_150,
+        LnurlpResponse lnurlpResponse = umaProtocolHelper.getLnurlpResponse(
+                request,
+                privateKeyBytes(),
+                true,
+                "https://vasp2.com/callback",
+                "encoded metadata",
                 1,
                 10_000_000,
-                2
+                CounterPartyData.createCounterPartyDataOptions(
+                        Map.of(
+                                "name", false,
+                                "email", false,
+                                "identity", true,
+                                "compliance", true
+                        )
+                ),
+                List.of(
+                        new CurrencyV0(
+                                "USD",
+                                "US Dollar",
+                                "$",
+                                34_150,
+                                1,
+                                10_000_000,
+                                2
+                        )
+                ),
+                KycStatus.VERIFIED
         );
-        String responseJson = umaProtocolHelper.encodeAsCurrency(currencyv0);
-        System.out.println("hi" + responseJson);
-        Currency parsedResponse = umaProtocolHelper.parseAsCurrency(responseJson);
+        assertNotNull(lnurlpResponse);
+        String responseJson = lnurlpResponse.toJson();
+        System.out.println(responseJson);
+        LnurlpResponse parsedResponse = umaProtocolHelper.parseAsLnurlpResponse(responseJson);
         assertNotNull(parsedResponse);
-        assertEquals(currencyv0, parsedResponse);
+        assertEquals(lnurlpResponse, parsedResponse);
+        assertTrue(umaProtocolHelper.verifyLnurlpResponseSignature(
+                parsedResponse.asUmaResponse(), new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
+                new InMemoryNonceCache(1L)));
     }
 
     @Test
-    public void testGetCurrencyV0() throws Exception {
-        Currency currencyv0 = new Currency.CurrencyV0(
-                "USD",
-                "US Dollar",
-                "$",
-                34_150,
-                1,
-                10_000_000,
-                2
-        );
-        String responseJson = "{\"code\":\"USD\",\"name\":\"US Dollar\",\"symbol\":\"$\",\"multiplier\":34150.0,\"minSendable\":1,\"maxSendable\":10000000,\"decimals\":2}";
-        System.out.println("hi" + responseJson);
-        Currency parsedResponse = umaProtocolHelper.parseAsCurrency(responseJson);
-        assertNotNull(parsedResponse);
-        assertEquals(currencyv0, parsedResponse);
-    }
-
-    @Test
-    public void testGetPayReqResponseSync() throws Exception {
+    public void testGetPayReqResponseSync_umaV1() throws Exception {
         PayRequest request = umaProtocolHelper.getPayRequest(
                 publicKeyBytes(),
                 privateKeyBytes(),
@@ -217,14 +204,64 @@ public class UmaTest {
                 null,
                 "",
                 privateKeyBytes(),
-                PayeeData.createPayeeData(null, "$bob@vasp2.com")
+                PayeeData.createPayeeData(null, "$bob@vasp2.com"),
+                null,
+                null,
+                "1.0"
         );
         assertNotNull(response);
         assertEquals("lnbc12345", response.getEncodedInvoice());
         System.out.println(response);
+        assertTrue(response instanceof PayReqResponseV1);
         assertTrue(umaProtocolHelper.verifyPayReqResponseSignature(
                 response, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
                 "$alice@vasp1.com", new InMemoryNonceCache(1L)));
+        String responseJson = response.toJson();
+        PayReqResponse parsedResponse = umaProtocolHelper.parseAsPayReqResponse(responseJson);
+        assertNotNull(parsedResponse);
+        assertEquals(response, parsedResponse);
+    }
+
+    @Test
+    public void testGetPayReqResponseSync_umaV0() throws Exception {
+        PayRequest request = umaProtocolHelper.getPayRequest(
+                publicKeyBytes(),
+                privateKeyBytes(),
+                "USD",
+                100L,
+                true,
+                "$alice@vasp1.com",
+                KycStatus.VERIFIED,
+                ""
+        );
+        PayReqResponse response = umaProtocolHelper.getPayReqResponseSync(
+                request,
+                new TestSyncUmaInvoiceCreator(),
+                "metadata",
+                "USD",
+                2,
+                12345.0,
+                0L,
+                List.of(),
+                null,
+                "",
+                privateKeyBytes(),
+                PayeeData.createPayeeData(null, "$bob@vasp2.com"),
+                null,
+                null,
+                "0.3"
+        );
+        assertNotNull(response);
+        assertEquals("lnbc12345", response.getEncodedInvoice());
+        System.out.println(response);
+        assertTrue(response instanceof PayReqResponseV0);
+        assertTrue(umaProtocolHelper.verifyPayReqResponseSignature(
+                response, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
+                "$alice@vasp1.com", new InMemoryNonceCache(1L)));
+        String responseJson = response.toJson();
+        PayReqResponse parsedResponse = umaProtocolHelper.parseAsPayReqResponse(responseJson);
+        assertNotNull(parsedResponse);
+        assertEquals(response, parsedResponse);
     }
 
     @Test
