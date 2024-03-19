@@ -1,5 +1,10 @@
 package me.uma
 
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.test.fail
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
@@ -13,11 +18,6 @@ import me.uma.protocol.TravelRuleFormat
 import me.uma.protocol.compliance
 import me.uma.protocol.createCounterPartyDataOptions
 import me.uma.utils.serialFormat
-import org.junit.jupiter.api.Assertions.assertTrue
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
-import kotlin.test.fail
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UmaTests {

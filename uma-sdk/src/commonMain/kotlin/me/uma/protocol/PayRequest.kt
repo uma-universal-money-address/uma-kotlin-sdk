@@ -85,7 +85,7 @@ data class PayRequestV1(
 
     override fun isUmaRequest() = payerData != null && payerData.compliance() != null && payerData.identifier() != null
 
-    override fun toJson() = serialFormat.encodeToString(this)
+    override fun toJson() = serialFormat.encodeToString(PayRequestV1Serializer, this)
 
     fun toQueryParamMap(): Map<String, List<String>> {
         val amountStr = if (sendingCurrencyCode != null) {

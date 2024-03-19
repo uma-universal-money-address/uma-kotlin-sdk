@@ -70,11 +70,13 @@ data class CurrencyV0(
      * currency (eg. cents for USD).
      */
     val minSendable: Long,
+
     /**
      * Maximum amount that can be sent in this currency. This is in the smallest unit of the
      * currency (eg. cents for USD).
      */
     val maxSendable: Long,
+
     override val decimals: Int,
 ) : Currency
 
