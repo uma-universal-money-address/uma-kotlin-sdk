@@ -14,7 +14,7 @@ You can install the SDK from Maven Central using Gradle or Maven.
 
 ```groovy
 dependencies {
-    implementation 'me.uma:uma-sdk:0.7.5'
+    implementation 'me.uma:uma-sdk:0.7.6'
 }
 ```
 
@@ -22,7 +22,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("me.uma:uma-sdk:0.7.5")
+    implementation("me.uma:uma-sdk:0.7.6")
 }
 ```
 
@@ -40,7 +40,7 @@ dependencies {
 <dependency>
     <groupId>me.uma</groupId>
     <artifactId>uma-sdk</artifactId>
-    <version>0.7.5</version>
+    <version>0.7.6</version>
 </dependency>
 </dependencies>
 ```
