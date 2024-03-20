@@ -48,6 +48,40 @@ sealed interface PayRequest {
     fun signablePayload(): ByteArray
 
     fun toJson(): String
+
+    fun requestedPayeeData(): CounterPartyDataOptions?
+
+    fun toQueryParamMap(): Map<String, List<String>>
+
+    companion object {
+        fun fromQueryParamMap(queryMap: Map<String, List<String>>): PayRequest {
+            val receivingCurrencyCode = queryMap["convert"]?.firstOrNull()
+
+            val amountStr = queryMap["amount"]?.firstOrNull()
+                ?: throw IllegalArgumentException("Amount is required")
+            val parts = amountStr.split(".")
+            val sendingCurrencyCode = if (parts.size == 2) parts[1] else null
+            val amount = parts[0].toLong()
+
+            val payerData =
+                queryMap["payerData"]?.firstOrNull()?.let { serialFormat.decodeFromString(PayerData.serializer(), it) }
+            val requestedPayeeData = queryMap["payeeData"]?.firstOrNull()?.let {
+                serialFormat.decodeFromString(
+                    MapSerializer(String.serializer(), CounterPartyDataOption.serializer()),
+                    it,
+                )
+            }
+            val comment = queryMap["comment"]?.firstOrNull()
+            return PayRequestV1(
+                sendingCurrencyCode,
+                receivingCurrencyCode,
+                amount,
+                payerData,
+                requestedPayeeData,
+                comment,
+            )
+        }
+    }
 }
 
 @Serializable
@@ -87,7 +121,9 @@ data class PayRequestV1(
 
     override fun toJson() = serialFormat.encodeToString(PayRequestV1Serializer, this)
 
-    fun toQueryParamMap(): Map<String, List<String>> {
+    override fun requestedPayeeData(): CounterPartyDataOptions? = requestedPayeeData
+
+    override fun toQueryParamMap(): Map<String, List<String>> {
         val amountStr = if (sendingCurrencyCode != null) {
             "$amount.$sendingCurrencyCode"
         } else {
@@ -103,36 +139,6 @@ data class PayRequestV1(
         }
         comment?.let { map["comment"] = listOf(it) }
         return map
-    }
-
-    companion object {
-        fun fromQueryParamMap(queryMap: Map<String, List<String>>): PayRequest {
-            val receivingCurrencyCode = queryMap["convert"]?.firstOrNull()
-
-            val amountStr = queryMap["amount"]?.firstOrNull()
-                ?: throw IllegalArgumentException("Amount is required")
-            val parts = amountStr.split(".")
-            val sendingCurrencyCode = if (parts.size == 2) parts[1] else null
-            val amount = parts[0].toLong()
-
-            val payerData =
-                queryMap["payerData"]?.firstOrNull()?.let { serialFormat.decodeFromString(PayerData.serializer(), it) }
-            val requestedPayeeData = queryMap["payeeData"]?.firstOrNull()?.let {
-                serialFormat.decodeFromString(
-                    MapSerializer(String.serializer(), CounterPartyDataOption.serializer()),
-                    it,
-                )
-            }
-            val comment = queryMap["comment"]?.firstOrNull()
-            return PayRequestV1(
-                sendingCurrencyCode,
-                receivingCurrencyCode,
-                amount,
-                payerData,
-                requestedPayeeData,
-                comment,
-            )
-        }
     }
 }
 
@@ -153,6 +159,8 @@ data class PayRequestV0(
 
     override fun isUmaRequest() = true
 
+    override fun requestedPayeeData() = null
+
     override fun signablePayload() =
         payerData.compliance()?.let {
             "${payerData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}".encodeToByteArray()
@@ -160,6 +168,12 @@ data class PayRequestV0(
             ?: throw IllegalArgumentException("Payer identifier is required for UMA")
 
     override fun toJson() = serialFormat.encodeToString(this)
+
+    override fun toQueryParamMap() = mapOf(
+        "amount" to listOf(amount.toString()),
+        "convert" to listOf(currencyCode),
+        "payerData" to listOf(serialFormat.encodeToString(payerData))
+    )
 }
 
 @OptIn(ExperimentalSerializationApi::class)
