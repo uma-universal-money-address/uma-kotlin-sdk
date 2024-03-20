@@ -58,7 +58,9 @@ class UmaTests {
 
     @Test
     fun `test isUmaLnurlpQuery future-proofing`() {
-        val umaLnurlpQuery = "https://example.com/.well-known/lnurlp/\$bob?vaspDomain=example.com&nonce=123&signature=123&isSubjectToTravelRule=true&timestamp=123&umaVersion=100.0"
+        val umaLnurlpQuery =
+            "https://example.com/.well-known/lnurlp/\$bob?vaspDomain=example.com&nonce=123&signature=123&" +
+                "isSubjectToTravelRule=true&timestamp=123&umaVersion=100.0"
         assertEquals(true, UmaProtocolHelper().isUmaLnurlpQuery(umaLnurlpQuery))
     }
 }
