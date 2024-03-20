@@ -172,7 +172,7 @@ data class PayRequestV0(
     override fun toQueryParamMap() = mapOf(
         "amount" to listOf(amount.toString()),
         "convert" to listOf(currencyCode),
-        "payerData" to listOf(serialFormat.encodeToString(payerData))
+        "payerData" to listOf(serialFormat.encodeToString(payerData)),
     )
 }
 
