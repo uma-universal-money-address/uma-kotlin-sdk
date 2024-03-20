@@ -180,6 +180,72 @@ public class UmaTest {
     }
 
     @Test
+    public void testGetPayRequest_umaV1() throws Exception {
+        PayRequest request = umaProtocolHelper.getPayRequest(
+                publicKeyBytes(),
+                privateKeyBytes(),
+                "USD",
+                100L,
+                true,
+                "$alice@vasp1.com",
+                KycStatus.VERIFIED,
+                "",
+                null,
+                null,
+                null,
+                "payerName",
+                "payerEmail",
+                null,
+                null,
+                "comment",
+                "1.0"
+        );
+        assertNotNull(request);
+        System.out.println(request);
+        assertTrue(request instanceof PayRequestV1);
+        assertTrue(umaProtocolHelper.verifyPayReqSignature(
+                request, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
+                new InMemoryNonceCache(1L)));
+        String requestJson = request.toJson();
+        PayRequest parsedRequest = umaProtocolHelper.parseAsPayRequest(requestJson);
+        assertNotNull(parsedRequest);
+        assertEquals(request, parsedRequest);
+    }
+
+    @Test
+    public void testGetPayRequest_umaV0() throws Exception {
+        PayRequest request = umaProtocolHelper.getPayRequest(
+                publicKeyBytes(),
+                privateKeyBytes(),
+                "USD",
+                100L,
+                true,
+                "$alice@vasp1.com",
+                KycStatus.VERIFIED,
+                "",
+                null,
+                null,
+                null,
+                "payerName",
+                "payerEmail",
+                null,
+                null,
+                "comment",
+                "0.3"
+        );
+        assertNotNull(request);
+        System.out.println(request);
+        assertTrue(request instanceof PayRequestV0);
+        assertTrue(umaProtocolHelper.verifyPayReqSignature(
+                request, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
+                new InMemoryNonceCache(1L)));
+        String requestJson = request.toJson();
+        PayRequest parsedRequest = umaProtocolHelper.parseAsPayRequest(requestJson);
+        assertNotNull(parsedRequest);
+        assertEquals(request, parsedRequest);
+    }
+
+    @Test
     public void testGetPayReqResponseSync_umaV1() throws Exception {
         PayRequest request = umaProtocolHelper.getPayRequest(
                 publicKeyBytes(),
