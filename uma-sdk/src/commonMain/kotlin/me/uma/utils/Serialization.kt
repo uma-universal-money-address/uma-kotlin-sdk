@@ -1,5 +1,6 @@
 package me.uma.utils
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import me.uma.protocol.Currency
@@ -22,8 +23,10 @@ val module = SerializersModule {
     polymorphic(PayReqResponse::class, PayReqResponseV0::class, PayReqResponseV0.serializer())
 }
 
+@OptIn(ExperimentalSerializationApi::class)
 val serialFormat = Json {
     ignoreUnknownKeys = true
     isLenient = true
+    explicitNulls = false
     serializersModule = module
 }
