@@ -179,11 +179,11 @@ internal data class PayRequestV0(
 @OptIn(ExperimentalSerializationApi::class)
 internal object PayRequestV1Serializer : KSerializer<PayRequestV1> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("PayRequestV1") {
-        element<String?>("convert")
+        element<String?>("convert", isOptional = true)
         element<String>("amount") // Serialize and deserialize amount as a string
         element<PayerData>("payerData")
-        element<CounterPartyDataOptions?>("payeeData")
-        element<String?>("comment")
+        element<CounterPartyDataOptions?>("payeeData", isOptional = true)
+        element<String?>("comment", isOptional = true)
     }
 
     override fun serialize(encoder: Encoder, value: PayRequestV1) {
