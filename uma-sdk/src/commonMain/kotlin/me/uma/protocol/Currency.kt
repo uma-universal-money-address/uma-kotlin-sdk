@@ -1,3 +1,5 @@
+@file:JvmName("CurrencyUtils")
+
 package me.uma.protocol
 
 import kotlinx.serialization.SerialName
@@ -40,6 +42,10 @@ sealed interface Currency {
      * For details on edge cases and examples, see https://github.com/uma-universal-money-address/protocol/blob/main/umad-04-lnurlp-response.md.
      */
     val decimals: Int
+
+    fun minSendable(): Long
+
+    fun maxSendable(): Long
 }
 
 /**
@@ -59,7 +65,7 @@ sealed interface Currency {
  * @return the [Currency] to be sent to the sender VASP.
  */
 @JvmOverloads
-fun getCurrency(
+fun createCurrency(
     code: String,
     name: String,
     symbol: String,
@@ -109,7 +115,13 @@ internal data class CurrencyV1(
     val convertible: CurrencyConvertible,
 
     override val decimals: Int,
-) : Currency
+) : Currency {
+
+    override fun minSendable() = convertible.min
+
+    override fun maxSendable() = convertible.max
+
+}
 
 @Serializable
 internal data class CurrencyV0(
@@ -132,13 +144,19 @@ internal data class CurrencyV0(
     val maxSendable: Long,
 
     override val decimals: Int,
-) : Currency
+) : Currency {
+
+    override fun minSendable() = minSendable
+
+    override fun maxSendable() = maxSendable
+
+}
 
 /**
  * The `convertible` field of the [Currency] object.
  */
 @Serializable
-data class CurrencyConvertible(
+internal data class CurrencyConvertible(
     /**
      * Minimum amount that can be sent in this currency. This is in the smallest unit of the currency
      * (eg. cents for USD).

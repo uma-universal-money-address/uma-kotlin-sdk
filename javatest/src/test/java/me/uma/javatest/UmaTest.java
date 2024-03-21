@@ -14,6 +14,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.*;
+import static me.uma.protocol.CurrencyUtils.createCurrency;
 
 public class UmaTest {
     UmaProtocolHelper umaProtocolHelper = new UmaProtocolHelper(new InMemoryPublicKeyCache(), new TestUmaRequester());
@@ -108,13 +109,15 @@ public class UmaTest {
                         )
                 ),
                 List.of(
-                        new CurrencyV1(
+                        createCurrency(
                                 "USD",
                                 "US Dollar",
                                 "$",
                                 34_150,
-                                new CurrencyConvertible(1, 10_000_000),
-                                2
+                                2,
+                                1,
+                                10_000_000,
+                                "1.0"
                         )
                 ),
                 KycStatus.VERIFIED
@@ -125,6 +128,9 @@ public class UmaTest {
         LnurlpResponse parsedResponse = umaProtocolHelper.parseAsLnurlpResponse(responseJson);
         assertNotNull(parsedResponse);
         assertEquals(lnurlpResponse, parsedResponse);
+        assertNotNull(parsedResponse.asUmaResponse());
+        assertEquals(1, parsedResponse.asUmaResponse().getCurrencies().get(0).minSendable());
+        assertEquals(10_000_000, parsedResponse.asUmaResponse().getCurrencies().get(0).maxSendable());
         assertTrue(umaProtocolHelper.verifyLnurlpResponseSignature(
                 requireNonNull(parsedResponse.asUmaResponse()), new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
                 new InMemoryNonceCache(1L)));
@@ -156,14 +162,15 @@ public class UmaTest {
                         )
                 ),
                 List.of(
-                        new CurrencyV0(
+                        createCurrency(
                                 "USD",
                                 "US Dollar",
                                 "$",
                                 34_150,
+                                2,
                                 1,
                                 10_000_000,
-                                2
+                                "0.3"
                         )
                 ),
                 KycStatus.VERIFIED
@@ -174,6 +181,9 @@ public class UmaTest {
         LnurlpResponse parsedResponse = umaProtocolHelper.parseAsLnurlpResponse(responseJson);
         assertNotNull(parsedResponse);
         assertEquals(lnurlpResponse, parsedResponse);
+        assertNotNull(parsedResponse.asUmaResponse());
+        assertEquals(1, parsedResponse.asUmaResponse().getCurrencies().get(0).minSendable());
+        assertEquals(10_000_000, parsedResponse.asUmaResponse().getCurrencies().get(0).maxSendable());
         assertTrue(umaProtocolHelper.verifyLnurlpResponseSignature(
                 parsedResponse.asUmaResponse(), new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
                 new InMemoryNonceCache(1L)));
@@ -202,7 +212,6 @@ public class UmaTest {
         );
         assertNotNull(request);
         System.out.println(request);
-        assertTrue(request instanceof PayRequestV1);
         assertTrue(umaProtocolHelper.verifyPayReqSignature(
                 request, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
                 new InMemoryNonceCache(1L)));
@@ -235,7 +244,6 @@ public class UmaTest {
         );
         assertNotNull(request);
         System.out.println(request);
-        assertTrue(request instanceof PayRequestV0);
         assertTrue(umaProtocolHelper.verifyPayReqSignature(
                 request, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
                 new InMemoryNonceCache(1L)));
@@ -277,7 +285,6 @@ public class UmaTest {
         assertNotNull(response);
         assertEquals("lnbc12345", response.getEncodedInvoice());
         System.out.println(response);
-        assertTrue(response instanceof PayReqResponseV1);
         assertTrue(umaProtocolHelper.verifyPayReqResponseSignature(
                 response, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
                 "$alice@vasp1.com", new InMemoryNonceCache(1L)));
@@ -319,7 +326,6 @@ public class UmaTest {
         assertNotNull(response);
         assertEquals("lnbc12345", response.getEncodedInvoice());
         System.out.println(response);
-        assertTrue(response instanceof PayReqResponseV0);
         assertTrue(umaProtocolHelper.verifyPayReqResponseSignature(
                 response, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
                 "$alice@vasp1.com", new InMemoryNonceCache(1L)));
