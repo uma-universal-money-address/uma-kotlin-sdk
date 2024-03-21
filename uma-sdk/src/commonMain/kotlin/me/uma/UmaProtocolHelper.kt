@@ -846,58 +846,6 @@ class UmaProtocolHelper @JvmOverloads constructor(
         return serialFormat.decodeFromString(callback)
     }
 
-    /**
-     * Creates a [Currency] which contains information about currencies that the VASP is able to receive.
-     *
-     * @param code The currency code, eg. "USD".
-     * @param name The full currency name, eg. "US Dollars".
-     * @param symbol The symbol of the currency, eg. "$".
-     * @param millisatoshiPerUnit The conversion rate from the smallest unit of the currency to millisatoshis.
-     * @param decimals The number of decimal places in the currency.
-     * @param minSendable Minimum amount that can be sent in this currency. This is in the smallest unit of the
-     *      currency (eg. cents for USD).
-     * @param maxSendable Maximum amount that can be sent in this currency. This is in the smallest unit of the
-     *      currency (eg. cents for USD).
-     * @param senderUmaVersion The UMA version of the sender VASP. This information can be obtained from the
-     *      [LnurlpRequest].
-     * @return the [Currency] to be sent to the sender VASP.
-     */
-    @JvmOverloads
-    fun getCurrency(
-        code: String,
-        name: String,
-        symbol: String,
-        millisatoshiPerUnit: Double,
-        decimals: Int,
-        minSendable: Long,
-        maxSendable: Long,
-        senderUmaVersion: String = UMA_VERSION_STRING,
-    ): Currency {
-        return if (Version.parse(senderUmaVersion).major < 1) {
-            CurrencyV0(
-                code = code,
-                name = name,
-                symbol = symbol,
-                millisatoshiPerUnit = millisatoshiPerUnit,
-                minSendable = minSendable,
-                maxSendable = maxSendable,
-                decimals = decimals,
-            )
-        } else {
-            CurrencyV1(
-                code = code,
-                name = name,
-                symbol = symbol,
-                millisatoshiPerUnit = millisatoshiPerUnit,
-                convertible = CurrencyConvertible(
-                    min = minSendable,
-                    max = maxSendable,
-                ),
-                decimals = decimals,
-            )
-        }
-    }
-
     @Throws(Exception::class)
     private fun signPayload(payload: ByteArray, privateKey: ByteArray): String {
         return Secp256k1.signEcdsa(payload, privateKey).toHexString()

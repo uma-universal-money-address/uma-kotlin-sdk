@@ -5,6 +5,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
+import me.uma.UMA_VERSION_STRING
+import me.uma.Version
 
 sealed interface Currency {
     /**
@@ -40,8 +42,60 @@ sealed interface Currency {
     val decimals: Int
 }
 
+/**
+ * Creates a [Currency] which contains information about currencies that the VASP is able to receive.
+ *
+ * @param code The currency code, eg. "USD".
+ * @param name The full currency name, eg. "US Dollars".
+ * @param symbol The symbol of the currency, eg. "$".
+ * @param millisatoshiPerUnit The conversion rate from the smallest unit of the currency to millisatoshis.
+ * @param decimals The number of decimal places in the currency.
+ * @param minSendable Minimum amount that can be sent in this currency. This is in the smallest unit of the
+ *      currency (eg. cents for USD).
+ * @param maxSendable Maximum amount that can be sent in this currency. This is in the smallest unit of the
+ *      currency (eg. cents for USD).
+ * @param senderUmaVersion The UMA version of the sender VASP. This information can be obtained from the
+ *      [LnurlpRequest].
+ * @return the [Currency] to be sent to the sender VASP.
+ */
+@JvmOverloads
+fun getCurrency(
+    code: String,
+    name: String,
+    symbol: String,
+    millisatoshiPerUnit: Double,
+    decimals: Int,
+    minSendable: Long,
+    maxSendable: Long,
+    senderUmaVersion: String = UMA_VERSION_STRING,
+): Currency {
+    return if (Version.parse(senderUmaVersion).major < 1) {
+        CurrencyV0(
+            code = code,
+            name = name,
+            symbol = symbol,
+            millisatoshiPerUnit = millisatoshiPerUnit,
+            minSendable = minSendable,
+            maxSendable = maxSendable,
+            decimals = decimals,
+        )
+    } else {
+        CurrencyV1(
+            code = code,
+            name = name,
+            symbol = symbol,
+            millisatoshiPerUnit = millisatoshiPerUnit,
+            convertible = CurrencyConvertible(
+                min = minSendable,
+                max = maxSendable,
+            ),
+            decimals = decimals,
+        )
+    }
+}
+
 @Serializable
-data class CurrencyV1(
+internal data class CurrencyV1(
     override val code: String,
     override val name: String,
     override val symbol: String,
@@ -58,7 +112,7 @@ data class CurrencyV1(
 ) : Currency
 
 @Serializable
-data class CurrencyV0(
+internal data class CurrencyV0(
     override val code: String,
     override val name: String,
     override val symbol: String,

@@ -34,7 +34,7 @@ sealed interface PayReqResponse {
 
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
-data class PayReqResponseV1(
+internal data class PayReqResponseV1(
     @SerialName("pr")
     override val encodedInvoice: String,
     override val paymentInfo: PayReqResponsePaymentInfo?,
@@ -81,7 +81,7 @@ data class PayReqResponseV1(
 }
 
 @Serializable
-data class PayReqResponseV0(
+internal data class PayReqResponseV0(
     @SerialName("pr")
     override val encodedInvoice: String,
 

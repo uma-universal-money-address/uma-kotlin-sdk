@@ -85,7 +85,7 @@ sealed interface PayRequest {
 }
 
 @Serializable
-data class PayRequestV1(
+internal data class PayRequestV1(
     val sendingCurrencyCode: String?,
     val receivingCurrencyCode: String?,
     override val amount: Long,
@@ -143,7 +143,7 @@ data class PayRequestV1(
 }
 
 @Serializable
-data class PayRequestV0(
+internal data class PayRequestV0(
     /**
      * The currency code that the receiver will receive for this payment.
      */
@@ -177,7 +177,7 @@ data class PayRequestV0(
 }
 
 @OptIn(ExperimentalSerializationApi::class)
-object PayRequestV1Serializer : KSerializer<PayRequestV1> {
+internal object PayRequestV1Serializer : KSerializer<PayRequestV1> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("PayRequestV1") {
         element<String?>("convert")
         element<String>("amount") // Serialize and deserialize amount as a string

@@ -26,9 +26,9 @@ data class PubKeyResponse internal constructor(
     val signingCertChain: List<@Serializable(with = X509CertificateSerializer::class) X509Certificate>? = null,
     val encryptionCertChain: List<@Serializable(with = X509CertificateSerializer::class) X509Certificate>? = null,
     @Serializable(with = ByteArrayAsHexSerializer::class)
-    private val signingPubKey: ByteArray?,
+    private val signingPubKey: ByteArray? = null,
     @Serializable(with = ByteArrayAsHexSerializer::class)
-    private val encryptionPubKey: ByteArray?,
+    private val encryptionPubKey: ByteArray? = null,
     val expirationTimestamp: Long? = null,
 ) {
     @JvmOverloads
