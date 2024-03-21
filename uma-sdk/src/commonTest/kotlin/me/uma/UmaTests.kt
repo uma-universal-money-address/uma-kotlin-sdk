@@ -6,10 +6,12 @@ import kotlin.test.fail
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import me.uma.crypto.Secp256k1
+import me.uma.protocol.CompliancePayerData
 import me.uma.protocol.KycStatus
 import me.uma.protocol.PayerDataOptions
 import me.uma.protocol.TravelRuleFormat
 import me.uma.utils.serialFormat
+import kotlinx.serialization.decodeFromString
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UmaTests {
@@ -62,5 +64,36 @@ class UmaTests {
             "https://example.com/.well-known/lnurlp/\$bob?vaspDomain=example.com&nonce=123&signature=123&" +
                 "isSubjectToTravelRule=true&timestamp=123&umaVersion=100.0"
         assertEquals(true, UmaProtocolHelper().isUmaLnurlpQuery(umaLnurlpQuery))
+    }
+
+    @Test
+    fun `test serialization nulls`() = runTest {
+        // Missing nodePubKey and encryptedTravelRuleInfo:
+        val jsonCompliancePayerData = """
+            {
+                "utxos": ["utxo1", "utxo2"],
+                "kycStatus": "VERIFIED",
+                "utxoCallback": "utxoCallback",
+                "signature": "signature",
+                "signatureNonce": "1234",
+                "signatureTimestamp": 1234567,
+                "travelRuleFormat": null
+            }
+        """.trimIndent()
+
+        val compliancePayerData = serialFormat.decodeFromString<CompliancePayerData>(jsonCompliancePayerData)
+        assertEquals(
+            CompliancePayerData(
+                utxos = listOf("utxo1", "utxo2"),
+                kycStatus = KycStatus.VERIFIED,
+                utxoCallback = "utxoCallback",
+                signature = "signature",
+                signatureNonce = "1234",
+                signatureTimestamp = 1234567,
+                encryptedTravelRuleInfo = null,
+                nodePubKey = null,
+            ),
+            compliancePayerData,
+        )
     }
 }
