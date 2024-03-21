@@ -5,13 +5,13 @@ import kotlin.test.assertEquals
 import kotlin.test.fail
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.decodeFromString
 import me.uma.crypto.Secp256k1
 import me.uma.protocol.CompliancePayerData
 import me.uma.protocol.KycStatus
 import me.uma.protocol.PayerDataOptions
 import me.uma.protocol.TravelRuleFormat
 import me.uma.utils.serialFormat
-import kotlinx.serialization.decodeFromString
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UmaTests {
