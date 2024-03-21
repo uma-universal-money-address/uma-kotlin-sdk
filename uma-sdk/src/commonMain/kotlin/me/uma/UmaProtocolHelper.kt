@@ -219,12 +219,31 @@ class UmaProtocolHelper @JvmOverloads constructor(
         val complianceResponse =
             getSignedLnurlpComplianceResponse(query, privateKeyBytes, requiresTravelRuleInfo, receiverKycStatus)
         val umaVersion = minOf(Version.parse(umaRequest.umaVersion), Version.parse(UMA_VERSION_STRING)).toString()
+        val currencies = if (Version.parse(umaVersion).major < 1) {
+            currencyOptions.map {
+                if (it is CurrencyV1) {
+                    CurrencyV0(
+                        code = it.code,
+                        name = it.name,
+                        symbol = it.symbol,
+                        millisatoshiPerUnit = it.millisatoshiPerUnit,
+                        minSendable = it.convertible.min,
+                        maxSendable = it.convertible.max,
+                        decimals = it.decimals,
+                    )
+                } else {
+                    it
+                }
+            }
+        } else {
+            currencyOptions
+        }
         return LnurlpResponse(
             callback = callback,
             minSendable = minSendableSats * 1000,
             maxSendable = maxSendableSats * 1000,
             metadata = encodedMetadata,
-            currencies = currencyOptions,
+            currencies = currencies,
             requiredPayerData = payerDataOptions,
             compliance = complianceResponse,
             umaVersion = umaVersion,
@@ -309,6 +328,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param comment A comment that the sender would like to include with the payment. This can only be included
      *    if the receiver included the `commentAllowed` field in the lnurlp response. The length of the comment must be
      *    less than or equal to the value of `commentAllowed`.
+     * @param receiverUmaVersion The UMA version of the receiver VASP. This information can be obtained from the [LnurlpResponse]
      * @return The [PayRequest] that should be sent to the receiver.
      */
     @JvmOverloads
@@ -329,6 +349,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         travelRuleFormat: TravelRuleFormat? = null,
         requestedPayeeData: CounterPartyDataOptions? = null,
         comment: String? = null,
+        receiverUmaVersion: String = UMA_VERSION_STRING,
     ): PayRequest {
         val compliancePayerData = getSignedCompliancePayerData(
             receiverEncryptionPubKey,
@@ -347,14 +368,22 @@ class UmaProtocolHelper @JvmOverloads constructor(
             email = payerEmail,
             compliance = compliancePayerData,
         )
-        return PayRequest(
-            sendingCurrencyCode = if (isAmountInReceivingCurrency) receivingCurrencyCode else null,
-            payerData = payerData,
-            receivingCurrencyCode = receivingCurrencyCode,
-            amount = amount,
-            requestedPayeeData = requestedPayeeData,
-            comment = comment,
-        )
+        if (Version.parse(receiverUmaVersion).major < 1) {
+            return PayRequestV0(
+                currencyCode = receivingCurrencyCode,
+                amount = amount,
+                payerData = payerData,
+            )
+        } else {
+            return PayRequestV1(
+                sendingCurrencyCode = if (isAmountInReceivingCurrency) receivingCurrencyCode else null,
+                payerData = payerData,
+                receivingCurrencyCode = receivingCurrencyCode,
+                amount = amount,
+                requestedPayeeData = requestedPayeeData,
+                comment = comment,
+            )
+        }
     }
 
     private fun getSignedCompliancePayerData(
@@ -400,7 +429,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      */
     @Throws(IllegalArgumentException::class)
     fun parseAsPayRequest(request: String): PayRequest {
-        return serialFormat.decodeFromString(request)
+        return serialFormat.decodeFromString(PayRequestSerializer, request)
     }
 
     /**
@@ -458,6 +487,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *      intends its LNURL links to be stored it must return `disposable: false`. UMA should always return
      *      `disposable: false`. See LUD-11.
      * @param successAction An action that the wallet should take once the payment is complete. See LUD-09.
+     * @param senderUmaVersion The UMA version of the sender VASP. This information can be obtained from the [LnurlpRequest].
      * @return A [CompletableFuture] [PayReqResponse] that should be returned to the sender for the given [PayRequest].
      */
     @JvmOverloads
@@ -477,6 +507,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         payeeData: PayeeData? = null,
         disposable: Boolean? = null,
         successAction: Map<String, String>? = null,
+        senderUmaVersion: String = UMA_VERSION_STRING,
     ): CompletableFuture<PayReqResponse> = coroutineScope.future {
         getPayReqResponse(
             query,
@@ -493,6 +524,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             payeeData,
             disposable,
             successAction,
+            senderUmaVersion,
         )
     }
 
@@ -527,6 +559,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *      intends its LNURL links to be stored it must return `disposable: false`. UMA should always return
      *      `disposable: false`. See LUD-11.
      * @param successAction An action that the wallet should take once the payment is complete. See LUD-09.
+     * @param senderUmaVersion The UMA version of the sender VASP. This information can be obtained from the [LnurlpRequest].
      * @return A [PayReqResponse] that should be returned to the sender for the given [PayRequest].
      */
     @JvmOverloads
@@ -546,6 +579,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         payeeData: PayeeData? = null,
         disposable: Boolean? = null,
         successAction: Map<String, String>? = null,
+        senderUmaVersion: String = UMA_VERSION_STRING,
     ): PayReqResponse = runBlocking {
         val futureInvoiceCreator = object : UmaInvoiceCreator {
             override fun createUmaInvoice(amountMsats: Long, metadata: String): CompletableFuture<String> {
@@ -567,6 +601,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             payeeData,
             disposable,
             successAction,
+            senderUmaVersion,
         )
     }
 
@@ -598,6 +633,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *      intends its LNURL links to be stored it must return `disposable: false`. UMA should always return
      *      `disposable: false`. See LUD-11.
      * @param successAction An action that the wallet should take once the payment is complete. See LUD-09.
+     * @param senderUmaVersion The UMA version of the sender VASP. This information can be obtained from the [LnurlpRequest].
      * @return The [PayReqResponse] that should be returned to the sender for the given [PayRequest].
      */
     @JvmName("KotlinOnly-getPayReqResponseSuspended")
@@ -616,10 +652,11 @@ class UmaProtocolHelper @JvmOverloads constructor(
         payeeData: PayeeData? = null,
         disposable: Boolean? = null,
         successAction: Map<String, String>? = null,
+        senderUmaVersion: String = UMA_VERSION_STRING,
     ): PayReqResponse {
         val encodedPayerData = query.payerData?.let { serialFormat.encodeToString(query.payerData) } ?: ""
         val metadataWithPayerData = "$metadata$encodedPayerData"
-        if (query.sendingCurrencyCode != null && query.sendingCurrencyCode != receivingCurrencyCode) {
+        if (query.sendingCurrencyCode() != null && query.sendingCurrencyCode() != receivingCurrencyCode) {
             throw IllegalArgumentException(
                 "Currency code in the pay request must match the receiving currency if not null.",
             )
@@ -639,7 +676,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
                 throw IllegalArgumentException("Missing required fields for UMA: $missingFields")
             }
         }
-        val isAmountInMsats = query.sendingCurrencyCode == null
+        val isAmountInMsats = query.sendingCurrencyCode() == null
         val receivingCurrencyAmount = if (isAmountInMsats) {
             ((query.amount.toDouble() - (receiverFeesMillisats ?: 0)) / (conversionRate ?: 1.0)).roundToLong()
         } else {
@@ -666,24 +703,36 @@ class UmaProtocolHelper @JvmOverloads constructor(
                 ),
             )
         }
-        return PayReqResponse(
+        val paymentInfo = if (
+            receivingCurrencyCode != null &&
+            receivingCurrencyDecimals != null &&
+            conversionRate != null
+        ) {
+            PayReqResponsePaymentInfo(
+                amount = receivingCurrencyAmount,
+                currencyCode = receivingCurrencyCode,
+                decimals = receivingCurrencyDecimals,
+                multiplier = conversionRate,
+                exchangeFeesMillisatoshi = receiverFeesMillisats ?: 0,
+            )
+        } else {
+            null
+        }
+        if (Version.parse(senderUmaVersion).major < 1) {
+            return PayReqResponseV0(
+                encodedInvoice = invoice,
+                compliance = PayReqResponseCompliance(
+                    utxos = receiverChannelUtxos ?: emptyList(),
+                    nodePubKey = receiverNodePubKey,
+                    utxoCallback = utxoCallback ?: "",
+                ),
+                paymentInfo = paymentInfo ?: throw IllegalArgumentException("Payment info is required for UMAv0"),
+            )
+        }
+        return PayReqResponseV1(
             encodedInvoice = invoice,
             payeeData = if (query.isUmaRequest()) JsonObject(mutablePayeeData) else null,
-            paymentInfo = if (
-                receivingCurrencyCode != null &&
-                receivingCurrencyDecimals != null &&
-                conversionRate != null
-            ) {
-                PayReqResponsePaymentInfo(
-                    amount = receivingCurrencyAmount,
-                    currencyCode = receivingCurrencyCode,
-                    decimals = receivingCurrencyDecimals,
-                    multiplier = conversionRate,
-                    exchangeFeesMillisatoshi = receiverFeesMillisats ?: 0,
-                )
-            } else {
-                null
-            },
+            paymentInfo = paymentInfo,
             disposable = disposable,
             successAction = successAction,
         )
@@ -713,7 +762,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
     }
 
     fun parseAsPayReqResponse(response: String): PayReqResponse {
-        return serialFormat.decodeFromString(response)
+        return serialFormat.decodeFromString(PayReqResponseSerializer, response)
     }
 
     /**
@@ -733,6 +782,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         payerIdentifier: String,
         nonceCache: NonceCache,
     ): Boolean {
+        if (payReqResponse !is PayReqResponseV1) return true
         if (!payReqResponse.isUmaResponse()) return false
         val compliance = payReqResponse.payeeData?.payeeCompliance() ?: return false
         nonceCache.checkAndSaveNonce(compliance.signatureNonce, compliance.signatureTimestamp)

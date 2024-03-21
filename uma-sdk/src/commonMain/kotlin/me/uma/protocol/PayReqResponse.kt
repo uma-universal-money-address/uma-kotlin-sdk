@@ -1,37 +1,72 @@
 package me.uma.protocol
 
 import kotlinx.serialization.*
+import kotlinx.serialization.json.JsonContentPolymorphicSerializer
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonObject
 import me.uma.utils.serialFormat
 
 /**
  * The response sent by the receiver to the sender to provide an invoice.
- *
- * @property encodedInvoice The BOLT11 invoice that the sender will pay.
- * @property paymentInfo Information about the payment that the receiver will receive. Includes
- *     Final currency-related information for the payment. Required for UMA.
- * @property payeeData The data about the receiver that the sending VASP requested in the payreq request.
- *     Required for UMA.
- * @property routes Usually just an empty list from legacy LNURL, which was replaced by route hints in the BOLT11
- *     invoice.
- * @property disposable This field may be used by a WALLET to decide whether the initial LNURL link will
- *     be stored locally for later reuse or erased. If disposable is null, it should be
- *     interpreted as true, so if SERVICE intends its LNURL links to be stored it must
- *     return `disposable: false`. UMA should always return `disposable: false`. See LUD-11.
- * @property successAction Defines a struct which can be stored and shown to the user on payment success. See LUD-09.
  */
+sealed interface PayReqResponse {
+    /**
+     * The BOLT11 invoice that the sender will pay.
+     */
+    val encodedInvoice: String
+
+    /**
+     * Information about the payment that the receiver will receive. Includes final currency-related
+     * information for the payment. Required for UMA.
+     */
+    val paymentInfo: PayReqResponsePaymentInfo?
+
+    /**
+     * Usually just an empty list from legacy LNURL, which was replaced by route hints in the BOLT11
+     * invoice.
+     */
+    val routes: List<Route>
+
+    fun isUmaResponse(): Boolean
+
+    fun toJson(): String
+}
+
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
-data class PayReqResponse(
+internal data class PayReqResponseV1(
     @SerialName("pr")
-    val encodedInvoice: String,
-    val paymentInfo: PayReqResponsePaymentInfo?,
+    override val encodedInvoice: String,
+    override val paymentInfo: PayReqResponsePaymentInfo?,
+
+    /**
+     * The data about the receiver that the sending VASP requested in the payreq request.
+     * Required for UMA.
+     */
     val payeeData: PayeeData?,
+
     @EncodeDefault
-    val routes: List<Route> = emptyList(),
+    override val routes: List<Route> = emptyList(),
+
+    /**
+     * This field may be used by a WALLET to decide whether the initial LNURL link will
+     *  be stored locally for later reuse or erased. If disposable is null, it should be
+     *  interpreted as true, so if SERVICE intends its LNURL links to be stored it must
+     *  return `disposable: false`. UMA should always return `disposable: false`. See LUD-11.
+     */
     val disposable: Boolean? = null,
+
+    /**
+     * Defines a struct which can be stored and shown to the user on payment success. See LUD-09.
+     */
     val successAction: Map<String, String>? = null,
-) {
-    fun toJson() = serialFormat.encodeToString(this)
+) : PayReqResponse {
+    override fun toJson() = serialFormat.encodeToString(this)
+
+    override fun isUmaResponse() = payeeData != null &&
+        payeeData.payeeCompliance() != null &&
+        payeeData.identifier() != null &&
+        paymentInfo != null
 
     fun signablePayload(payerIdentifier: String): ByteArray {
         if (payeeData == null) throw IllegalArgumentException("Payee data is required for UMA")
@@ -43,11 +78,25 @@ data class PayReqResponse(
                 .encodeToByteArray()
         }
     }
+}
 
-    fun isUmaResponse() = payeeData != null &&
-        payeeData.payeeCompliance() != null &&
-        payeeData.identifier() != null &&
-        paymentInfo != null
+@Serializable
+internal data class PayReqResponseV0(
+    @SerialName("pr")
+    override val encodedInvoice: String,
+
+    /**
+     * The compliance data from the receiver, including utxo info.
+     */
+    val compliance: PayReqResponseCompliance,
+
+    override val paymentInfo: PayReqResponsePaymentInfo,
+    @EncodeDefault
+    override val routes: List<Route> = emptyList(),
+) : PayReqResponse {
+    override fun isUmaResponse() = true
+
+    override fun toJson() = serialFormat.encodeToString(this)
 }
 
 @Serializable
@@ -83,10 +132,32 @@ data class RouteHop(
  */
 @Serializable
 data class PayReqResponsePaymentInfo(
-    val amount: Long,
+    val amount: Long? = null,
     val currencyCode: String,
     val decimals: Int,
     val multiplier: Double,
-    @SerialName("fee")
     val exchangeFeesMillisatoshi: Long,
 )
+
+/**
+ * The compliance data from the receiver, including utxo info.
+ *
+ * @property utxos A list of UTXOs of channels over which the receiver will likely receive the payment.
+ * @property nodePubKey If known, the public key of the receiver's node. If supported by the sending VASP's compliance
+ *     provider, this will be used to pre-screen the receiver's UTXOs for compliance purposes.
+ * @property utxoCallback The URL that the sender VASP will call to send UTXOs of the channel that the sender used to
+ *     send the payment once it completes.
+ */
+@Serializable
+data class PayReqResponseCompliance(
+    val utxos: List<String>,
+    val nodePubKey: String?,
+    val utxoCallback: String,
+)
+
+object PayReqResponseSerializer : JsonContentPolymorphicSerializer<PayReqResponse>(PayReqResponse::class) {
+    override fun selectDeserializer(element: JsonElement) = when {
+        "compliance" in element.jsonObject -> PayReqResponseV0.serializer()
+        else -> PayReqResponseV1.serializer()
+    }
+}

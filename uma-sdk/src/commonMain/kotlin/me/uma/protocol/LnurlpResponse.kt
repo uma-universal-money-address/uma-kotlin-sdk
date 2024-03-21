@@ -30,7 +30,7 @@ data class LnurlpResponse(
     val minSendable: Long,
     val maxSendable: Long,
     val metadata: String,
-    val currencies: List<Currency>?,
+    val currencies: List<@Serializable(with = CurrencySerializer::class) Currency>?,
     @SerialName("payerData")
     val requiredPayerData: CounterPartyDataOptions?,
     val compliance: LnurlComplianceResponse?,
@@ -77,7 +77,7 @@ data class UmaLnurlpResponse(
     val minSendable: Long,
     val maxSendable: Long,
     val metadata: String,
-    val currencies: List<Currency>,
+    val currencies: List<@Serializable(with = CurrencySerializer::class) Currency>,
     @SerialName("payerData")
     val requiredPayerData: CounterPartyDataOptions,
     val compliance: LnurlComplianceResponse,
