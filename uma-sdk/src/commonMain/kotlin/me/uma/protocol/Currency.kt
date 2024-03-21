@@ -120,7 +120,6 @@ internal data class CurrencyV1(
     override fun minSendable() = convertible.min
 
     override fun maxSendable() = convertible.max
-
 }
 
 @Serializable
@@ -149,7 +148,6 @@ internal data class CurrencyV0(
     override fun minSendable() = minSendable
 
     override fun maxSendable() = maxSendable
-
 }
 
 /**
