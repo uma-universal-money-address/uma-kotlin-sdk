@@ -1,13 +1,14 @@
 package me.uma
 
+import me.uma.utils.serialFormat
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
-import me.uma.utils.serialFormat
 
-const val MAJOR_VERSION = 0
-const val MINOR_VERSION = 3
+const val MAJOR_VERSION = 1
+const val MINOR_VERSION = 0
 const val UMA_VERSION_STRING = "$MAJOR_VERSION.$MINOR_VERSION"
+val backCompatVersions = listOf("0.3")
 
 /**
  * The supported major versions of this UMA SDK.
@@ -15,7 +16,7 @@ const val UMA_VERSION_STRING = "$MAJOR_VERSION.$MINOR_VERSION"
  * NOTE: In the future, we may want to support multiple major versions in the same SDK, but for now, this keeps
  * things simple.
  */
-fun supportedMajorVersions() = setOf(MAJOR_VERSION)
+fun supportedMajorVersions() = setOf(MAJOR_VERSION) + backCompatVersions.map { Version.parse(it).major }
 
 data class Version(val major: Int, val minor: Int) : Comparable<Version> {
     override fun compareTo(other: Version): Int {
@@ -75,7 +76,7 @@ fun selectHighestSupportedVersion(otherVaspSupportedMajorVersions: List<Int>): S
 }
 
 private fun getHighestSupportedVersionForMajorVersion(majorVersion: Int): String? {
-    // Note that this also only supports a single major version for now. If we support more than one major version in
-    // the future, we'll need to change this.
-    return if (majorVersion == MAJOR_VERSION) UMA_VERSION_STRING else null
+    if (majorVersion == MAJOR_VERSION) return UMA_VERSION_STRING
+
+    return backCompatVersions.find { Version.parse(it).major == majorVersion }
 }
