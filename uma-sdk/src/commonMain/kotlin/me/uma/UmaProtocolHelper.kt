@@ -2,6 +2,10 @@
 
 package me.uma
 
+import me.uma.crypto.Secp256k1
+import me.uma.protocol.*
+import me.uma.utils.isDomainLocalhost
+import me.uma.utils.serialFormat
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 import kotlin.math.roundToLong
@@ -18,10 +22,6 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.encodeToJsonElement
-import me.uma.crypto.Secp256k1
-import me.uma.protocol.*
-import me.uma.utils.isDomainLocalhost
-import me.uma.utils.serialFormat
 
 /**
  * A helper class for interacting with the UMA protocol. It provides methods for creating and verifying UMA requests
@@ -698,7 +698,8 @@ class UmaProtocolHelper @JvmOverloads constructor(
                     receiverNodePubKey,
                     receivingVaspPrivateKey!!,
                     payerIdentifier = query.payerData!!.identifier()!!,
-                    payeeIdentifier = payeeData?.identifier() ?: "",
+                    payeeIdentifier = payeeData?.identifier()
+                        ?: throw IllegalArgumentException("Payee identifier is required for UMA"),
                     utxoCallback ?: "",
                 ),
             )
