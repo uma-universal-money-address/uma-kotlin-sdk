@@ -1,9 +1,9 @@
 package me.uma
 
-import me.uma.utils.serialFormat
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
+import me.uma.utils.serialFormat
 
 const val MAJOR_VERSION = 1
 const val MINOR_VERSION = 0
