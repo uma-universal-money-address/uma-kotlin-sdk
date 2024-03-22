@@ -80,8 +80,9 @@ internal data class PayReqResponseV1(
     }
 }
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
-internal data class PayReqResponseV0 @OptIn(ExperimentalSerializationApi::class) constructor(
+internal data class PayReqResponseV0 constructor(
     @SerialName("pr")
     override val encodedInvoice: String,
 
