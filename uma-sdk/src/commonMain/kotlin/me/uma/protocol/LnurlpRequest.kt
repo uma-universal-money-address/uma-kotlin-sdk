@@ -107,6 +107,10 @@ data class LnurlpRequest(
             val timestamp = urlBuilder.parameters["timestamp"]?.toLong()
             val umaVersion = urlBuilder.parameters["umaVersion"]
 
+            if (umaVersion != null && !isVersionSupported(umaVersion)) {
+                throw UnsupportedVersionException(umaVersion)
+            }
+
             if (vaspDomain == null ||
                 nonce == null ||
                 signature == null ||
@@ -115,10 +119,6 @@ data class LnurlpRequest(
                 umaVersion == null
             ) {
                 throw IllegalArgumentException("Invalid URL. Missing param: $url")
-            }
-
-            if (!isVersionSupported(umaVersion)) {
-                throw UnsupportedVersionException(umaVersion)
             }
 
             return LnurlpRequest(

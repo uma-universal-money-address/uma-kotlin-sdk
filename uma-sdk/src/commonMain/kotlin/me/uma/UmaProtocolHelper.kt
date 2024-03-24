@@ -698,7 +698,8 @@ class UmaProtocolHelper @JvmOverloads constructor(
                     receiverNodePubKey,
                     receivingVaspPrivateKey!!,
                     payerIdentifier = query.payerData!!.identifier()!!,
-                    payeeIdentifier = payeeData?.identifier() ?: "",
+                    payeeIdentifier = payeeData?.identifier()
+                        ?: throw IllegalArgumentException("Payee identifier is required for UMA"),
                     utxoCallback ?: "",
                 ),
             )

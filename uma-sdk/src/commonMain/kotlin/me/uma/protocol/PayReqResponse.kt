@@ -37,6 +37,7 @@ sealed interface PayReqResponse {
 internal data class PayReqResponseV1(
     @SerialName("pr")
     override val encodedInvoice: String,
+    @SerialName("converted")
     override val paymentInfo: PayReqResponsePaymentInfo?,
 
     /**
@@ -80,8 +81,9 @@ internal data class PayReqResponseV1(
     }
 }
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
-internal data class PayReqResponseV0(
+internal data class PayReqResponseV0 constructor(
     @SerialName("pr")
     override val encodedInvoice: String,
 
