@@ -2,6 +2,10 @@
 
 package me.uma
 
+import me.uma.crypto.Secp256k1
+import me.uma.protocol.*
+import me.uma.utils.isDomainLocalhost
+import me.uma.utils.serialFormat
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 import kotlin.math.roundToLong
@@ -18,10 +22,6 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.encodeToJsonElement
-import me.uma.crypto.Secp256k1
-import me.uma.protocol.*
-import me.uma.utils.isDomainLocalhost
-import me.uma.utils.serialFormat
 
 /**
  * A helper class for interacting with the UMA protocol. It provides methods for creating and verifying UMA requests
@@ -704,22 +704,13 @@ class UmaProtocolHelper @JvmOverloads constructor(
                 ),
             )
         }
-        val paymentInfo = if (
-            receivingCurrencyCode != null &&
+        val hasPaymentInfo = receivingCurrencyCode != null &&
             receivingCurrencyDecimals != null &&
             conversionRate != null
-        ) {
-            PayReqResponsePaymentInfo(
-                amount = receivingCurrencyAmount,
-                currencyCode = receivingCurrencyCode,
-                decimals = receivingCurrencyDecimals,
-                multiplier = conversionRate,
-                exchangeFeesMillisatoshi = receiverFeesMillisats ?: 0,
-            )
-        } else {
-            null
-        }
         if (Version.parse(senderUmaVersion).major < 1) {
+            if (!hasPaymentInfo) {
+                throw IllegalArgumentException("Payment info is required for UMAv0")
+            }
             return PayReqResponseV0(
                 encodedInvoice = invoice,
                 compliance = PayReqResponseCompliance(
@@ -727,13 +718,24 @@ class UmaProtocolHelper @JvmOverloads constructor(
                     nodePubKey = receiverNodePubKey,
                     utxoCallback = utxoCallback ?: "",
                 ),
-                paymentInfo = paymentInfo ?: throw IllegalArgumentException("Payment info is required for UMAv0"),
+                paymentInfo = V0PayReqResponsePaymentInfo(
+                    currencyCode = receivingCurrencyCode!!,
+                    decimals = receivingCurrencyDecimals!!,
+                    multiplier = conversionRate!!,
+                    exchangeFeesMillisatoshi = receiverFeesMillisats ?: 0,
+                ),
             )
         }
         return PayReqResponseV1(
             encodedInvoice = invoice,
             payeeData = if (query.isUmaRequest()) JsonObject(mutablePayeeData) else null,
-            paymentInfo = paymentInfo,
+            paymentInfo = if (hasPaymentInfo) V1PayReqResponsePaymentInfo(
+                currencyCode = receivingCurrencyCode!!,
+                decimals = receivingCurrencyDecimals!!,
+                multiplier = conversionRate!!,
+                exchangeFeesMillisatoshi = receiverFeesMillisats ?: 0,
+                amount = receivingCurrencyAmount,
+            ) else null,
             disposable = disposable,
             successAction = successAction,
         )
