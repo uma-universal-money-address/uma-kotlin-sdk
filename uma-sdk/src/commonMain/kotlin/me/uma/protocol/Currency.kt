@@ -9,7 +9,6 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
 import me.uma.UMA_VERSION_STRING
 import me.uma.Version
-import kotlinx.serialization.json.Json
 
 sealed interface Currency {
     /**

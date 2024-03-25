@@ -169,7 +169,7 @@ internal data class V0PayReqResponsePaymentInfo(
     override val decimals: Int,
     override val multiplier: Double,
     override val exchangeFeesMillisatoshi: Long,
-): PayReqResponsePaymentInfo {
+) : PayReqResponsePaymentInfo {
     override val amount: Long? = null
 }
 

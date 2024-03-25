@@ -2,10 +2,6 @@
 
 package me.uma
 
-import me.uma.crypto.Secp256k1
-import me.uma.protocol.*
-import me.uma.utils.isDomainLocalhost
-import me.uma.utils.serialFormat
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 import kotlin.math.roundToLong
@@ -22,6 +18,10 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.encodeToJsonElement
+import me.uma.crypto.Secp256k1
+import me.uma.protocol.*
+import me.uma.utils.isDomainLocalhost
+import me.uma.utils.serialFormat
 
 /**
  * A helper class for interacting with the UMA protocol. It provides methods for creating and verifying UMA requests
@@ -729,13 +729,17 @@ class UmaProtocolHelper @JvmOverloads constructor(
         return PayReqResponseV1(
             encodedInvoice = invoice,
             payeeData = if (query.isUmaRequest()) JsonObject(mutablePayeeData) else null,
-            paymentInfo = if (hasPaymentInfo) V1PayReqResponsePaymentInfo(
-                currencyCode = receivingCurrencyCode!!,
-                decimals = receivingCurrencyDecimals!!,
-                multiplier = conversionRate!!,
-                exchangeFeesMillisatoshi = receiverFeesMillisats ?: 0,
-                amount = receivingCurrencyAmount,
-            ) else null,
+            paymentInfo = if (hasPaymentInfo) {
+                V1PayReqResponsePaymentInfo(
+                    currencyCode = receivingCurrencyCode!!,
+                    decimals = receivingCurrencyDecimals!!,
+                    multiplier = conversionRate!!,
+                    exchangeFeesMillisatoshi = receiverFeesMillisats ?: 0,
+                    amount = receivingCurrencyAmount,
+                )
+            } else {
+                null
+            },
             disposable = disposable,
             successAction = successAction,
         )
