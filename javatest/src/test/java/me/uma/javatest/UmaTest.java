@@ -1,6 +1,10 @@
 package me.uma.javatest;
 
 import kotlin.coroutines.Continuation;
+import kotlinx.serialization.json.Json;
+import kotlinx.serialization.json.JsonElement;
+import kotlinx.serialization.json.JsonElementKt;
+import kotlinx.serialization.json.JsonObject;
 import me.uma.*;
 import me.uma.protocol.*;
 import org.jetbrains.annotations.NotNull;
@@ -272,7 +276,7 @@ public class UmaTest {
                 "USD",
                 2,
                 12345.0,
-                0L,
+                5L,
                 List.of(),
                 null,
                 "",
@@ -289,6 +293,9 @@ public class UmaTest {
                 response, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
                 "$alice@vasp1.com", new InMemoryNonceCache(1L)));
         String responseJson = response.toJson();
+        JsonObject json = Json.Default.decodeFromString(JsonObject.Companion.serializer(), responseJson);
+        JsonObject paymentInfo = JsonElementKt.getJsonObject(json.get("converted"));
+        assertEquals(5, JsonElementKt.getInt(JsonElementKt.getJsonPrimitive(paymentInfo.get("fee"))));
         PayReqResponse parsedResponse = umaProtocolHelper.parseAsPayReqResponse(responseJson);
         assertNotNull(parsedResponse);
         assertEquals(response, parsedResponse);

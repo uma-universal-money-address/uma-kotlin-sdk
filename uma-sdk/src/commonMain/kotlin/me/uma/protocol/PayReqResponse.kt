@@ -38,7 +38,7 @@ internal data class PayReqResponseV1(
     @SerialName("pr")
     override val encodedInvoice: String,
     @SerialName("converted")
-    override val paymentInfo: PayReqResponsePaymentInfo?,
+    override val paymentInfo: V1PayReqResponsePaymentInfo?,
 
     /**
      * The data about the receiver that the sending VASP requested in the payreq request.
@@ -92,7 +92,7 @@ internal data class PayReqResponseV0 constructor(
      */
     val compliance: PayReqResponseCompliance,
 
-    override val paymentInfo: PayReqResponsePaymentInfo,
+    override val paymentInfo: V0PayReqResponsePaymentInfo,
     @EncodeDefault
     override val routes: List<Route> = emptyList(),
 ) : PayReqResponse {
@@ -117,29 +117,61 @@ data class RouteHop(
 
 /**
  * The payment info from the receiver.
- *
- * @property amount The amount that the receiver will receive in the smallest unit of the specified currency.
- * @property currencyCode The currency code that the receiver will receive for this payment.
- * @property decimals Number of digits after the decimal point for the receiving currency. For example, in USD, by
- *     convention, there are 2 digits for cents - $5.95. In this case, `decimals` would be 2. This should align with
- *     the currency's `decimals` field in the LNURLP response. It is included here for convenience. See
- *     [UMAD-04](https://github.com/uma-universal-money-address/protocol/blob/main/umad-04-lnurlp-response.md) for
- *     details, edge cases, and examples.
- * @property multiplier The conversion rate. It is the number of millisatoshis that the receiver will receive for 1
- *     unit of the specified currency (eg: cents in USD). In this context, this is just for convenience. The conversion
- *     rate is also baked into the invoice amount itself. Specifically:
- *     `invoiceAmount = amount * multiplier + exchangeFeesMillisatoshi`
- * @property exchangeFeesMillisatoshi The fees charged (in millisats) by the receiving VASP for this transaction. This
- * 	   is separate from the [multiplier].
  */
+sealed interface PayReqResponsePaymentInfo {
+    /**
+     * The amount that the receiver will receive in the smallest unit of the specified currency.
+     */
+    val amount: Long?
+
+    /**
+     * The currency code that the receiver will receive for this payment.
+     */
+    val currencyCode: String
+
+    /**
+     * Number of digits after the decimal point for the receiving currency. For example, in USD, by
+     * convention, there are 2 digits for cents - $5.95. In this case, `decimals` would be 2. This should align with
+     * the currency's `decimals` field in the LNURLP response. It is included here for convenience. See
+     * [UMAD-04](https://github.com/uma-universal-money-address/protocol/blob/main/umad-04-lnurlp-response.md) for
+     * details, edge cases, and examples.
+     */
+    val decimals: Int
+
+    /**
+     * The conversion rate. It is the number of millisatoshis that the receiver will receive for 1
+     * unit of the specified currency (eg: cents in USD). In this context, this is just for convenience. The conversion
+     * rate is also baked into the invoice amount itself. Specifically:
+     * `invoiceAmount = amount * multiplier + exchangeFeesMillisatoshi`
+     */
+    val multiplier: Double
+
+    /**
+     * The fees charged (in millisats) by the receiving VASP for this transaction. This
+     * is separate from the [multiplier].
+     */
+    val exchangeFeesMillisatoshi: Long
+}
+
 @Serializable
-data class PayReqResponsePaymentInfo(
-    val amount: Long? = null,
-    val currencyCode: String,
-    val decimals: Int,
-    val multiplier: Double,
-    val exchangeFeesMillisatoshi: Long,
-)
+internal data class V1PayReqResponsePaymentInfo(
+    override val amount: Long? = null,
+    override val currencyCode: String,
+    override val decimals: Int,
+    override val multiplier: Double,
+    @SerialName("fee")
+    override val exchangeFeesMillisatoshi: Long,
+) : PayReqResponsePaymentInfo
+
+@Serializable
+internal data class V0PayReqResponsePaymentInfo(
+    override val currencyCode: String,
+    override val decimals: Int,
+    override val multiplier: Double,
+    override val exchangeFeesMillisatoshi: Long,
+) : PayReqResponsePaymentInfo {
+    override val amount: Long? = null
+}
 
 /**
  * The compliance data from the receiver, including utxo info.
