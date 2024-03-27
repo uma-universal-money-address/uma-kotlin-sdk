@@ -222,7 +222,11 @@ internal object PayRequestV1Serializer : KSerializer<PayRequestV1> {
                 val index = decodeElementIndex(descriptor)
                 if (index == CompositeDecoder.DECODE_DONE) break
                 when (index) {
-                    0 -> receivingCurrencyCode = decodeNullableSerializableElement(descriptor, index, String.serializer().nullable)
+                    0 -> receivingCurrencyCode = decodeNullableSerializableElement(
+                        descriptor,
+                        index,
+                        String.serializer().nullable,
+                    )
                     1 -> amount = decodeStringElement(descriptor, index)
                     2 -> payerData = decodeSerializableElement(descriptor, index, PayerData.serializer())
                     3 -> requestedPayeeData = decodeNullableSerializableElement(
