@@ -27,11 +27,11 @@ sealed interface PayReqResponse {
      */
     val routes: List<Route>
 
-    fun getPayeeData(): PayeeData?
+    fun payeeData(): PayeeData?
 
-    fun getDisposable(): Boolean?
+    fun disposable(): Boolean?
 
-    fun getSuccessAction(): Map<String, String>?
+    fun successAction(): Map<String, String>?
 
     fun isUmaResponse(): Boolean
 
@@ -68,11 +68,11 @@ internal data class PayReqResponseV1(
      */
     val successAction: Map<String, String>? = null,
 ) : PayReqResponse {
-    override fun getPayeeData() = payeeData
+    override fun payeeData() = payeeData
 
-    override fun getDisposable() = disposable
+    override fun disposable() = disposable
 
-    override fun getSuccessAction() = successAction
+    override fun successAction() = successAction
 
     override fun toJson() = serialFormat.encodeToString(this)
 
@@ -108,11 +108,11 @@ internal data class PayReqResponseV0 constructor(
     @EncodeDefault
     override val routes: List<Route> = emptyList(),
 ) : PayReqResponse {
-    override fun getPayeeData(): PayeeData? = null
+    override fun payeeData(): PayeeData? = null
 
-    override fun getDisposable() = null
+    override fun disposable() = null
 
-    override fun getSuccessAction() = null
+    override fun successAction() = null
 
     override fun isUmaResponse() = true
 

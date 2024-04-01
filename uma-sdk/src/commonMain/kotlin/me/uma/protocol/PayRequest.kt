@@ -51,7 +51,7 @@ sealed interface PayRequest {
 
     fun requestedPayeeData(): CounterPartyDataOptions?
 
-    fun getComment(): String?
+    fun comment(): String?
 
     fun toQueryParamMap(): Map<String, List<String>>
 
@@ -125,7 +125,7 @@ internal data class PayRequestV1(
 
     override fun requestedPayeeData(): CounterPartyDataOptions? = requestedPayeeData
 
-    override fun getComment(): String? = comment
+    override fun comment(): String? = comment
 
     override fun toQueryParamMap(): Map<String, List<String>> {
         val amountStr = if (sendingCurrencyCode != null) {
@@ -165,7 +165,7 @@ internal data class PayRequestV0(
 
     override fun requestedPayeeData() = null
 
-    override fun getComment(): String? = null
+    override fun comment(): String? = null
 
     override fun signablePayload() =
         payerData.compliance()?.let {
