@@ -1,14 +1,6 @@
 package me.uma.protocol
 
 import kotlinx.serialization.*
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.buildClassSerialDescriptor
-import kotlinx.serialization.descriptors.element
-import kotlinx.serialization.encoding.CompositeDecoder
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.encoding.decodeStructure
-import kotlinx.serialization.encoding.encodeStructure
 import me.uma.utils.serialFormat
 
 /**
@@ -25,6 +17,11 @@ import me.uma.utils.serialFormat
  * @property umaVersion The version of the UMA protocol that VASP2 has chosen for this transaction based on its own
  *     support and VASP1's specified preference in the LnurlpRequest. For the version negotiation flow, see
  * 	   https://static.swimlanes.io/87f5d188e080cb8e0494e46f80f2ae74.png
+ * @property commentCharsAllowed The number of characters that the sender can include in the comment field of the pay
+ *     request.
+ * @property nostrPubkey An optional nostr pubkey used for nostr zaps (NIP-57). If set, it should be a valid
+ *     BIP-340 public key in hex format.
+ * @property allowsNostr Should be set to true if the receiving VASP allows nostr zaps (NIP-57).
  */
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
@@ -33,99 +30,64 @@ data class LnurlpResponse(
     val minSendable: Long,
     val maxSendable: Long,
     val metadata: String,
-    val currencies: List<Currency>,
+    val currencies: List<@Serializable(with = CurrencySerializer::class) Currency>?,
     @SerialName("payerData")
-    val requiredPayerData: PayerDataOptions,
+    val requiredPayerData: CounterPartyDataOptions?,
+    val compliance: LnurlComplianceResponse?,
+    val umaVersion: String?,
+    @SerialName("commentAllowed")
+    val commentCharsAllowed: Int? = null,
+    val nostrPubkey: String? = null,
+    val allowsNostr: Boolean? = null,
+    @EncodeDefault
+    val tag: String = "payRequest",
+) {
+    fun asUmaResponse(): UmaLnurlpResponse? =
+        if (
+            currencies != null &&
+            requiredPayerData != null &&
+            compliance != null &&
+            umaVersion != null
+        ) {
+            UmaLnurlpResponse(
+                callback,
+                minSendable,
+                maxSendable,
+                metadata,
+                currencies,
+                requiredPayerData,
+                compliance,
+                umaVersion,
+                commentCharsAllowed,
+                nostrPubkey,
+                allowsNostr,
+                tag,
+            )
+        } else {
+            null
+        }
+
+    fun toJson() = serialFormat.encodeToString(this)
+}
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class UmaLnurlpResponse(
+    val callback: String,
+    val minSendable: Long,
+    val maxSendable: Long,
+    val metadata: String,
+    val currencies: List<@Serializable(with = CurrencySerializer::class) Currency>,
+    @SerialName("payerData")
+    val requiredPayerData: CounterPartyDataOptions,
     val compliance: LnurlComplianceResponse,
     val umaVersion: String,
+    @SerialName("commentAllowed")
+    val commentCharsAllowed: Int? = null,
+    val nostrPubkey: String? = null,
+    val allowsNostr: Boolean? = null,
     @EncodeDefault
     val tag: String = "payRequest",
 ) {
     fun toJson() = serialFormat.encodeToString(this)
-}
-
-@Serializable(with = PayerDataOptionsSerializer::class)
-data class PayerDataOptions(
-    val nameRequired: Boolean,
-    val emailRequired: Boolean,
-    val complianceRequired: Boolean,
-) {
-    fun toJson() = serialFormat.encodeToString(this)
-}
-
-@Serializable
-data class PayerDataJsonField(
-    val mandatory: Boolean,
-)
-
-// Custom serializer for PayerDataOptions
-class PayerDataOptionsSerializer : KSerializer<PayerDataOptions> {
-    override val descriptor: SerialDescriptor
-        get() = buildClassSerialDescriptor("PayerDataOptions") {
-            element<PayerDataJsonField>("identifier", isOptional = true)
-            element<PayerDataJsonField>("name", isOptional = true)
-            element<PayerDataJsonField>("email", isOptional = true)
-            element<PayerDataJsonField>("compliance", isOptional = true)
-        }
-
-    override fun serialize(encoder: Encoder, value: PayerDataOptions) {
-        encoder.encodeStructure(descriptor) {
-            encodeSerializableElement(descriptor, 0, PayerDataJsonField.serializer(), PayerDataJsonField(true))
-            encodeSerializableElement(
-                descriptor,
-                1,
-                PayerDataJsonField.serializer(),
-                PayerDataJsonField(value.nameRequired),
-            )
-            encodeSerializableElement(
-                descriptor,
-                2,
-                PayerDataJsonField.serializer(),
-                PayerDataJsonField(value.emailRequired),
-            )
-            encodeSerializableElement(
-                descriptor,
-                3,
-                PayerDataJsonField.serializer(),
-                PayerDataJsonField(value.complianceRequired),
-            )
-        }
-    }
-
-    override fun deserialize(decoder: Decoder): PayerDataOptions {
-        return decoder.decodeStructure(descriptor) {
-            var nameRequired = false
-            var emailRequired = false
-            var complianceRequired = false
-            while (true) {
-                when (val index = decodeElementIndex(descriptor)) {
-                    0 -> {
-                        val identifier = decodeSerializableElement(descriptor, 0, PayerDataJsonField.serializer())
-                        if (!identifier.mandatory) {
-                            throw IllegalArgumentException("PayerDataOptions.identifier must be mandatory")
-                        }
-                    }
-
-                    1 -> {
-                        val name = decodeSerializableElement(descriptor, 1, PayerDataJsonField.serializer())
-                        nameRequired = name.mandatory
-                    }
-
-                    2 -> {
-                        val email = decodeSerializableElement(descriptor, 2, PayerDataJsonField.serializer())
-                        emailRequired = email.mandatory
-                    }
-
-                    3 -> {
-                        val compliance = decodeSerializableElement(descriptor, 3, PayerDataJsonField.serializer())
-                        complianceRequired = compliance.mandatory
-                    }
-
-                    CompositeDecoder.DECODE_DONE -> break
-                    else -> error("Unexpected index: $index")
-                }
-            }
-            PayerDataOptions(nameRequired, emailRequired, complianceRequired)
-        }
-    }
 }
