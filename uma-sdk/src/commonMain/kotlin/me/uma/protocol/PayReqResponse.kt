@@ -1,10 +1,10 @@
 package me.uma.protocol
 
-import me.uma.utils.serialFormat
 import kotlinx.serialization.*
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
+import me.uma.utils.serialFormat
 
 /**
  * The response sent by the receiver to the sender to provide an invoice.

@@ -1,15 +1,15 @@
 package me.uma
 
-import me.uma.crypto.Secp256k1
-import me.uma.crypto.hexToByteArray
-import me.uma.protocol.*
-import me.uma.utils.serialFormat
 import kotlin.test.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import me.uma.crypto.Secp256k1
+import me.uma.crypto.hexToByteArray
+import me.uma.protocol.*
+import me.uma.utils.serialFormat
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UmaTests {

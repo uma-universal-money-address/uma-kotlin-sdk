@@ -1,9 +1,9 @@
 package me.uma.utils
 
-import me.uma.protocol.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
+import me.uma.protocol.*
 
 val module = SerializersModule {
     polymorphic(Currency::class, CurrencyV1::class, CurrencyV1.serializer())

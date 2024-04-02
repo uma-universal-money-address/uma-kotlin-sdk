@@ -1,6 +1,5 @@
 package me.uma.protocol
 
-import me.uma.utils.serialFormat
 import kotlinx.serialization.*
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.nullable
@@ -12,6 +11,7 @@ import kotlinx.serialization.encoding.*
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
+import me.uma.utils.serialFormat
 
 /**
  * The request sent by the sender to the receiver to retrieve an invoice.
@@ -167,7 +167,7 @@ internal data class PayRequestV0(
         payerData.compliance()?.let {
             "${payerData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}".encodeToByteArray()
         } ?: payerData.identifier()?.encodeToByteArray()
-        ?: throw IllegalArgumentException("Payer identifier is required for UMA")
+            ?: throw IllegalArgumentException("Payer identifier is required for UMA")
 
     override fun toJson() = serialFormat.encodeToString(this)
 

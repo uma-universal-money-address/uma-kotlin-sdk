@@ -1,7 +1,7 @@
 package me.uma.protocol
 
-import me.uma.utils.serialFormat
 import kotlinx.serialization.*
+import me.uma.utils.serialFormat
 
 /**
  * Response from VASP2 to the [LnurlpRequest].

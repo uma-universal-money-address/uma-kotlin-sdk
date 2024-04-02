@@ -1,13 +1,13 @@
 package me.uma.protocol
 
-import me.uma.utils.ByteArrayAsHexSerializer
-import me.uma.utils.X509CertificateSerializer
-import me.uma.utils.serialFormat
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.interfaces.ECPublicKey
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
+import me.uma.utils.ByteArrayAsHexSerializer
+import me.uma.utils.X509CertificateSerializer
+import me.uma.utils.serialFormat
 
 /**
  * Response from another VASP when requesting public keys.
