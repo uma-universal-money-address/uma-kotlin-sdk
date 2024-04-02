@@ -27,6 +27,7 @@ import me.uma.utils.serialFormat
  * A helper class for interacting with the UMA protocol. It provides methods for creating and verifying UMA requests
  * and responses.
  */
+@OptIn(ExperimentalStdlibApi::class)
 class UmaProtocolHelper @JvmOverloads constructor(
     private val publicKeyCache: PublicKeyCache = InMemoryPublicKeyCache(),
     private val umaRequester: UmaRequester = KtorUmaRequester(),

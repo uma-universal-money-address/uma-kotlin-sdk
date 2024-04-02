@@ -1,16 +1,12 @@
 package me.uma.protocol
 
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import kotlinx.serialization.*
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.descriptors.element
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.encoding.*
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement
@@ -233,6 +229,7 @@ internal object PayRequestV1Serializer : KSerializer<PayRequestV1> {
                         index,
                         String.serializer().nullable,
                     )
+
                     1 -> amount = decodeStringElement(descriptor, index)
                     2 -> payerData = decodeSerializableElement(descriptor, index, PayerData.serializer())
                     3 -> requestedPayeeData = decodeNullableSerializableElement(
