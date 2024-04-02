@@ -139,4 +139,43 @@ class UmaTests {
             compliancePayerData,
         )
     }
+
+    @Test
+    fun `test isUmaLnurlpQuery future-proofing`() {
+        val umaLnurlpQuery =
+            "https://example.com/.well-known/lnurlp/\$bob?vaspDomain=example.com&nonce=123&signature=123&" +
+                "isSubjectToTravelRule=true&timestamp=123&umaVersion=100.0"
+        assertEquals(true, UmaProtocolHelper().isUmaLnurlpQuery(umaLnurlpQuery))
+    }
+
+    @Test
+    fun `test serialization nulls`() = runTest {
+        // Missing nodePubKey and encryptedTravelRuleInfo:
+        val jsonCompliancePayerData = """
+            {
+                "utxos": ["utxo1", "utxo2"],
+                "kycStatus": "VERIFIED",
+                "utxoCallback": "utxoCallback",
+                "signature": "signature",
+                "signatureNonce": "1234",
+                "signatureTimestamp": 1234567,
+                "travelRuleFormat": null
+            }
+        """.trimIndent()
+
+        val compliancePayerData = serialFormat.decodeFromString<CompliancePayerData>(jsonCompliancePayerData)
+        assertEquals(
+            CompliancePayerData(
+                utxos = listOf("utxo1", "utxo2"),
+                kycStatus = KycStatus.VERIFIED,
+                utxoCallback = "utxoCallback",
+                signature = "signature",
+                signatureNonce = "1234",
+                signatureTimestamp = 1234567,
+                encryptedTravelRuleInfo = null,
+                nodePubKey = null,
+            ),
+            compliancePayerData,
+        )
+    }
 }
