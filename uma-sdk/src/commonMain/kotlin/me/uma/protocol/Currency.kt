@@ -2,13 +2,13 @@
 
 package me.uma.protocol
 
+import me.uma.UMA_VERSION_STRING
+import me.uma.Version
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
-import me.uma.UMA_VERSION_STRING
-import me.uma.Version
 
 sealed interface Currency {
     /**
