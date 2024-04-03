@@ -239,13 +239,16 @@ class UmaProtocolHelper @JvmOverloads constructor(
         } else {
             currencyOptions
         }
+        val umaPayerDataOptions = payerDataOptions?.toMutableMap() ?: mutableMapOf()
+        umaPayerDataOptions.putIfAbsent("compliance", CounterPartyDataOption(true))
+        umaPayerDataOptions.putIfAbsent("identifier", CounterPartyDataOption(true))
         return LnurlpResponse(
             callback = callback,
             minSendable = minSendableSats * 1000,
             maxSendable = maxSendableSats * 1000,
             metadata = encodedMetadata,
             currencies = currencies,
-            requiredPayerData = payerDataOptions,
+            requiredPayerData = umaPayerDataOptions,
             compliance = complianceResponse,
             umaVersion = umaVersion,
             commentCharsAllowed = commentCharsAllowed,

@@ -107,9 +107,7 @@ public class UmaTest {
                 CounterPartyData.createCounterPartyDataOptions(
                         Map.of(
                                 "name", false,
-                                "email", false,
-                                "identity", true,
-                                "compliance", true
+                                "email", false
                         )
                 ),
                 List.of(
@@ -135,6 +133,12 @@ public class UmaTest {
         assertNotNull(parsedResponse.asUmaResponse());
         assertEquals(1, parsedResponse.asUmaResponse().getCurrencies().get(0).minSendable());
         assertEquals(10_000_000, parsedResponse.asUmaResponse().getCurrencies().get(0).maxSendable());
+        CounterPartyDataOption complianceOption = parsedResponse.asUmaResponse().getRequiredPayerData().get("compliance");
+        assertNotNull(complianceOption);
+        assertTrue(complianceOption.getMandatory());
+        CounterPartyDataOption identifierOption = parsedResponse.asUmaResponse().getRequiredPayerData().get("identifier");
+        assertNotNull(identifierOption);
+        assertTrue(identifierOption.getMandatory());
         assertTrue(umaProtocolHelper.verifyLnurlpResponseSignature(
                 requireNonNull(parsedResponse.asUmaResponse()), new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
                 new InMemoryNonceCache(1L)));
