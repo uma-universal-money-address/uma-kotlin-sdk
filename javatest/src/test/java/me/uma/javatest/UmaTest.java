@@ -446,8 +446,10 @@ public class UmaTest {
         );
         assertNotNull(callback);
         System.out.println(callback);
+        String json = callback.toJson();
+        PostTransactionCallback parsedCallback = umaProtocolHelper.parseAsPostTransactionCallback(json);
         assertTrue(umaProtocolHelper.verifyPostTransactionCallbackSignature(
-                callback, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
+                parsedCallback, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
                 new InMemoryNonceCache(1L)));
     }
 

@@ -1,5 +1,9 @@
 package me.uma.protocol
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import me.uma.utils.serialFormat
+
 /**
  * Post-payment callbacks exchanged between VASPs.
  *
@@ -9,6 +13,7 @@ package me.uma.protocol
  * @property signatureNonce The nonce used in the signature.
  * @property signatureTimestamp The timestamp used in the signature.
  */
+@Serializable
 data class PostTransactionCallback(
     val utxos: List<UtxoWithAmount>,
     val vaspDomain: String,
@@ -21,4 +26,6 @@ data class PostTransactionCallback(
     }
 
     fun signedWith(signature: String) = copy(signature = signature)
+
+    fun toJson() = serialFormat.encodeToString(this)
 }
