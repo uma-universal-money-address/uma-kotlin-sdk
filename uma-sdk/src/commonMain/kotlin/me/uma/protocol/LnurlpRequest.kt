@@ -111,16 +111,6 @@ data class LnurlpRequest(
                 throw UnsupportedVersionException(umaVersion)
             }
 
-            if (vaspDomain == null ||
-                nonce == null ||
-                signature == null ||
-                isSubjectToTravelRule == null ||
-                timestamp == null ||
-                umaVersion == null
-            ) {
-                throw IllegalArgumentException("Invalid URL. Missing param: $url")
-            }
-
             return LnurlpRequest(
                 receiverAddress,
                 nonce,
