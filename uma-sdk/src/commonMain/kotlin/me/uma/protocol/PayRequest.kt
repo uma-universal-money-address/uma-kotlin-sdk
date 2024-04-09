@@ -49,7 +49,7 @@ sealed interface PayRequest {
 
     fun comment(): String?
 
-    fun toQueryParamMap(): Map<String, List<String>>
+    fun toQueryParamMap(): Map<String, String>
 
     companion object {
         fun fromQueryParamMap(queryMap: Map<String, List<String>>): PayRequest {
@@ -123,21 +123,21 @@ internal data class PayRequestV1(
 
     override fun comment(): String? = comment
 
-    override fun toQueryParamMap(): Map<String, List<String>> {
+    override fun toQueryParamMap(): Map<String, String> {
         val amountStr = if (sendingCurrencyCode != null) {
             "$amount.$sendingCurrencyCode"
         } else {
             amount.toString()
         }
         val map = mutableMapOf(
-            "amount" to listOf(amountStr),
+            "amount" to amountStr,
         )
-        receivingCurrencyCode?.let { map["convert"] = listOf(it) }
-        payerData?.let { map["payerData"] = listOf(serialFormat.encodeToString(it)) }
+        receivingCurrencyCode?.let { map["convert"] = it }
+        payerData?.let { map["payerData"] = serialFormat.encodeToString(it) }
         requestedPayeeData?.let {
-            map["payeeData"] = listOf(serialFormat.encodeToString(it))
+            map["payeeData"] = serialFormat.encodeToString(it)
         }
-        comment?.let { map["comment"] = listOf(it) }
+        comment?.let { map["comment"] = it }
         return map
     }
 }
@@ -172,9 +172,9 @@ internal data class PayRequestV0(
     override fun toJson() = serialFormat.encodeToString(this)
 
     override fun toQueryParamMap() = mapOf(
-        "amount" to listOf(amount.toString()),
-        "convert" to listOf(currencyCode),
-        "payerData" to listOf(serialFormat.encodeToString(payerData)),
+        "amount" to amount.toString(),
+        "convert" to currencyCode,
+        "payerData" to serialFormat.encodeToString(payerData),
     )
 }
 
