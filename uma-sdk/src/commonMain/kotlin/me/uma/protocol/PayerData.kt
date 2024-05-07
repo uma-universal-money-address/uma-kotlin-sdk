@@ -8,6 +8,7 @@ import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -24,10 +25,12 @@ fun createPayerData(
     name: String? = null,
     email: String? = null,
 ): PayerData {
-    val payerDataMap = mutableMapOf(
+    val payerDataMap = mutableMapOf<String, JsonElement>(
         "identifier" to JsonPrimitive(identifier),
-        "compliance" to serialFormat.encodeToJsonElement(compliance),
     )
+    if (compliance != null) {
+        payerDataMap["compliance"] = serialFormat.encodeToJsonElement(compliance)
+    }
     if (name != null) {
         payerDataMap["name"] = JsonPrimitive(name)
     }
