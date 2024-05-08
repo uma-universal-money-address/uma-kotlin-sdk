@@ -6,6 +6,10 @@ import kotlinx.serialization.json.JsonElement;
 import kotlinx.serialization.json.JsonElementKt;
 import kotlinx.serialization.json.JsonObject;
 import me.uma.*;
+import me.uma.crypto.KeyPair;
+import me.uma.crypto.Secp256k1;
+import me.uma.crypto.internal.CryptoException;
+import me.uma.crypto.internal.UmaCryptoKt;
 import me.uma.protocol.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -474,6 +478,25 @@ public class UmaTest {
         assertEquals(certsOnlyResponse, parsedResponse);
         assertArrayEquals(UmaTest.hexToBytes(PUBKEY_HEX), parsedResponse.getSigningPublicKey());
         assertArrayEquals(UmaTest.hexToBytes(PUBKEY_HEX), parsedResponse.getEncryptionPublicKey());
+    }
+
+    @Test
+    public void generateKeysFromCryptoLib() throws CryptoException {
+        KeyPair keyPair = Secp256k1.INSTANCE.generateKeyPair();
+        PubKeyResponse keysOnlyResponse =
+                new PubKeyResponse(keyPair.getPublicKey(), keyPair.getPublicKey());
+        String json = keysOnlyResponse.toJson();
+        PubKeyResponse parsedResponse = umaProtocolHelper.parseAsPubKeyResponse(json);
+        assertNotNull(parsedResponse);
+        assertEquals(keysOnlyResponse, parsedResponse);
+
+        // Ensure that ecies and signing work to validate key parsing.
+        byte[] encrypted = Secp256k1.INSTANCE.encryptEcies("hello".getBytes(), parsedResponse.getEncryptionPublicKey());
+        byte[] decrypted = Secp256k1.INSTANCE.decryptEcies(encrypted, keyPair.getPrivateKey());
+        assertArrayEquals("hello".getBytes(), decrypted);
+
+        byte[] signature = Secp256k1.INSTANCE.signEcdsa("hello".getBytes(), keyPair.getPrivateKey());
+        assertTrue(Secp256k1.INSTANCE.verifyEcdsa("hello".getBytes(), signature, parsedResponse.getSigningPublicKey()));
     }
 
     static byte[] hexToBytes(String hex) {
