@@ -511,7 +511,11 @@ class TestUmaRequester implements UmaRequester {
 class TestUmaInvoiceCreator implements UmaInvoiceCreator {
     @NotNull
     @Override
-    public CompletableFuture<String> createUmaInvoice(long amountMsats, @NotNull String metadata) {
+    public CompletableFuture<String> createUmaInvoice(
+            long amountMsats,
+            @NotNull String metadata,
+            @Nullable String receiverIdentifier
+    ) {
         return CompletableFuture.completedFuture("lnbc12345");
     }
 }
@@ -519,7 +523,11 @@ class TestUmaInvoiceCreator implements UmaInvoiceCreator {
 class TestSyncUmaInvoiceCreator implements SyncUmaInvoiceCreator {
     @NotNull
     @Override
-    public String createUmaInvoice(long amountMsats, @NotNull String metadata) {
+    public String createUmaInvoice(
+            long amountMsats,
+            @NotNull String metadata,
+            @Nullable String receiverIdentifier
+    ) {
         return "lnbc12345";
     }
 }
