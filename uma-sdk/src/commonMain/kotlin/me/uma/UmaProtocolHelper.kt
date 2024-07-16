@@ -896,7 +896,7 @@ interface UmaInvoiceCreator {
     fun createUmaInvoice(
         amountMsats: Long,
         metadata: String,
-        receiverIdentifier: String? = null,
+        receiverIdentifier: String?,
     ): CompletableFuture<String>
 }
 
@@ -914,6 +914,6 @@ interface SyncUmaInvoiceCreator {
     fun createUmaInvoice(
         amountMsats: Long,
         metadata: String,
-        receiverIdentifier: String? = null,
+        receiverIdentifier: String?,
     ): String
 }
