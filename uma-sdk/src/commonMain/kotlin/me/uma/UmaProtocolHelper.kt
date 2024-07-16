@@ -586,8 +586,14 @@ class UmaProtocolHelper @JvmOverloads constructor(
         senderUmaVersion: String = UMA_VERSION_STRING,
     ): PayReqResponse = runBlocking {
         val futureInvoiceCreator = object : UmaInvoiceCreator {
-            override fun createUmaInvoice(amountMsats: Long, metadata: String): CompletableFuture<String> {
-                return coroutineScope.future { invoiceCreator.createUmaInvoice(amountMsats, metadata) }
+            override fun createUmaInvoice(
+                amountMsats: Long,
+                metadata: String,
+                receiverIdentifier: String?,
+            ): CompletableFuture<String> {
+                return coroutineScope.future {
+                    invoiceCreator.createUmaInvoice(amountMsats, metadata, receiverIdentifier)
+                }
             }
         }
         getPayReqResponse(
@@ -693,6 +699,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
                 (query.amount.toDouble() * (conversionRate ?: 1.0) + (receiverFeesMillisats ?: 0)).roundToLong()
             },
             metadata = metadataWithPayerData,
+            receiverIdentifier = payeeData?.identifier(),
         ).await()
         val mutablePayeeData = payeeData?.toMutableMap() ?: mutableMapOf()
         if (query.isUmaRequest()) {
@@ -882,10 +889,15 @@ interface UmaInvoiceCreator {
      *
      * @param amountMsats The amount of the invoice in millisatoshis.
      * @param metadata The metadata that will be added to the invoice's metadata hash field.
+     * @param receiverIdentifier Optional identifier of the receiver.
      * @return The encoded BOLT-11 invoice that should be returned to the sender for the given [PayRequest] wrapped in a
      *     [CompletableFuture].
      */
-    fun createUmaInvoice(amountMsats: Long, metadata: String): CompletableFuture<String>
+    fun createUmaInvoice(
+        amountMsats: Long,
+        metadata: String,
+        receiverIdentifier: String?,
+    ): CompletableFuture<String>
 }
 
 interface SyncUmaInvoiceCreator {
@@ -896,7 +908,12 @@ interface SyncUmaInvoiceCreator {
      *
      * @param amountMsats The amount of the invoice in millisatoshis.
      * @param metadata The metadata that will be added to the invoice's metadata hash field.
+     * @param receiverIdentifier Optional identifier of the receiver.
      * @return The encoded BOLT-11 invoice that should be returned to the sender for the given [PayRequest].
      */
-    fun createUmaInvoice(amountMsats: Long, metadata: String): String
+    fun createUmaInvoice(
+        amountMsats: Long,
+        metadata: String,
+        receiverIdentifier: String?,
+    ): String
 }
