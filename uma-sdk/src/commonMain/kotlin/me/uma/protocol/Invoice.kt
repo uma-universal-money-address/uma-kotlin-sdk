@@ -1,7 +1,19 @@
 package me.uma.protocol
 
-import me.uma.utils.ByteCodeable
 import me.uma.utils.TLVCodeable
+import me.uma.utils.getBoolean
+import me.uma.utils.getByteCodeable
+import me.uma.utils.getNumber
+import me.uma.utils.getString
+import me.uma.utils.getTLV
+import me.uma.utils.lengthOffset
+import me.uma.utils.putByteCodeable
+import me.uma.utils.putBoolean
+import me.uma.utils.putByteArray
+import me.uma.utils.putTLVCodeable
+import me.uma.utils.putNumber
+import me.uma.utils.putString
+import me.uma.utils.valueOffset
 import java.nio.ByteBuffer
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -27,29 +39,14 @@ data class InvoiceCurrency(
             var decimals = -1
             var offset = 0
             while(offset < bytes.size) {
+                val length = bytes[offset.lengthOffset()].toInt()
                 when(bytes[offset].toInt()) {
-                    0 ->  {
-                        val length = bytes[offset+1].toInt()
-                        code = bytes.getTLVString(offset+2, bytes[offset+1].toInt())
-                        offset += 2 + length
-                    }
-                    1 ->  {
-                        val length = bytes[offset+1].toInt()
-                        name = bytes.getTLVString(offset+2, bytes[offset+1].toInt())
-                        offset += 2 + length
-                    }
-                    2 ->  {
-                        val length = bytes[offset+1].toInt()
-                        symbol = bytes.getTLVString(offset+2, bytes[offset+1].toInt())
-                        offset += 2 + length
-                    }
-                    3 -> {
-                        val length = bytes[offset+1].toInt()
-                        decimals = getTLVInt(bytes.slice(offset+2..<offset+2+length))
-                        offset += 2 + length
-                    }
+                    0 -> code = bytes.getString(offset.valueOffset(), length)
+                    1 -> name = bytes.getString(offset.valueOffset(), length)
+                    2 -> symbol = bytes.getString(offset.valueOffset(), length)
+                    3 -> decimals = bytes.getNumber(offset.valueOffset())
                 }
-
+                offset = offset.valueOffset() + length
             }
             return InvoiceCurrency(name, symbol, code, decimals)
         }
@@ -57,12 +54,15 @@ data class InvoiceCurrency(
 
     override fun toTLV(): ByteArray {
         val bytes = ByteBuffer.allocate(
-            6 + name.length + code.length + symbol.length + 3
+            2 + name.length +
+            2 + code.length +
+            2 + symbol.length +
+            3 // for int
         )
-            .putTLVString(0, code)
-            .putTLVString(1, name)
-            .putTLVString(2, symbol)
-            .putTLVNumber(3, decimals)
+            .putString(0, code)
+            .putString(1, name)
+            .putString(2, symbol)
+            .putNumber(3, decimals)
             .array()
         return bytes
     }
@@ -85,15 +85,21 @@ class InvoiceCurrencyTLVSerializer: KSerializer<InvoiceCurrency> {
     )
 }
 
-private fun ByteArray.getTLVString(offset: Int, length: Int): String {
-    val decodedResult = String(
-        slice(offset..<offset+length).toByteArray()
-    )
-    return decodedResult
-}
+@OptIn(ExperimentalSerializationApi::class)
+class InvoiceTLVSerializer: KSerializer<Invoice> {
+    private val delegateSerializer = ByteArraySerializer()
+    override val descriptor = SerialDescriptor("Invoice", delegateSerializer.descriptor)
 
-private fun getTLVInt(bytes: List<Byte>): Int {
-    return bytes[0].toInt()
+    override fun serialize(encoder: Encoder, value: Invoice) {
+        encoder.encodeSerializableValue(
+            delegateSerializer,
+            value.toTLV()
+        )
+    }
+
+    override fun deserialize(decoder: Decoder) = Invoice.fromTLV(
+        decoder.decodeSerializableValue(delegateSerializer)
+    )
 }
 
 @Serializable(with = InvoiceTLVSerializer::class)
@@ -142,45 +148,84 @@ class Invoice(
 ) : TLVCodeable {
     override fun toTLV(): ByteArray {
         val bytes = ByteBuffer.allocate(
-            6 + receiverUma.length + invoiceUUID.length + umaVersion.length + 3
+            1 // TODO, this is too manual
         )
-            .putTLVString(0, receiverUma)
-            .putTLVString(1, invoiceUUID)
-            .putTLVString(2, umaVersion)
-            .putTLVNumber(3, invoiceLimit)
+            .putString(0, receiverUma)
+            .putString(1, invoiceUUID)
+            .putNumber(2, amount)
+            .putTLVCodeable(3, receivingCurrency)
+            .putNumber(4, expiration)
+            .putBoolean(5, isSubjectToTravelRule)
+            .putByteCodeable(6, CounterPartyDataOptionsWrapper(requiredPayerData))
+            .putString(7, umaVersion)
+            .putNumber(8, commentCharsAllowed)
+            .putString(9, senderUma)
+            .putNumber(10, invoiceLimit)
+            .putByteCodeable(11, KycStatusWrapper(kycStatus))
+            .putString(12, callback)
+            .putByteArray(100, signature)
             .array()
         return bytes
     }
-}
 
-private fun ByteBuffer.putTLVString(tag: Int, value: String): ByteBuffer {
-    return put(tag.toByte())
-    .put(value.length.toByte())
-    .put(value.toByteArray())
-}
-
-private fun ByteBuffer.putTLVNumber(tag: Int, value: Int): ByteBuffer {
-    return put(tag.toByte())
-    .put(1)
-    .put(value.toByte())
-}
-
-private fun ByteBuffer.putTLVBoolean(tag: Int, value: Boolean): ByteBuffer {
-    return put(tag.toByte())
-        .put(1)
-        .put(if (value) 1 else 0)
-}
-
-private fun ByteBuffer.putByteCodable(tag: Int, value: ByteCodeable): ByteBuffer {
-    val encodedBytes = value.toBytes()
-    return put(tag.toByte())
-        .put(encodedBytes.size.toByte())
-        .put(encodedBytes)
-}
-
-private fun ByteBuffer.putTLVCodeable(tag: Int, value: TLVCodeable): ByteBuffer {
-    val encodedBytes = value.toTLV()
-    return put(tag.toByte())
-        .put(encodedBytes.size.toByte())
-        .put(encodedBytes)
+    companion object {
+        fun fromTLV(bytes: ByteArray): Invoice {
+            var receiverUma = ""
+            var invoiceUUID = ""
+            var amount = -1
+            var receivingCurrency: InvoiceCurrency
+            var expiration = -1
+            var isSubjectToTravelRule = false
+            var requiredPayerData: CounterPartyDataOptions
+            var umaVersion = ""
+            var commentCharsAllowed = -1
+            var senderUma = ""
+            var invoiceLimit = -1
+            var kycStatus: KycStatus
+            var callback = ""
+            var signature = ByteArray(0)
+            var offset = 0
+            while(offset < bytes.size) {
+                val length = bytes[offset.lengthOffset()].toInt()
+                when(bytes[offset].toInt()) {
+                    0 -> receiverUma = bytes.getString(offset.valueOffset(), length)
+                    1 -> invoiceUUID = bytes.getString(offset.valueOffset(), length)
+                    2 -> amount = bytes.getNumber(offset.valueOffset())
+                    3 -> receivingCurrency = bytes.getTLV(offset.valueOffset(), length, InvoiceCurrency::fromTLV) as InvoiceCurrency
+                    4 -> expiration = bytes.getNumber(offset.valueOffset())
+                    5 -> isSubjectToTravelRule = bytes.getBoolean(offset.valueOffset())
+                    6 -> requiredPayerData = (bytes.getByteCodeable(
+                            offset.valueOffset(),
+                            length,
+                            CounterPartyDataOptionsWrapper::fromBytes) as CounterPartyDataOptionsWrapper
+                        ).options
+                    7 -> umaVersion = bytes.getString(offset.valueOffset(), length)
+                    8 -> commentCharsAllowed = bytes.getNumber(offset.valueOffset())
+                    9 -> senderUma = bytes.getString(offset.valueOffset(), length)
+                    10 -> invoiceLimit = bytes.getNumber(offset.valueOffset())
+                    11 -> kycStatus = (bytes.getByteCodeable(offset.valueOffset(), length, KycStatusWrapper::fromBytes) as KycStatusWrapper).status
+                    12 -> callback = bytes.getString(offset.valueOffset(), length)
+                    100 -> signature = bytes.sliceArray(offset.valueOffset()..< offset.valueOffset()+length
+                    )
+                }
+                offset = offset.valueOffset() + length
+            }
+            return Invoice(
+                receiverUma,
+                invoiceUUID,
+                amount,
+                receivingCurrency,
+                expiration,
+                isSubjectToTravelRule,
+                requiredPayerData,
+                umaVersion,
+                commentCharsAllowed,
+                senderUma,
+                invoiceLimit,
+                kycStatus,
+                callback,
+                signature,
+            )
+        }
+    }
 }
