@@ -4,6 +4,7 @@ import kotlin.test.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import me.uma.crypto.Secp256k1
@@ -14,6 +15,19 @@ import me.uma.utils.serialFormat
 @OptIn(ExperimentalCoroutinesApi::class)
 class UmaTests {
     val keys = Secp256k1.generateKeyPair()
+
+    @Test
+    fun `test create invoice currency`() = runTest {
+        val invoiceCurrency = InvoiceCurrency(
+            "usd",
+            "us dollars",
+            "$",
+            10
+        )
+        val encoded = serialFormat.encodeToString(invoiceCurrency)
+        println(encoded)
+        println("decoded object ${serialFormat.decodeFromString<InvoiceCurrency>(encoded)}")
+    }
 
     @Test
     fun `test create and parse payreq in receiving amount`() = runTest {
