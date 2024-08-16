@@ -1,6 +1,9 @@
 package me.uma.protocol
 
+import io.ktor.utils.io.core.toByteArray
+import me.uma.utils.ByteCodeable
 import me.uma.utils.TLVCodeable
+import me.uma.utils.array
 import me.uma.utils.getBoolean
 import me.uma.utils.getByteCodeable
 import me.uma.utils.getNumber
@@ -14,7 +17,6 @@ import me.uma.utils.putTLVCodeable
 import me.uma.utils.putNumber
 import me.uma.utils.putString
 import me.uma.utils.valueOffset
-import java.nio.ByteBuffer
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -22,6 +24,9 @@ import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import org.bitcoinj.core.Bech32
+
+private const val UMA_BECH32_PREFIX = "uma"
 
 @Serializable(with = InvoiceCurrencyTLVSerializer::class)
 data class InvoiceCurrency(
@@ -54,20 +59,12 @@ data class InvoiceCurrency(
         }
     }
 
-    override fun toTLV(): ByteArray {
-        val bytes = ByteBuffer.allocate(
-            2 + name.length +
-            2 + code.length +
-            2 + symbol.length +
-            3 // for int
-        )
-            .putString(0, code)
-            .putString(1, name)
-            .putString(2, symbol)
-            .putNumber(3, decimals)
-            .array()
-        return bytes
-    }
+    override fun toTLV() = mutableListOf<ByteArray>()
+        .putString(0, code)
+        .putString(1, name)
+        .putString(2, symbol)
+        .putNumber(3, decimals)
+        .array()
 }
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -83,23 +80,6 @@ class InvoiceCurrencyTLVSerializer: KSerializer<InvoiceCurrency> {
     }
 
     override fun deserialize(decoder: Decoder) = InvoiceCurrency.fromTLV(
-        decoder.decodeSerializableValue(delegateSerializer)
-    )
-}
-
-@OptIn(ExperimentalSerializationApi::class)
-class InvoiceTLVSerializer: KSerializer<Invoice> {
-    private val delegateSerializer = ByteArraySerializer()
-    override val descriptor = SerialDescriptor("Invoice", delegateSerializer.descriptor)
-
-    override fun serialize(encoder: Encoder, value: Invoice) {
-        encoder.encodeSerializableValue(
-            delegateSerializer,
-            value.toTLV()
-        )
-    }
-
-    override fun deserialize(decoder: Decoder) = Invoice.fromTLV(
         decoder.decodeSerializableValue(delegateSerializer)
     )
 }
@@ -148,10 +128,8 @@ class Invoice(
     // The signature of the UMA invoice
     val signature: ByteArray,
 ) : TLVCodeable {
-    override fun toTLV(): ByteArray {
-        val bytes = ByteBuffer.allocate(
-           256
-        )
+
+    override fun toTLV() = mutableListOf<ByteArray>()
             .putString(0, receiverUma)
             .putString(1, invoiceUUID)
             .putNumber(2, amount)
@@ -163,16 +141,12 @@ class Invoice(
             .putNumber(8, commentCharsAllowed)
             .putString(9, senderUma)
             .putNumber(10, invoiceLimit)
-            .putByteCodeable(11, KycStatusWrapper(kycStatus))
+            .putByteCodeable(11, InvoiceKycStatus(kycStatus))
             .putString(12, callback)
             .putByteArray(100, signature)
             .array()
-        return bytes
-    }
 
-    fun justForFun() {
-
-    }
+    fun toBech32() = Bech32.encode(Bech32.Encoding.BECH32, UMA_BECH32_PREFIX, this.toTLV())
 
     companion object {
         fun fromTLV(bytes: ByteArray): Invoice {
@@ -194,9 +168,7 @@ class Invoice(
             while(offset < bytes.size) {
                 val length = bytes[offset.lengthOffset()].toInt()
                 when(bytes[offset].toInt()) {
-                    0 -> {
-                        receiverUma = bytes.getString(offset.valueOffset(), length)
-                    }
+                    0 -> receiverUma = bytes.getString(offset.valueOffset(), length)
                     1 -> invoiceUUID = bytes.getString(offset.valueOffset(), length)
                     2 -> amount = bytes.getNumber(offset.valueOffset(), length)
                     3 -> receivingCurrency = bytes.getTLV(offset.valueOffset(), length, InvoiceCurrency::fromTLV) as InvoiceCurrency
@@ -211,7 +183,7 @@ class Invoice(
                     8 -> commentCharsAllowed = bytes.getNumber(offset.valueOffset(), length)
                     9 -> senderUma = bytes.getString(offset.valueOffset(), length)
                     10 -> invoiceLimit = bytes.getNumber(offset.valueOffset(), length)
-                    11 -> kycStatus = (bytes.getByteCodeable(offset.valueOffset(), length, KycStatusWrapper::fromBytes) as KycStatusWrapper).status
+                    11 -> kycStatus = (bytes.getByteCodeable(offset.valueOffset(), length, InvoiceKycStatus::fromBytes) as InvoiceKycStatus).status
                     12 -> callback = bytes.getString(offset.valueOffset(), length)
                     100 -> signature = bytes.sliceArray(offset.valueOffset()..< offset.valueOffset()+length
                     )
@@ -233,6 +205,67 @@ class Invoice(
                 kycStatus = kycStatus,
                 callback = callback,
                 signature = signature,
+            )
+        }
+
+        fun fromBech32(bech32String: String): Invoice {
+            val b32data = Bech32.decode(bech32String)
+            return fromTLV(b32data.data)
+        }
+    }
+}
+
+@OptIn(ExperimentalSerializationApi::class)
+class InvoiceTLVSerializer: KSerializer<Invoice> {
+    private val delegateSerializer = ByteArraySerializer()
+    override val descriptor = SerialDescriptor("Invoice", delegateSerializer.descriptor)
+
+    override fun serialize(encoder: Encoder, value: Invoice) {
+        encoder.encodeSerializableValue(
+            delegateSerializer,
+            value.toTLV()
+        )
+    }
+
+    override fun deserialize(decoder: Decoder) = Invoice.fromTLV(
+        decoder.decodeSerializableValue(delegateSerializer)
+    )
+}
+
+data class InvoiceCounterPartyDataOptions(
+    val options: CounterPartyDataOptions
+) : ByteCodeable {
+    override fun toBytes(): ByteArray {
+        val optionsString = options.map { (key, option) ->
+            "${key}:${ if (option.mandatory) 1 else 0}"
+        }.joinToString(",")
+        return optionsString.toByteArray(Charsets.UTF_8)
+    }
+
+    companion object {
+        fun fromBytes(bytes: ByteArray): InvoiceCounterPartyDataOptions {
+            val optionsString = String(bytes)
+            return InvoiceCounterPartyDataOptions(
+                optionsString.split(",").mapNotNull {
+                    val options = it.split(':')
+                    if (options.size == 2) {
+                        options[0] to CounterPartyDataOption(options[1] == "1")
+                    } else null
+                }.toMap()
+            )
+        }
+    }
+}
+
+data class InvoiceKycStatus(val status: KycStatus): ByteCodeable {
+    override fun toBytes(): ByteArray {
+        return status.rawValue.toByteArray()
+    }
+
+    companion object {
+        fun fromBytes(bytes: ByteArray): InvoiceKycStatus {
+            return InvoiceKycStatus(
+                KycStatus.fromRawValue(bytes.toString(Charsets.UTF_8))
             )
         }
     }

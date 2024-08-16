@@ -5,7 +5,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import me.uma.utils.EnumSerializer
 import me.uma.utils.serialFormat
-import okio.Utf8
 
 @Serializable(with = KycStatusSerializer::class)
 enum class KycStatus(val rawValue: String) {
@@ -28,20 +27,6 @@ enum class KycStatus(val rawValue: String) {
                 "VERIFIED" -> VERIFIED
                 else -> UNKNOWN
             }
-    }
-}
-
-data class KycStatusWrapper(val status: KycStatus): ByteCodeable {
-    override fun toBytes(): ByteArray {
-        return status.rawValue.toByteArray()
-    }
-
-    companion object {
-        fun fromBytes(bytes: ByteArray): KycStatusWrapper {
-            return KycStatusWrapper(
-                KycStatus.fromRawValue(bytes.toString(Charsets.UTF_8))
-            )
-        }
     }
 }
 

@@ -27,7 +27,6 @@ class UmaTests {
             "$",
             10
         )
-        assertTrue(10 in Byte.MIN_VALUE..Byte.MAX_VALUE)
         val encoded = serialFormat.encodeToString(invoiceCurrency)
         val result = serialFormat.decodeFromString<InvoiceCurrency>(encoded)
         assertEquals("usd", result.code)
@@ -38,48 +37,25 @@ class UmaTests {
 
     @Test
     fun `test create invoice`() = runTest {
-        val requiredPayerData = mapOf(
-            "name" to CounterPartyDataOption(false),
-            "email" to CounterPartyDataOption(false),
-            "compliance" to CounterPartyDataOption(true),
-        )
-        val invoiceCurrency = InvoiceCurrency(
-            code = "USD",
-            name = "US Dollar",
-            symbol = "$",
-            decimals = 2,
-        )
-        val invoice = Invoice(
-            receiverUma = "\$foo@bar.com",
-            invoiceUUID = "c7c07fec-cf00-431c-916f-6c13fc4b69f9",
-            amount = 1000,
-            receivingCurrency = invoiceCurrency,
-            expiration = 1000000,
-            isSubjectToTravelRule = true,
-            requiredPayerData = requiredPayerData,
-            commentCharsAllowed = 30,
-            senderUma = "\$other@uma.com",
-            invoiceLimit = 100,
-            umaVersion = "0.3",
-            kycStatus = KycStatus.VERIFIED,
-            callback = "https://example.com/callback",
-            signature = "signature".toByteArray(),
-        )
+        val invoice = createInvoice()
         val serializedInvoice = serialFormat.encodeToString(invoice)
         val result = serialFormat.decodeFromString<Invoice>(serializedInvoice)
-        assertEquals("\$foo@bar.com", result.receiverUma)
-        assertEquals("c7c07fec-cf00-431c-916f-6c13fc4b69f9", result.invoiceUUID)
-        assertEquals(1000, result.amount)
-        assertEquals(1000000, result.expiration)
-        assertEquals(true, result.isSubjectToTravelRule)
-        assertEquals(30, result.commentCharsAllowed)
-        assertEquals("\$other@uma.com", result.senderUma)
-        assertEquals(100, result.invoiceLimit)
-        assertEquals("0.3", result.umaVersion)
-        assertEquals(KycStatus.VERIFIED, result.kycStatus)
-        assertEquals("https://example.com/callback", result.callback)
-        assertEquals(requiredPayerData, result.requiredPayerData)
-        assertEquals(invoiceCurrency, result.receivingCurrency)
+        validateInvoice(invoice, result)
+    }
+
+    @Test
+    fun `test encode invoice as bech32`() = runTest {
+        val invoice = createInvoice()
+        val bech32str = try {
+            invoice.toBech32()
+        } catch (e: IndexOutOfBoundsException) {
+            ""
+        }
+        assertEquals("uma", bech32str.slice(0..2))
+
+        val decodedInvoice = Invoice.fromBech32(bech32str)
+        validateInvoice(invoice, decodedInvoice)
+
     }
 
     @Test
@@ -205,5 +181,52 @@ class UmaTests {
             ),
             compliancePayerData,
         )
+    }
+
+    private fun createInvoice(
+    ): Invoice {
+        val requiredPayerData = mapOf(
+            "name" to CounterPartyDataOption(false),
+            "email" to CounterPartyDataOption(false),
+            "compliance" to CounterPartyDataOption(true),
+        )
+        val invoiceCurrency = InvoiceCurrency(
+            code = "USD",
+            name = "US Dollar",
+            symbol = "$",
+            decimals = 2,
+        )
+        return Invoice(
+            receiverUma = "\$foo@bar.com",
+            invoiceUUID = "c7c07fec-cf00-431c-916f-6c13fc4b69f9",
+            amount = 1000,
+            receivingCurrency = invoiceCurrency,
+            expiration = 1000000,
+            isSubjectToTravelRule = true,
+            requiredPayerData = requiredPayerData,
+            commentCharsAllowed = 30,
+            senderUma = "\$other@uma.com",
+            invoiceLimit = 100,
+            umaVersion = "0.3",
+            kycStatus = KycStatus.VERIFIED,
+            callback = "https://example.com/callback",
+            signature = "signature".toByteArray(),
+        )
+    }
+
+    private fun validateInvoice(preEncodedInvoice: Invoice, decodedInvoice: Invoice) {
+        assertEquals(preEncodedInvoice.receiverUma, decodedInvoice.receiverUma)
+        assertEquals(preEncodedInvoice.invoiceUUID, decodedInvoice.invoiceUUID)
+        assertEquals(preEncodedInvoice.amount, decodedInvoice.amount)
+        assertEquals(preEncodedInvoice.expiration, decodedInvoice.expiration)
+        assertEquals(preEncodedInvoice.isSubjectToTravelRule, decodedInvoice.isSubjectToTravelRule)
+        assertEquals(preEncodedInvoice.commentCharsAllowed, decodedInvoice.commentCharsAllowed)
+        assertEquals(preEncodedInvoice.senderUma, decodedInvoice.senderUma)
+        assertEquals(preEncodedInvoice.invoiceLimit, decodedInvoice.invoiceLimit)
+        assertEquals(preEncodedInvoice.umaVersion, decodedInvoice.umaVersion)
+        assertEquals(preEncodedInvoice.kycStatus, decodedInvoice.kycStatus)
+        assertEquals(preEncodedInvoice.callback, decodedInvoice.callback)
+        assertEquals(preEncodedInvoice.requiredPayerData, decodedInvoice.requiredPayerData)
+        assertEquals(preEncodedInvoice.receivingCurrency, decodedInvoice.receivingCurrency)
     }
 }

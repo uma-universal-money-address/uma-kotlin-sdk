@@ -6,18 +6,22 @@ kotlin = "1.9.0"
 kotlinCoroutines = "1.6.4"
 kotlinxDateTime = "0.4.0"
 kotlinSerializationJson = "1.4.1"
+kotlinReflect = "2.0.0"
 ktlint = "11.3.1"
 ktor = "2.2.3"
 mavenPublish = "0.25.2"
 mockitoCore = "5.5.0"
 taskTree = "2.1.1"
 junit = "4.13.2"
+bitcoinj-core = "0.16.3"
 
 [libraries]
 gradleClasspath-dokka = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 gradleClasspath-ktlint = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlint" }
 gradleClasspath-kotlin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 gradleClasspath-mavenPublish = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "mavenPublish" }
+
+bitcoin-core = { module = "org.bitcoinj:bitcoinj-core", version.ref = "bitcoinj-core" }
 
 task-tree = { module = "com.dorongold.plugins:task-tree", version.ref = "taskTree" }
 
