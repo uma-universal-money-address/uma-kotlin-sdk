@@ -13,7 +13,7 @@ data class CounterPartyDataOption(
 
 typealias CounterPartyDataOptions = Map<String, CounterPartyDataOption>
 
-data class CounterPartyDataOptionsWrapper(
+data class InvoiceCounterPartyDataOptions(
     val options: CounterPartyDataOptions
 ) : ByteCodeable {
     override fun toBytes(): ByteArray {
@@ -24,9 +24,9 @@ data class CounterPartyDataOptionsWrapper(
     }
 
     companion object {
-        fun fromBytes(bytes: ByteArray): CounterPartyDataOptionsWrapper {
+        fun fromBytes(bytes: ByteArray): InvoiceCounterPartyDataOptions {
             val optionsString = String(bytes)
-            return CounterPartyDataOptionsWrapper(
+            return InvoiceCounterPartyDataOptions(
                 optionsString.split(",").mapNotNull {
                     val options = it.split(':')
                     if (options.size == 2) {

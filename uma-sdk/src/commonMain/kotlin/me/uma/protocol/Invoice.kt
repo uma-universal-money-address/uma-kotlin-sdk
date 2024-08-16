@@ -32,6 +32,8 @@ data class InvoiceCurrency(
 ) : TLVCodeable {
 
     companion object {
+        val EMPTY = InvoiceCurrency("","","",0)
+
         fun fromTLV(bytes: ByteArray): InvoiceCurrency {
             var code = ""
             var name = ""
@@ -44,11 +46,11 @@ data class InvoiceCurrency(
                     0 -> code = bytes.getString(offset.valueOffset(), length)
                     1 -> name = bytes.getString(offset.valueOffset(), length)
                     2 -> symbol = bytes.getString(offset.valueOffset(), length)
-                    3 -> decimals = bytes.getNumber(offset.valueOffset())
+                    3 -> decimals = bytes.getNumber(offset.valueOffset(), length)
                 }
                 offset = offset.valueOffset() + length
             }
-            return InvoiceCurrency(name, symbol, code, decimals)
+            return InvoiceCurrency(code=code, name=name, symbol=symbol, decimals=decimals)
         }
     }
 
@@ -148,7 +150,7 @@ class Invoice(
 ) : TLVCodeable {
     override fun toTLV(): ByteArray {
         val bytes = ByteBuffer.allocate(
-            1 // TODO, this is too manual
+           256
         )
             .putString(0, receiverUma)
             .putString(1, invoiceUUID)
@@ -156,7 +158,7 @@ class Invoice(
             .putTLVCodeable(3, receivingCurrency)
             .putNumber(4, expiration)
             .putBoolean(5, isSubjectToTravelRule)
-            .putByteCodeable(6, CounterPartyDataOptionsWrapper(requiredPayerData))
+            .putByteCodeable(6, InvoiceCounterPartyDataOptions(requiredPayerData))
             .putString(7, umaVersion)
             .putNumber(8, commentCharsAllowed)
             .putString(9, senderUma)
@@ -168,41 +170,47 @@ class Invoice(
         return bytes
     }
 
+    fun justForFun() {
+
+    }
+
     companion object {
         fun fromTLV(bytes: ByteArray): Invoice {
             var receiverUma = ""
             var invoiceUUID = ""
             var amount = -1
-            var receivingCurrency: InvoiceCurrency
+            var receivingCurrency = InvoiceCurrency.EMPTY
             var expiration = -1
             var isSubjectToTravelRule = false
-            var requiredPayerData: CounterPartyDataOptions
+            var requiredPayerData = mapOf<String, CounterPartyDataOption>()
             var umaVersion = ""
             var commentCharsAllowed = -1
             var senderUma = ""
             var invoiceLimit = -1
-            var kycStatus: KycStatus
+            var kycStatus = KycStatus.UNKNOWN
             var callback = ""
             var signature = ByteArray(0)
             var offset = 0
             while(offset < bytes.size) {
                 val length = bytes[offset.lengthOffset()].toInt()
                 when(bytes[offset].toInt()) {
-                    0 -> receiverUma = bytes.getString(offset.valueOffset(), length)
+                    0 -> {
+                        receiverUma = bytes.getString(offset.valueOffset(), length)
+                    }
                     1 -> invoiceUUID = bytes.getString(offset.valueOffset(), length)
-                    2 -> amount = bytes.getNumber(offset.valueOffset())
+                    2 -> amount = bytes.getNumber(offset.valueOffset(), length)
                     3 -> receivingCurrency = bytes.getTLV(offset.valueOffset(), length, InvoiceCurrency::fromTLV) as InvoiceCurrency
-                    4 -> expiration = bytes.getNumber(offset.valueOffset())
+                    4 -> expiration = bytes.getNumber(offset.valueOffset(), length)
                     5 -> isSubjectToTravelRule = bytes.getBoolean(offset.valueOffset())
                     6 -> requiredPayerData = (bytes.getByteCodeable(
                             offset.valueOffset(),
                             length,
-                            CounterPartyDataOptionsWrapper::fromBytes) as CounterPartyDataOptionsWrapper
+                            InvoiceCounterPartyDataOptions::fromBytes) as InvoiceCounterPartyDataOptions
                         ).options
                     7 -> umaVersion = bytes.getString(offset.valueOffset(), length)
-                    8 -> commentCharsAllowed = bytes.getNumber(offset.valueOffset())
+                    8 -> commentCharsAllowed = bytes.getNumber(offset.valueOffset(), length)
                     9 -> senderUma = bytes.getString(offset.valueOffset(), length)
-                    10 -> invoiceLimit = bytes.getNumber(offset.valueOffset())
+                    10 -> invoiceLimit = bytes.getNumber(offset.valueOffset(), length)
                     11 -> kycStatus = (bytes.getByteCodeable(offset.valueOffset(), length, KycStatusWrapper::fromBytes) as KycStatusWrapper).status
                     12 -> callback = bytes.getString(offset.valueOffset(), length)
                     100 -> signature = bytes.sliceArray(offset.valueOffset()..< offset.valueOffset()+length
@@ -211,20 +219,20 @@ class Invoice(
                 offset = offset.valueOffset() + length
             }
             return Invoice(
-                receiverUma,
-                invoiceUUID,
-                amount,
-                receivingCurrency,
-                expiration,
-                isSubjectToTravelRule,
-                requiredPayerData,
-                umaVersion,
-                commentCharsAllowed,
-                senderUma,
-                invoiceLimit,
-                kycStatus,
-                callback,
-                signature,
+                receiverUma = receiverUma,
+                invoiceUUID = invoiceUUID,
+                amount = amount,
+                receivingCurrency = receivingCurrency,
+                expiration = expiration,
+                isSubjectToTravelRule = isSubjectToTravelRule,
+                requiredPayerData = requiredPayerData,
+                umaVersion = umaVersion,
+                commentCharsAllowed = commentCharsAllowed,
+                senderUma = senderUma,
+                invoiceLimit = invoiceLimit,
+                kycStatus = kycStatus,
+                callback = callback,
+                signature = signature,
             )
         }
     }

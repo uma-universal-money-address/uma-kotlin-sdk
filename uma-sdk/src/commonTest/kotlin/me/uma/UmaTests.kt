@@ -1,5 +1,6 @@
 package me.uma
 
+import io.ktor.utils.io.core.toByteArray
 import kotlin.test.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -11,6 +12,8 @@ import me.uma.crypto.Secp256k1
 import me.uma.crypto.hexToByteArray
 import me.uma.protocol.*
 import me.uma.utils.serialFormat
+import org.w3c.dom.css.Counter
+import kotlinx.coroutines.flow.callbackFlow
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UmaTests {
@@ -24,9 +27,59 @@ class UmaTests {
             "$",
             10
         )
+        assertTrue(10 in Byte.MIN_VALUE..Byte.MAX_VALUE)
         val encoded = serialFormat.encodeToString(invoiceCurrency)
-        println(encoded)
-        println("decoded object ${serialFormat.decodeFromString<InvoiceCurrency>(encoded)}")
+        val result = serialFormat.decodeFromString<InvoiceCurrency>(encoded)
+        assertEquals("usd", result.code)
+        assertEquals("us dollars", result.name)
+        assertEquals("$", result.symbol)
+        assertEquals(10, result.decimals)
+    }
+
+    @Test
+    fun `test create invoice`() = runTest {
+        val requiredPayerData = mapOf(
+            "name" to CounterPartyDataOption(false),
+            "email" to CounterPartyDataOption(false),
+            "compliance" to CounterPartyDataOption(true),
+        )
+        val invoiceCurrency = InvoiceCurrency(
+            code = "USD",
+            name = "US Dollar",
+            symbol = "$",
+            decimals = 2,
+        )
+        val invoice = Invoice(
+            receiverUma = "\$foo@bar.com",
+            invoiceUUID = "c7c07fec-cf00-431c-916f-6c13fc4b69f9",
+            amount = 1000,
+            receivingCurrency = invoiceCurrency,
+            expiration = 1000000,
+            isSubjectToTravelRule = true,
+            requiredPayerData = requiredPayerData,
+            commentCharsAllowed = 30,
+            senderUma = "\$other@uma.com",
+            invoiceLimit = 100,
+            umaVersion = "0.3",
+            kycStatus = KycStatus.VERIFIED,
+            callback = "https://example.com/callback",
+            signature = "signature".toByteArray(),
+        )
+        val serializedInvoice = serialFormat.encodeToString(invoice)
+        val result = serialFormat.decodeFromString<Invoice>(serializedInvoice)
+        assertEquals("\$foo@bar.com", result.receiverUma)
+        assertEquals("c7c07fec-cf00-431c-916f-6c13fc4b69f9", result.invoiceUUID)
+        assertEquals(1000, result.amount)
+        assertEquals(1000000, result.expiration)
+        assertEquals(true, result.isSubjectToTravelRule)
+        assertEquals(30, result.commentCharsAllowed)
+        assertEquals("\$other@uma.com", result.senderUma)
+        assertEquals(100, result.invoiceLimit)
+        assertEquals("0.3", result.umaVersion)
+        assertEquals(KycStatus.VERIFIED, result.kycStatus)
+        assertEquals("https://example.com/callback", result.callback)
+        assertEquals(requiredPayerData, result.requiredPayerData)
+        assertEquals(invoiceCurrency, result.receivingCurrency)
     }
 
     @Test
