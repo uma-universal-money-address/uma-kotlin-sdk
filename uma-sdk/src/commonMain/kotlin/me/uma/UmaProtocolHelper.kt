@@ -883,27 +883,36 @@ class UmaProtocolHelper @JvmOverloads constructor(
     }
 
     fun getInvoice(
-
+        receiverUma: String,
+        invoiceUUID: String,
+        amount: Int,
+        receivingCurrency: InvoiceCurrency,
+        expiration: Int,
+        isSubjectToTravelRule: Boolean,
+        umaVersion: String,
+        commentCharsAllowed: Int,
+        senderUma: String,
+        invoiceLimint: Int,
+        callback: String,
+        signature: ByteArray,
+        kycStatus: KycStatus,
+        requiredPartyDataOption: CounterPartyDataOptions
     ): Invoice {
         return Invoice(
-            receiverUma = "\$foo@bar.com",
-            invoiceUUID = "c7c07fec-cf00-431c-916f-6c13fc4b69f9",
-            amount = 1000,
-            receivingCurrency = InvoiceCurrency("USD", "US Dollar", "$", 2),
-            expiration = 100000,
-            isSubjectToTravelRule = true,
-            umaVersion = "1.0",
-            commentCharsAllowed = 10,
-            senderUma = "sender_uma",
-            invoiceLimit = 10,
-            callback = "https://example.com/callback",
-            signature = ByteArray(0),
-            kycStatus = KycStatus.VERIFIED,
-            requiredPayerData = createCounterPartyDataOptions(
-                "email" to true,
-                "name" to false,
-                "compliance" to true,
-            ),
+            receiverUma = receiverUma,
+            invoiceUUID = invoiceUUID,
+            amount = amount,
+            receivingCurrency = receivingCurrency,
+            expiration = expiration,
+            isSubjectToTravelRule = isSubjectToTravelRule,
+            umaVersion = umaVersion,
+            commentCharsAllowed = commentCharsAllowed,
+            senderUma = senderUma,
+            invoiceLimit = invoiceLimint,
+            callback = callback,
+            signature = signature,
+            kycStatus = kycStatus,
+            requiredPayerData = requiredPartyDataOption,
         )
     }
 }

@@ -88,44 +88,45 @@ class InvoiceCurrencyTLVSerializer: KSerializer<InvoiceCurrency> {
 class Invoice(
     val receiverUma: String,
 
-    // Invoice UUID Served as both the identifier of the UMA invoice, and the validation of proof of payment.
+    /** Invoice UUID Served as both the identifier of the UMA invoice, and the validation of proof of payment.*/
     val invoiceUUID: String,
 
-    // The amount of invoice to be paid in the smalest unit of the ReceivingCurrency.
+    /** The amount of invoice to be paid in the smalest unit of the ReceivingCurrency. */
     val amount: Int,
 
-    // The currency of the invoice
+    /** The currency of the invoice */
     val receivingCurrency: InvoiceCurrency,
 
-    // The unix timestamp the UMA invoice expires
+    /** The unix timestamp the UMA invoice expires */
     val expiration: Int,
 
-    // Indicates whether the VASP is a financial institution that requires travel rule information.
+    /** Indicates whether the VASP is a financial institution that requires travel rule information. */
     val isSubjectToTravelRule: Boolean,
 
-    // RequiredPayerData the data about the payer that the sending VASP must provide in order to send a payment.
+    /** RequiredPayerData the data about the payer that the sending VASP must provide in order to send a payment. */
     val requiredPayerData: CounterPartyDataOptions,
 
-    // UmaVersion is a list of UMA versions that the VASP supports for this transaction. It should be
-    // containing the lowest minor version of each major version it supported, separated by commas.
+    /** UmaVersion is a list of UMA versions that the VASP supports for this transaction. It should be
+    * containing the lowest minor version of each major version it supported, separated by commas.
+    */
     val umaVersion: String,
 
-    // CommentCharsAllowed is the number of characters that the sender can include in the comment field of the pay request.
+    /** CommentCharsAllowed is the number of characters that the sender can include in the comment field of the pay request. */
     val commentCharsAllowed: Int,
 
-    // The sender's UMA address. If this field presents, the UMA invoice should directly go to the sending VASP instead of showing in other formats.
+    /** The sender's UMA address. If this field presents, the UMA invoice should directly go to the sending VASP instead of showing in other formats. */
     val senderUma: String,
 
-    // The maximum number of the invoice can be paid
+    /** The maximum number of the invoice can be paid */
     val invoiceLimit: Int,
 
-    // KYC status of the receiver, default is verified.
+    /** YC status of the receiver, default is verified. */
     val kycStatus: KycStatus,
 
-    // The callback url that the sender should send the PayRequest to.
+    /** The callback url that the sender should send the PayRequest to. */
     val callback: String,
 
-    // The signature of the UMA invoice
+    /** The signature of the UMA invoice */
     val signature: ByteArray,
 ) : TLVCodeable {
 
@@ -236,10 +237,12 @@ data class InvoiceCounterPartyDataOptions(
     val options: CounterPartyDataOptions
 ) : ByteCodeable {
     override fun toBytes(): ByteArray {
-        val optionsString = options.map { (key, option) ->
-            "${key}:${ if (option.mandatory) 1 else 0}"
-        }.joinToString(",")
-        return optionsString.toByteArray(Charsets.UTF_8)
+        return options.entries
+            .sortedBy { it.key }
+            .joinToString(",") { (key, option) ->
+                "${key}:${if (option.mandatory) 1 else 0}"
+            }
+            .toByteArray(Charsets.UTF_8)
     }
 
     companion object {
