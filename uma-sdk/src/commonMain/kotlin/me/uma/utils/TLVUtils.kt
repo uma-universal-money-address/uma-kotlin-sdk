@@ -17,19 +17,22 @@ fun Int.lengthOffset() = this + 1
 
 fun Int.valueOffset() = this + 2
 
-fun MutableList<ByteArray>.putString(tag: Int, value: String): MutableList<ByteArray> {
-    val byteStr = value.toByteArray(Charsets.UTF_8)
-    add(
-        ByteBuffer.allocate(2 + byteStr.size)
-            .put(tag.toByte())
-            .put(byteStr.size.toByte())
-            .put(byteStr)
-            .array()
-    )
+fun MutableList<ByteArray>.putString(tag: Int, value: String?): MutableList<ByteArray> {
+    value?.let {
+        val byteStr = value.toByteArray(Charsets.UTF_8)
+        add(
+            ByteBuffer.allocate(2 + byteStr.size)
+                .put(tag.toByte())
+                .put(byteStr.size.toByte())
+                .put(byteStr)
+                .array()
+        )
+    }
     return this
 }
 
-fun MutableList<ByteArray>.putNumber(tag: Int, value: Number): MutableList<ByteArray> {
+fun MutableList<ByteArray>.putNumber(tag: Int, value: Number?): MutableList<ByteArray> {
+   if (value == null) return this
     val tlvBuffer = { numberSize: Int ->
         ByteBuffer
             .allocate(2 + numberSize)
@@ -80,26 +83,30 @@ fun MutableList<ByteArray>.putBoolean(tag: Int, value: Boolean): MutableList<Byt
     return this
 }
 
-fun MutableList<ByteArray>.putByteArray(tag: Int, value: ByteArray): MutableList<ByteArray> {
-    add(
-        ByteBuffer.allocate(2 + value.size)
-            .put(tag.toByte())
-            .put(value.size.toByte())
-            .put(value)
-            .array()
-    )
+fun MutableList<ByteArray>.putByteArray(tag: Int, value: ByteArray?): MutableList<ByteArray> {
+    value?.let {
+        add(
+            ByteBuffer.allocate(2 + value.size)
+                .put(tag.toByte())
+                .put(value.size.toByte())
+                .put(value)
+                .array()
+        )
+    }
     return this
 }
 
-fun MutableList<ByteArray>.putByteCodeable(tag: Int, value: ByteCodeable): MutableList<ByteArray> {
-    val encodedBytes = value.toBytes()
-    add(
-        ByteBuffer.allocate(2 + encodedBytes.size)
-            .put(tag.toByte())
-            .put(encodedBytes.size.toByte())
-            .put(encodedBytes)
-            .array()
-    )
+fun MutableList<ByteArray>.putByteCodeable(tag: Int, value: ByteCodeable?): MutableList<ByteArray> {
+    value?.let {
+        val encodedBytes = it.toBytes()
+        add(
+            ByteBuffer.allocate(2 + encodedBytes.size)
+                .put(tag.toByte())
+                .put(encodedBytes.size.toByte())
+                .put(encodedBytes)
+                .array()
+        )
+    }
     return this
 }
 

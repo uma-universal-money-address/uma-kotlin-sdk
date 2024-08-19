@@ -104,7 +104,7 @@ class Invoice(
     val isSubjectToTravelRule: Boolean,
 
     /** RequiredPayerData the data about the payer that the sending VASP must provide in order to send a payment. */
-    val requiredPayerData: CounterPartyDataOptions,
+    val requiredPayerData: CounterPartyDataOptions? = null,
 
     /** UmaVersion is a list of UMA versions that the VASP supports for this transaction. It should be
     * containing the lowest minor version of each major version it supported, separated by commas.
@@ -112,22 +112,22 @@ class Invoice(
     val umaVersion: String,
 
     /** CommentCharsAllowed is the number of characters that the sender can include in the comment field of the pay request. */
-    val commentCharsAllowed: Int,
+    val commentCharsAllowed: Int? = null,
 
     /** The sender's UMA address. If this field presents, the UMA invoice should directly go to the sending VASP instead of showing in other formats. */
-    val senderUma: String,
+    val senderUma: String? = null,
 
     /** The maximum number of the invoice can be paid */
-    val invoiceLimit: Int,
+    val invoiceLimit: Int? = null,
 
     /** YC status of the receiver, default is verified. */
-    val kycStatus: KycStatus,
+    val kycStatus: KycStatus? = null,
 
     /** The callback url that the sender should send the PayRequest to. */
     val callback: String,
 
     /** The signature of the UMA invoice */
-    val signature: ByteArray,
+    val signature: ByteArray? = null,
 ) : TLVCodeable {
 
     override fun toTLV() = mutableListOf<ByteArray>()
@@ -137,17 +137,17 @@ class Invoice(
             .putTLVCodeable(3, receivingCurrency)
             .putNumber(4, expiration)
             .putBoolean(5, isSubjectToTravelRule)
-            .putByteCodeable(6, InvoiceCounterPartyDataOptions(requiredPayerData))
+            .putByteCodeable(6, requiredPayerData?.let(::InvoiceCounterPartyDataOptions))
             .putString(7, umaVersion)
             .putNumber(8, commentCharsAllowed)
             .putString(9, senderUma)
             .putNumber(10, invoiceLimit)
-            .putByteCodeable(11, InvoiceKycStatus(kycStatus))
+            .putByteCodeable(11, kycStatus?.let(::InvoiceKycStatus))
             .putString(12, callback)
             .putByteArray(100, signature)
             .array()
 
-    fun toBech32() = Bech32.encode(Bech32.Encoding.BECH32, UMA_BECH32_PREFIX, this.toTLV())
+    fun toBech32(): String = Bech32.encode(Bech32.Encoding.BECH32, UMA_BECH32_PREFIX, this.toTLV())
 
     companion object {
         fun fromTLV(bytes: ByteArray): Invoice {
@@ -157,14 +157,14 @@ class Invoice(
             var receivingCurrency = InvoiceCurrency.EMPTY
             var expiration = -1
             var isSubjectToTravelRule = false
-            var requiredPayerData = mapOf<String, CounterPartyDataOption>()
+            var requiredPayerData: CounterPartyDataOptions? = null
             var umaVersion = ""
-            var commentCharsAllowed = -1
-            var senderUma = ""
-            var invoiceLimit = -1
-            var kycStatus = KycStatus.UNKNOWN
+            var commentCharsAllowed: Int? = null
+            var senderUma: String? = null
+            var invoiceLimit: Int? = null
+            var kycStatus: KycStatus? = null
             var callback = ""
-            var signature = ByteArray(0)
+            var signature: ByteArray? = null
             var offset = 0
             while(offset < bytes.size) {
                 val length = bytes[offset.lengthOffset()].toInt()

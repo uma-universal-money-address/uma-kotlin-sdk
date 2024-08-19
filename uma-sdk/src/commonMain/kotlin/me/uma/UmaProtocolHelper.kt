@@ -882,6 +882,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
         return identifier.substring(atIndex + 1)
     }
 
+    /**
+     * Create an UMA invoice object
+     */
     fun getInvoice(
         receiverUma: String,
         invoiceUUID: String,
@@ -890,13 +893,13 @@ class UmaProtocolHelper @JvmOverloads constructor(
         expiration: Int,
         isSubjectToTravelRule: Boolean,
         umaVersion: String,
-        commentCharsAllowed: Int,
-        senderUma: String,
-        invoiceLimint: Int,
+        commentCharsAllowed: Int? = null,
+        senderUma: String? = null,
+        invoiceLimit: Int? = null,
         callback: String,
-        signature: ByteArray,
-        kycStatus: KycStatus,
-        requiredPartyDataOption: CounterPartyDataOptions
+        signature: ByteArray? = null,
+        kycStatus: KycStatus? = null,
+        requiredPayerData: CounterPartyDataOptions? = null
     ): Invoice {
         return Invoice(
             receiverUma = receiverUma,
@@ -908,11 +911,11 @@ class UmaProtocolHelper @JvmOverloads constructor(
             umaVersion = umaVersion,
             commentCharsAllowed = commentCharsAllowed,
             senderUma = senderUma,
-            invoiceLimit = invoiceLimint,
+            invoiceLimit = invoiceLimit,
             callback = callback,
             signature = signature,
             kycStatus = kycStatus,
-            requiredPayerData = requiredPartyDataOption,
+            requiredPayerData = requiredPayerData,
         )
     }
 }
