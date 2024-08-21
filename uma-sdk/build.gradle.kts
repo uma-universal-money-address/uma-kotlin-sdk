@@ -27,6 +27,7 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.ktor.client.core)
                 implementation(libs.jna)
+                implementation(kotlin("reflect"))
             }
         }
         val commonTest by getting {

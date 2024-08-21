@@ -12,6 +12,7 @@ import me.uma.crypto.Secp256k1
 import me.uma.crypto.hexToByteArray
 import me.uma.protocol.*
 import me.uma.utils.serialFormat
+import org.junit.jupiter.api.assertThrows
 
 private const val BECH32_REFERENCE_STR = "uma1qqxzgen0daqxyctj9e3k7mgpy33nwcesxanx2cedvdnrqvpdxsenzced8ycnve3dxe3nzvmxvv6xyd3evcusyqsraqp3vqqr24f5gqgf24fjq3r0d3kxzuszqyjqxqgzqszqqr6zgqzszqgxrd3k7mtsd35kzmnrv5arztr9d4skjmp6xqkxuctdv5arqpcrxqhrxzcg2ez4yj2xf9z5grqudp68gurn8ghj7etcv9khqmr99e3k7mf0vdskcmrzv93kkeqfwd5kwmnpw36hyeg73rn40"
 
@@ -43,7 +44,19 @@ class UmaTests {
         validateInvoice(invoice, result)
     }
 
-//    @Ignore("bech32 not complete")
+    @Test
+    fun `deserializing an Invoice with missing required fields triggers error`() = runTest {
+        val exception = assertThrows<MalformedUmaInvoiceException> {
+            // missing receiverUma, invoiceUUID, and Amount
+            val malformedBech32str = "uma1qvtqqq642dzqzz242vsygmmvd3shyqspyspszqsyqsqq7sjqq5qszpsmvdhk6urvd9skucm98gcjcetdv95kcw3s93hxzmt98gcqwqes9ceskzzkg4fyj3jfg4zqc8rgw368que69uhk27rpd4cxcefwvdhk6tmrv9kxccnpvd4kgztnd9nkuct5w4ex2mxcdff"
+            Invoice.fromBech32(malformedBech32str)
+        }
+        assertEquals(
+            "missing required fields: [amount, invoiceUUID, receiverUma]",
+            exception.message
+        )
+    }
+
     @Test
     fun `test encode invoice as bech32`() = runTest {
         val invoice = createInvoice()

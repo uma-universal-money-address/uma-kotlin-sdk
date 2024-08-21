@@ -27,6 +27,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 private const val UMA_BECH32_PREFIX = "uma"
+typealias MalformedUmaInvoiceException = IllegalArgumentException
 
 @Serializable(with = InvoiceCurrencyTLVSerializer::class)
 data class InvoiceCurrency(
@@ -156,68 +157,101 @@ class Invoice(
 
     companion object {
         fun fromTLV(bytes: ByteArray): Invoice {
-            var receiverUma = ""
-            var invoiceUUID = ""
-            var amount = -1
-            var receivingCurrency = InvoiceCurrency.EMPTY
-            var expiration = -1
-            var isSubjectToTravelRule = false
-            var requiredPayerData: CounterPartyDataOptions? = null
-            var umaVersion = ""
-            var commentCharsAllowed: Int? = null
-            var senderUma: String? = null
-            var invoiceLimit: Int? = null
-            var kycStatus: KycStatus? = null
-            var callback = ""
-            var signature: ByteArray? = null
+            val ib = InvoiceBuilder()
             var offset = 0
             while(offset < bytes.size) {
                 val length = bytes[offset.lengthOffset()].toInt()
                 when(bytes[offset].toInt()) {
-                    0 -> receiverUma = bytes.getString(offset.valueOffset(), length)
-                    1 -> invoiceUUID = bytes.getString(offset.valueOffset(), length)
-                    2 -> amount = bytes.getNumber(offset.valueOffset(), length)
-                    3 -> receivingCurrency = bytes.getTLV(offset.valueOffset(), length, InvoiceCurrency::fromTLV) as InvoiceCurrency
-                    4 -> expiration = bytes.getNumber(offset.valueOffset(), length)
-                    5 -> isSubjectToTravelRule = bytes.getBoolean(offset.valueOffset())
-                    6 -> requiredPayerData = (bytes.getByteCodeable(
+                    0 -> ib.receiverUma = bytes.getString(offset.valueOffset(), length)
+                    1 -> ib.invoiceUUID = bytes.getString(offset.valueOffset(), length)
+                    2 -> ib.amount = bytes.getNumber(offset.valueOffset(), length)
+                    3 -> ib.receivingCurrency = bytes.getTLV(offset.valueOffset(), length, InvoiceCurrency::fromTLV) as InvoiceCurrency
+                    4 -> ib.expiration = bytes.getNumber(offset.valueOffset(), length)
+                    5 -> ib.isSubjectToTravelRule = bytes.getBoolean(offset.valueOffset())
+                    6 -> ib.requiredPayerData = (bytes.getByteCodeable(
                             offset.valueOffset(),
                             length,
                             InvoiceCounterPartyDataOptions::fromBytes) as InvoiceCounterPartyDataOptions
                         ).options
-                    7 -> umaVersion = bytes.getString(offset.valueOffset(), length)
-                    8 -> commentCharsAllowed = bytes.getNumber(offset.valueOffset(), length)
-                    9 -> senderUma = bytes.getString(offset.valueOffset(), length)
-                    10 -> invoiceLimit = bytes.getNumber(offset.valueOffset(), length)
-                    11 -> kycStatus = (bytes.getByteCodeable(offset.valueOffset(), length, InvoiceKycStatus::fromBytes) as InvoiceKycStatus).status
-                    12 -> callback = bytes.getString(offset.valueOffset(), length)
-                    100 -> signature = bytes.sliceArray(offset.valueOffset()..< offset.valueOffset()+length
+                    7 -> ib.umaVersion = bytes.getString(offset.valueOffset(), length)
+                    8 -> ib.commentCharsAllowed = bytes.getNumber(offset.valueOffset(), length)
+                    9 -> ib.senderUma = bytes.getString(offset.valueOffset(), length)
+                    10 -> ib.invoiceLimit = bytes.getNumber(offset.valueOffset(), length)
+                    11 -> ib.kycStatus = (bytes.getByteCodeable(offset.valueOffset(), length, InvoiceKycStatus::fromBytes) as InvoiceKycStatus).status
+                    12 -> ib.callback = bytes.getString(offset.valueOffset(), length)
+                    100 -> ib.signature = bytes.sliceArray(offset.valueOffset()..< offset.valueOffset()+length
                     )
                 }
                 offset = offset.valueOffset() + length
             }
-            return Invoice(
-                receiverUma = receiverUma,
-                invoiceUUID = invoiceUUID,
-                amount = amount,
-                receivingCurrency = receivingCurrency,
-                expiration = expiration,
-                isSubjectToTravelRule = isSubjectToTravelRule,
-                requiredPayerData = requiredPayerData,
-                umaVersion = umaVersion,
-                commentCharsAllowed = commentCharsAllowed,
-                senderUma = senderUma,
-                invoiceLimit = invoiceLimit,
-                kycStatus = kycStatus,
-                callback = callback,
-                signature = signature,
-            )
+            return ib.build()
         }
 
         fun fromBech32(bech32String: String): Invoice {
             val b32data = Bech32.decodeBech32(bech32String)
             return fromTLV(b32data.data)
         }
+    }
+}
+
+class InvoiceBuilder {
+    var receiverUma: String? = null
+    var invoiceUUID: String? = null
+    var amount: Int? = null
+    var receivingCurrency: InvoiceCurrency? = null
+    var expiration: Int? = null
+    var isSubjectToTravelRule: Boolean? = null
+    var requiredPayerData: CounterPartyDataOptions? = null
+    var umaVersion: String? = null
+    var commentCharsAllowed: Int? = null
+    var senderUma: String? = null
+    var invoiceLimit: Int? = null
+    var kycStatus: KycStatus? = null
+    var callback: String? = null
+    var signature: ByteArray? = null
+
+    private fun validate() {
+        val requiredFields = listOf(
+            "receiverUma",
+            "invoiceUUID",
+            "amount",
+            "receivingCurrency",
+            "expiration",
+            "isSubjectToTravelRule",
+            "umaVersion",
+            "callback"
+        )
+        val missingRequiredFields = this::class.members.mapNotNull {
+            if (it.name in requiredFields && it.call(this) == null) {
+                it.name
+            } else null
+        }
+        if (missingRequiredFields.isNotEmpty()) {
+            throw MalformedUmaInvoiceException("missing required fields: ${missingRequiredFields}")
+        }
+    }
+
+    /**
+     * build invoice object.  Certain fields are required to be non null
+     */
+    fun build(): Invoice {
+        validate()
+        return Invoice(
+            receiverUma = receiverUma!!,
+            invoiceUUID = invoiceUUID!!,
+            amount = amount!!,
+            receivingCurrency = receivingCurrency!!,
+            expiration = expiration!!,
+            isSubjectToTravelRule = isSubjectToTravelRule!!,
+            requiredPayerData = requiredPayerData,
+            umaVersion = umaVersion!!,
+            commentCharsAllowed = commentCharsAllowed,
+            senderUma = senderUma,
+            invoiceLimit = invoiceLimit,
+            kycStatus = kycStatus,
+            callback = callback!!,
+            signature = signature,
+        )
     }
 }
 
