@@ -1,6 +1,7 @@
 package me.uma.protocol
 
 import io.ktor.utils.io.core.toByteArray
+import me.uma.crypto.Bech32
 import me.uma.utils.ByteCodeable
 import me.uma.utils.TLVCodeable
 import me.uma.utils.array
@@ -24,7 +25,6 @@ import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import org.bitcoinj.core.Bech32
 
 private const val UMA_BECH32_PREFIX = "uma"
 
@@ -91,7 +91,7 @@ class Invoice(
     /** Invoice UUID Served as both the identifier of the UMA invoice, and the validation of proof of payment.*/
     val invoiceUUID: String,
 
-    /** The amount of invoice to be paid in the smalest unit of the ReceivingCurrency. */
+    /** The amount of invoice to be paid in the smallest unit of the ReceivingCurrency. */
     val amount: Int,
 
     /** The currency of the invoice */
@@ -147,7 +147,12 @@ class Invoice(
             .putByteArray(100, signature)
             .array()
 
-    fun toBech32(): String = Bech32.encode(Bech32.Encoding.BECH32, UMA_BECH32_PREFIX, this.toTLV())
+    fun toBech32(): String {
+        return Bech32.encodeBech32(
+            UMA_BECH32_PREFIX,
+            this.toTLV(),
+        )
+    }
 
     companion object {
         fun fromTLV(bytes: ByteArray): Invoice {
@@ -210,7 +215,7 @@ class Invoice(
         }
 
         fun fromBech32(bech32String: String): Invoice {
-            val b32data = Bech32.decode(bech32String)
+            val b32data = Bech32.decodeBech32(bech32String)
             return fromTLV(b32data.data)
         }
     }

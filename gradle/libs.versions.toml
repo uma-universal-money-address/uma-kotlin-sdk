@@ -21,8 +21,6 @@ gradleClasspath-ktlint = { module = "org.jlleitschuh.gradle:ktlint-gradle", vers
 gradleClasspath-kotlin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 gradleClasspath-mavenPublish = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "mavenPublish" }
 
-bitcoin-core = { module = "org.bitcoinj:bitcoinj-core", version.ref = "bitcoinj-core" }
-
 task-tree = { module = "com.dorongold.plugins:task-tree", version.ref = "taskTree" }
 
 kotlin-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinSerializationJson" }

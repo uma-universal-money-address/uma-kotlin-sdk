@@ -12,8 +12,8 @@ import me.uma.crypto.Secp256k1
 import me.uma.crypto.hexToByteArray
 import me.uma.protocol.*
 import me.uma.utils.serialFormat
-import org.w3c.dom.css.Counter
-import kotlinx.coroutines.flow.callbackFlow
+
+private const val BECH32_REFERENCE_STR = "uma1qqxzgen0daqxyctj9e3k7mgpy33nwcesxanx2cedvdnrqvpdxsenzced8ycnve3dxe3nzvmxvv6xyd3evcusyqsraqp3vqqr24f5gqgf24fjq3r0d3kxzuszqyjqxqgzqszqqr6zgqzszqgxrd3k7mtsd35kzmnrv5arztr9d4skjmp6xqkxuctdv5arqpcrxqhrxzcg2ez4yj2xf9z5grqudp68gurn8ghj7etcv9khqmr99e3k7mf0vdskcmrzv93kkeqfwd5kwmnpw36hyeg73rn40"
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UmaTests {
@@ -43,7 +43,7 @@ class UmaTests {
         validateInvoice(invoice, result)
     }
 
-    @Ignore("bech32 not complete")
+//    @Ignore("bech32 not complete")
     @Test
     fun `test encode invoice as bech32`() = runTest {
         val invoice = createInvoice()
@@ -53,12 +53,26 @@ class UmaTests {
             ""
         }
         assertEquals("uma", bech32str.slice(0..2))
+        assertEquals(BECH32_REFERENCE_STR, bech32str)
 
         val decodedInvoice = Invoice.fromBech32(bech32str)
         validateInvoice(invoice, decodedInvoice)
-
     }
 
+    @Test
+    fun `test decode bech32 invoice from incoming string`() {
+        // sourced from python
+        val decodedInvoice = Invoice.fromBech32(BECH32_REFERENCE_STR)
+        assertEquals("\$foo@bar.com", decodedInvoice.receiverUma)
+        assertEquals("c7c07fec-cf00-431c-916f-6c13fc4b69f9", decodedInvoice.invoiceUUID)
+        assertEquals(1000, decodedInvoice.amount)
+        assertEquals(1000000, decodedInvoice.expiration)
+        assertEquals(true, decodedInvoice.isSubjectToTravelRule)
+        assertEquals("0.3", decodedInvoice.umaVersion)
+        assertEquals(KycStatus.VERIFIED, decodedInvoice.kycStatus)
+        assertEquals("https://example.com/callback", decodedInvoice.callback)
+        assertEquals(InvoiceCurrency("USD", "US Dollar", "$", 2), decodedInvoice.receivingCurrency)
+    }
     @Test
     fun `test create and parse payreq in receiving amount`() = runTest {
         val travelRuleInfo = "travel rule info"
@@ -206,9 +220,9 @@ class UmaTests {
             expiration = 1000000,
             isSubjectToTravelRule = true,
             requiredPayerData = requiredPayerData,
-            commentCharsAllowed = 30,
-            senderUma = "\$other@uma.com",
-            invoiceLimit = 100,
+            commentCharsAllowed = null,
+            senderUma = null,
+            invoiceLimit = null,
             umaVersion = "0.3",
             kycStatus = KycStatus.VERIFIED,
             callback = "https://example.com/callback",

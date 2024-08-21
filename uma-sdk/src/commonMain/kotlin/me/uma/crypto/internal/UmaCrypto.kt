@@ -39,14 +39,18 @@ open class RustBuffer : Structure() {
 
     @JvmField var data: Pointer? = null
 
-    class ByValue : RustBuffer(), Structure.ByValue
+    class ByValue :
+        RustBuffer(),
+        Structure.ByValue
 
-    class ByReference : RustBuffer(), Structure.ByReference
+    class ByReference :
+        RustBuffer(),
+        Structure.ByReference
 
     companion object {
         internal fun alloc(size: Int = 0) =
             rustCall { status ->
-                _UniFFILib.INSTANCE.ffi_uma_crypto_b9a_rustbuffer_alloc(size, status).also {
+                _UniFFILib.INSTANCE.ffi_uma_crypto_338f_rustbuffer_alloc(size, status).also {
                     if (it.data == null) {
                         throw RuntimeException("RustBuffer.alloc() returned null data pointer (size=$size)")
                     }
@@ -55,7 +59,7 @@ open class RustBuffer : Structure() {
 
         internal fun free(buf: RustBuffer.ByValue) =
             rustCall { status ->
-                _UniFFILib.INSTANCE.ffi_uma_crypto_b9a_rustbuffer_free(buf, status)
+                _UniFFILib.INSTANCE.ffi_uma_crypto_338f_rustbuffer_free(buf, status)
             }
     }
 
@@ -97,7 +101,9 @@ open class ForeignBytes : Structure() {
 
     @JvmField var data: Pointer? = null
 
-    class ByValue : ForeignBytes(), Structure.ByValue
+    class ByValue :
+        ForeignBytes(),
+        Structure.ByValue
 }
 
 // The FfiConverter interface handles converter types to and from the FFI
@@ -186,20 +192,16 @@ internal open class RustCallStatus : Structure() {
 
     @JvmField var error_buf: RustBuffer.ByValue = RustBuffer.ByValue()
 
-    fun isSuccess(): Boolean {
-        return code == 0
-    }
+    fun isSuccess(): Boolean = code == 0
 
-    fun isError(): Boolean {
-        return code == 1
-    }
+    fun isError(): Boolean = code == 1
 
-    fun isPanic(): Boolean {
-        return code == 2
-    }
+    fun isPanic(): Boolean = code == 2
 }
 
-class InternalException(message: String) : Exception(message)
+class InternalException(
+    message: String,
+) : Exception(message)
 
 // Each top-level error class has a companion object that can lift the error from the call status's rust buffer
 interface CallStatusErrorHandler<E> {
@@ -244,9 +246,7 @@ object NullCallStatusErrorHandler : CallStatusErrorHandler<InternalException> {
 }
 
 // Call a rust function that returns a plain value
-private inline fun <U> rustCall(callback: (RustCallStatus) -> U): U {
-    return rustCallWithError(NullCallStatusErrorHandler, callback)
-}
+private inline fun <U> rustCall(callback: (RustCallStatus) -> U): U = rustCallWithError(NullCallStatusErrorHandler, callback)
 
 // Contains loading, initialization code,
 // and the FFI Function declarations in a com.sun.jna.Library.
@@ -259,9 +259,8 @@ private fun findLibraryName(componentName: String): String {
     return "uniffi_uma_crypto"
 }
 
-private inline fun <reified Lib : Library> loadIndirect(componentName: String): Lib {
-    return Native.load<Lib>(findLibraryName(componentName), Lib::class.java)
-}
+private inline fun <reified Lib : Library> loadIndirect(componentName: String): Lib =
+    Native.load<Lib>(findLibraryName(componentName), Lib::class.java)
 
 // A JNA Library to expose the extern-C FFI definitions.
 // This is an implementation detail which will be called internally by the public API.
@@ -273,64 +272,75 @@ internal interface _UniFFILib : Library {
         }
     }
 
-    fun ffi_uma_crypto_b9a_KeyPair_object_free(
+    fun ffi_uma_crypto_338f_KeyPair_object_free(
         `ptr`: Pointer,
         _uniffi_out_err: RustCallStatus,
     ): Unit
 
-    fun uma_crypto_b9a_KeyPair_get_public_key(
+    fun uma_crypto_338f_KeyPair_get_public_key(
         `ptr`: Pointer,
         _uniffi_out_err: RustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uma_crypto_b9a_KeyPair_get_private_key(
+    fun uma_crypto_338f_KeyPair_get_private_key(
         `ptr`: Pointer,
         _uniffi_out_err: RustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uma_crypto_b9a_sign_ecdsa(
+    fun uma_crypto_338f_sign_ecdsa(
         `msg`: RustBuffer.ByValue,
         `privateKeyBytes`: RustBuffer.ByValue,
         _uniffi_out_err: RustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uma_crypto_b9a_verify_ecdsa(
+    fun uma_crypto_338f_verify_ecdsa(
         `msg`: RustBuffer.ByValue,
         `signatureBytes`: RustBuffer.ByValue,
         `publicKeyBytes`: RustBuffer.ByValue,
         _uniffi_out_err: RustCallStatus,
     ): Byte
 
-    fun uma_crypto_b9a_encrypt_ecies(
+    fun uma_crypto_338f_encrypt_ecies(
         `msg`: RustBuffer.ByValue,
         `publicKeyBytes`: RustBuffer.ByValue,
         _uniffi_out_err: RustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uma_crypto_b9a_decrypt_ecies(
+    fun uma_crypto_338f_decrypt_ecies(
         `cipherText`: RustBuffer.ByValue,
         `privateKeyBytes`: RustBuffer.ByValue,
         _uniffi_out_err: RustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uma_crypto_b9a_generate_keypair(_uniffi_out_err: RustCallStatus): Pointer
+    fun uma_crypto_338f_generate_keypair(_uniffi_out_err: RustCallStatus): Pointer
 
-    fun ffi_uma_crypto_b9a_rustbuffer_alloc(
+    fun uma_crypto_338f_encode_bech32(
+        `hrp`: RustBuffer.ByValue,
+        `messageData`: RustBuffer.ByValue,
+        _uniffi_out_err: RustCallStatus,
+    ): RustBuffer.ByValue
+
+    fun uma_crypto_338f_decode_bech32(
+        `bech32Str`: RustBuffer.ByValue,
+        _uniffi_out_err: RustCallStatus,
+    ): RustBuffer.ByValue
+
+    fun ffi_uma_crypto_338f_rustbuffer_alloc(
         `size`: Int,
         _uniffi_out_err: RustCallStatus,
     ): RustBuffer.ByValue
 
-    fun ffi_uma_crypto_b9a_rustbuffer_from_bytes(
+    fun ffi_uma_crypto_338f_rustbuffer_from_bytes(
         `bytes`: ForeignBytes.ByValue,
         _uniffi_out_err: RustCallStatus,
     ): RustBuffer.ByValue
 
-    fun ffi_uma_crypto_b9a_rustbuffer_free(
+    fun ffi_uma_crypto_338f_rustbuffer_free(
         `buf`: RustBuffer.ByValue,
         _uniffi_out_err: RustCallStatus,
     ): Unit
 
-    fun ffi_uma_crypto_b9a_rustbuffer_reserve(
+    fun ffi_uma_crypto_338f_rustbuffer_reserve(
         `buf`: RustBuffer.ByValue,
         `additional`: Int,
         _uniffi_out_err: RustCallStatus,
@@ -340,17 +350,11 @@ internal interface _UniFFILib : Library {
 // Public interface members begin here.
 
 public object FfiConverterUByte : FfiConverter<UByte, Byte> {
-    override fun lift(value: Byte): UByte {
-        return value.toUByte()
-    }
+    override fun lift(value: Byte): UByte = value.toUByte()
 
-    override fun read(buf: ByteBuffer): UByte {
-        return lift(buf.get())
-    }
+    override fun read(buf: ByteBuffer): UByte = lift(buf.get())
 
-    override fun lower(value: UByte): Byte {
-        return value.toByte()
-    }
+    override fun lower(value: UByte): Byte = value.toByte()
 
     override fun allocationSize(value: UByte) = 1
 
@@ -363,17 +367,11 @@ public object FfiConverterUByte : FfiConverter<UByte, Byte> {
 }
 
 public object FfiConverterBoolean : FfiConverter<Boolean, Byte> {
-    override fun lift(value: Byte): Boolean {
-        return value.toInt() != 0
-    }
+    override fun lift(value: Byte): Boolean = value.toInt() != 0
 
-    override fun read(buf: ByteBuffer): Boolean {
-        return lift(buf.get())
-    }
+    override fun read(buf: ByteBuffer): Boolean = lift(buf.get())
 
-    override fun lower(value: Boolean): Byte {
-        return if (value) 1.toByte() else 0.toByte()
-    }
+    override fun lower(value: Boolean): Byte = if (value) 1.toByte() else 0.toByte()
 
     override fun allocationSize(value: Boolean) = 1
 
@@ -447,7 +445,8 @@ interface Disposable {
 
     companion object {
         fun destroy(vararg args: Any?) {
-            args.filterIsInstance<Disposable>()
+            args
+                .filterIsInstance<Disposable>()
                 .forEach(Disposable::destroy)
         }
     }
@@ -548,7 +547,8 @@ inline fun <T : Disposable?, R> T.use(block: (T) -> R) =
 //
 abstract class FFIObject(
     protected val pointer: Pointer,
-) : Disposable, AutoCloseable {
+) : Disposable,
+    AutoCloseable {
     private val wasDestroyed = AtomicBoolean(false)
     private val callCounter = AtomicLong(1)
 
@@ -604,7 +604,8 @@ public interface KeyPairInterface {
 
 class KeyPair(
     pointer: Pointer,
-) : FFIObject(pointer), KeyPairInterface {
+) : FFIObject(pointer),
+    KeyPairInterface {
     /**
      * Disconnect the object from the underlying Rust object.
      *
@@ -615,14 +616,14 @@ class KeyPair(
      */
     protected override fun freeRustArcPtr() {
         rustCall { status ->
-            _UniFFILib.INSTANCE.ffi_uma_crypto_b9a_KeyPair_object_free(this.pointer, status)
+            _UniFFILib.INSTANCE.ffi_uma_crypto_338f_KeyPair_object_free(this.pointer, status)
         }
     }
 
     override fun `getPublicKey`(): List<UByte> =
         callWithPointer {
             rustCall { _status ->
-                _UniFFILib.INSTANCE.uma_crypto_b9a_KeyPair_get_public_key(it, _status)
+                _UniFFILib.INSTANCE.uma_crypto_338f_KeyPair_get_public_key(it, _status)
             }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -631,7 +632,7 @@ class KeyPair(
     override fun `getPrivateKey`(): List<UByte> =
         callWithPointer {
             rustCall { _status ->
-                _UniFFILib.INSTANCE.uma_crypto_b9a_KeyPair_get_private_key(it, _status)
+                _UniFFILib.INSTANCE.uma_crypto_338f_KeyPair_get_private_key(it, _status)
             }
         }.let {
             FfiConverterSequenceUByte.lift(it)
@@ -641,9 +642,7 @@ class KeyPair(
 public object FfiConverterTypeKeyPair : FfiConverter<KeyPair, Pointer> {
     override fun lower(value: KeyPair): Pointer = value.callWithPointer { it }
 
-    override fun lift(value: Pointer): KeyPair {
-        return KeyPair(value)
-    }
+    override fun lift(value: Pointer): KeyPair = KeyPair(value)
 
     override fun read(buf: ByteBuffer): KeyPair {
         // The Rust code always writes pointers as 8 bytes, and will
@@ -663,10 +662,86 @@ public object FfiConverterTypeKeyPair : FfiConverter<KeyPair, Pointer> {
     }
 }
 
-sealed class CryptoException(message: String) : Exception(message) {
+data class Bech32Data(
+    var `data`: List<UByte>,
+    var `hrp`: String,
+)
+
+public object FfiConverterTypeBech32Data : FfiConverterRustBuffer<Bech32Data> {
+    override fun read(buf: ByteBuffer): Bech32Data =
+        Bech32Data(
+            FfiConverterSequenceUByte.read(buf),
+            FfiConverterString.read(buf),
+        )
+
+    override fun allocationSize(value: Bech32Data) =
+        (
+            FfiConverterSequenceUByte.allocationSize(value.`data`) +
+                FfiConverterString.allocationSize(value.`hrp`)
+            )
+
+    override fun write(
+        value: Bech32Data,
+        buf: ByteBuffer,
+    ) {
+        FfiConverterSequenceUByte.write(value.`data`, buf)
+        FfiConverterString.write(value.`hrp`, buf)
+    }
+}
+
+sealed class Bech32Exception(
+    message: String,
+) : Exception(message) {
     // Each variant is a nested class
     // Flat enums carries a string error message, so no special implementation is necessary.
-    class Secp256k1Exception(message: String) : CryptoException(message)
+    class Bech32EncodeException(
+        message: String,
+    ) : Bech32Exception(message)
+
+    class Bech32DecodeException(
+        message: String,
+    ) : Bech32Exception(message)
+
+    companion object ErrorHandler : CallStatusErrorHandler<Bech32Exception> {
+        override fun lift(error_buf: RustBuffer.ByValue): Bech32Exception = FfiConverterTypeBech32Error.lift(error_buf)
+    }
+}
+
+public object FfiConverterTypeBech32Error : FfiConverterRustBuffer<Bech32Exception> {
+    override fun read(buf: ByteBuffer): Bech32Exception =
+        when (buf.getInt()) {
+            1 -> Bech32Exception.Bech32EncodeException(FfiConverterString.read(buf))
+            2 -> Bech32Exception.Bech32DecodeException(FfiConverterString.read(buf))
+            else -> throw RuntimeException("invalid error enum value, something is very wrong!!")
+        }
+
+    override fun allocationSize(value: Bech32Exception): Int = 4
+
+    override fun write(
+        value: Bech32Exception,
+        buf: ByteBuffer,
+    ) {
+        when (value) {
+            is Bech32Exception.Bech32EncodeException -> {
+                buf.putInt(1)
+                Unit
+            }
+            is Bech32Exception.Bech32DecodeException -> {
+                buf.putInt(2)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+sealed class CryptoException(
+    message: String,
+) : Exception(message) {
+    // Each variant is a nested class
+    // Flat enums carries a string error message, so no special implementation is necessary.
+    class Secp256k1Exception(
+        message: String,
+    ) : CryptoException(message)
 
     companion object ErrorHandler : CallStatusErrorHandler<CryptoException> {
         override fun lift(error_buf: RustBuffer.ByValue): CryptoException = FfiConverterTypeCryptoError.lift(error_buf)
@@ -674,16 +749,13 @@ sealed class CryptoException(message: String) : Exception(message) {
 }
 
 public object FfiConverterTypeCryptoError : FfiConverterRustBuffer<CryptoException> {
-    override fun read(buf: ByteBuffer): CryptoException {
-        return when (buf.getInt()) {
+    override fun read(buf: ByteBuffer): CryptoException =
+        when (buf.getInt()) {
             1 -> CryptoException.Secp256k1Exception(FfiConverterString.read(buf))
             else -> throw RuntimeException("invalid error enum value, something is very wrong!!")
         }
-    }
 
-    override fun allocationSize(value: CryptoException): Int {
-        return 4
-    }
+    override fun allocationSize(value: CryptoException): Int = 4
 
     override fun write(
         value: CryptoException,
@@ -727,27 +799,26 @@ public object FfiConverterSequenceUByte : FfiConverterRustBuffer<List<UByte>> {
 fun `signEcdsa`(
     `msg`: List<UByte>,
     `privateKeyBytes`: List<UByte>,
-): List<UByte> {
-    return FfiConverterSequenceUByte.lift(
+): List<UByte> =
+    FfiConverterSequenceUByte.lift(
         rustCallWithError(CryptoException) { _status ->
-            _UniFFILib.INSTANCE.uma_crypto_b9a_sign_ecdsa(
+            _UniFFILib.INSTANCE.uma_crypto_338f_sign_ecdsa(
                 FfiConverterSequenceUByte.lower(`msg`),
                 FfiConverterSequenceUByte.lower(`privateKeyBytes`),
                 _status,
             )
         },
     )
-}
 
 @Throws(CryptoException::class)
 fun `verifyEcdsa`(
     `msg`: List<UByte>,
     `signatureBytes`: List<UByte>,
     `publicKeyBytes`: List<UByte>,
-): Boolean {
-    return FfiConverterBoolean.lift(
+): Boolean =
+    FfiConverterBoolean.lift(
         rustCallWithError(CryptoException) { _status ->
-            _UniFFILib.INSTANCE.uma_crypto_b9a_verify_ecdsa(
+            _UniFFILib.INSTANCE.uma_crypto_338f_verify_ecdsa(
                 FfiConverterSequenceUByte.lower(`msg`),
                 FfiConverterSequenceUByte.lower(`signatureBytes`),
                 FfiConverterSequenceUByte.lower(`publicKeyBytes`),
@@ -755,45 +826,64 @@ fun `verifyEcdsa`(
             )
         },
     )
-}
 
 @Throws(CryptoException::class)
 fun `encryptEcies`(
     `msg`: List<UByte>,
     `publicKeyBytes`: List<UByte>,
-): List<UByte> {
-    return FfiConverterSequenceUByte.lift(
+): List<UByte> =
+    FfiConverterSequenceUByte.lift(
         rustCallWithError(CryptoException) { _status ->
-            _UniFFILib.INSTANCE.uma_crypto_b9a_encrypt_ecies(
+            _UniFFILib.INSTANCE.uma_crypto_338f_encrypt_ecies(
                 FfiConverterSequenceUByte.lower(`msg`),
                 FfiConverterSequenceUByte.lower(`publicKeyBytes`),
                 _status,
             )
         },
     )
-}
 
 @Throws(CryptoException::class)
 fun `decryptEcies`(
     `cipherText`: List<UByte>,
     `privateKeyBytes`: List<UByte>,
-): List<UByte> {
-    return FfiConverterSequenceUByte.lift(
+): List<UByte> =
+    FfiConverterSequenceUByte.lift(
         rustCallWithError(CryptoException) { _status ->
-            _UniFFILib.INSTANCE.uma_crypto_b9a_decrypt_ecies(
+            _UniFFILib.INSTANCE.uma_crypto_338f_decrypt_ecies(
                 FfiConverterSequenceUByte.lower(`cipherText`),
                 FfiConverterSequenceUByte.lower(`privateKeyBytes`),
                 _status,
             )
         },
     )
-}
 
 @Throws(CryptoException::class)
-fun `generateKeypair`(): KeyPair {
-    return FfiConverterTypeKeyPair.lift(
+fun `generateKeypair`(): KeyPair =
+    FfiConverterTypeKeyPair.lift(
         rustCallWithError(CryptoException) { _status ->
-            _UniFFILib.INSTANCE.uma_crypto_b9a_generate_keypair(_status)
+            _UniFFILib.INSTANCE.uma_crypto_338f_generate_keypair(_status)
         },
     )
-}
+
+@Throws(Bech32Exception::class)
+fun `encodeBech32`(
+    `hrp`: String,
+    `messageData`: List<UByte>,
+): String =
+    FfiConverterString.lift(
+        rustCallWithError(Bech32Exception) { _status ->
+            _UniFFILib.INSTANCE.uma_crypto_338f_encode_bech32(
+                FfiConverterString.lower(`hrp`),
+                FfiConverterSequenceUByte.lower(`messageData`),
+                _status,
+            )
+        },
+    )
+
+@Throws(Bech32Exception::class)
+fun `decodeBech32`(`bech32Str`: String): Bech32Data =
+    FfiConverterTypeBech32Data.lift(
+        rustCallWithError(Bech32Exception) { _status ->
+            _UniFFILib.INSTANCE.uma_crypto_338f_decode_bech32(FfiConverterString.lower(`bech32Str`), _status)
+        },
+    )
