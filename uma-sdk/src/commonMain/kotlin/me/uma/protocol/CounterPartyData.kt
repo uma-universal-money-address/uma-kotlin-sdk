@@ -2,8 +2,6 @@
 
 package me.uma.protocol
 
-import io.ktor.utils.io.core.toByteArray
-import me.uma.utils.ByteCodeable
 import kotlinx.serialization.Serializable
 
 @Serializable

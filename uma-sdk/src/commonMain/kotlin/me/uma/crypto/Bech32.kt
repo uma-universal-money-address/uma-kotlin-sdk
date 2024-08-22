@@ -4,10 +4,10 @@ package me.uma.crypto
  * wrapper class for bech32 conversion functions
  */
 object Bech32 {
-
     fun encodeBech32(hrp: String, data: ByteArray): String {
         return me.uma.crypto.internal.encodeBech32(
-            hrp, data.toByteList()
+            hrp,
+            data.toByteList(),
         )
     }
 
@@ -15,7 +15,7 @@ object Bech32 {
         val data = me.uma.crypto.internal.decodeBech32(bech32str)
         return Bech32Data(
             data.hrp,
-            data.data.toByteArray()
+            data.data.toByteArray(),
         )
     }
 
@@ -25,6 +25,6 @@ object Bech32 {
 
     data class Bech32Data(
         val hrp: String,
-        val data: ByteArray
+        val data: ByteArray,
     )
 }

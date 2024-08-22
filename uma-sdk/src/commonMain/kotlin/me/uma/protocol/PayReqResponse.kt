@@ -1,10 +1,10 @@
 package me.uma.protocol
 
+import me.uma.utils.serialFormat
 import kotlinx.serialization.*
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
-import me.uma.utils.serialFormat
 
 /**
  * The response sent by the receiver to the sender to provide an invoice.
@@ -45,16 +45,13 @@ internal data class PayReqResponseV1(
     override val encodedInvoice: String,
     @SerialName("converted")
     override val paymentInfo: V1PayReqResponsePaymentInfo?,
-
     /**
      * The data about the receiver that the sending VASP requested in the payreq request.
      * Required for UMA.
      */
     val payeeData: PayeeData?,
-
     @EncodeDefault
     override val routes: List<Route> = emptyList(),
-
     /**
      * This field may be used by a WALLET to decide whether the initial LNURL link will
      *  be stored locally for later reuse or erased. If disposable is null, it should be
@@ -62,7 +59,6 @@ internal data class PayReqResponseV1(
      *  return `disposable: false`. UMA should always return `disposable: false`. See LUD-11.
      */
     val disposable: Boolean? = null,
-
     /**
      * Defines a struct which can be stored and shown to the user on payment success. See LUD-09.
      */
@@ -84,8 +80,9 @@ internal data class PayReqResponseV1(
     fun signablePayload(payerIdentifier: String): ByteArray {
         if (payeeData == null) throw IllegalArgumentException("Payee data is required for UMA")
         if (payeeData.identifier() == null) throw IllegalArgumentException("Payee identifier is required for UMA")
-        val complianceData = payeeData.payeeCompliance()
-            ?: throw IllegalArgumentException("Compliance data is required")
+        val complianceData =
+            payeeData.payeeCompliance()
+                ?: throw IllegalArgumentException("Compliance data is required")
         return complianceData.let {
             "$payerIdentifier|${payeeData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}"
                 .encodeToByteArray()
@@ -98,12 +95,10 @@ internal data class PayReqResponseV1(
 internal data class PayReqResponseV0 constructor(
     @SerialName("pr")
     override val encodedInvoice: String,
-
     /**
      * The compliance data from the receiver, including utxo info.
      */
     val compliance: PayReqResponseCompliance,
-
     override val paymentInfo: V0PayReqResponsePaymentInfo,
     @EncodeDefault
     override val routes: List<Route> = emptyList(),

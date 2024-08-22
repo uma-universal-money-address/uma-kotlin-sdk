@@ -1,8 +1,8 @@
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SonatypeHost
-import java.net.URL
 import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
 import org.jetbrains.dokka.gradle.DokkaTaskPartial
+import java.net.URL
 
 buildscript {
     dependencies {
@@ -28,8 +28,9 @@ subprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
     configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
         outputToConsole.set(true)
+        debug.set(true)
         verbose.set(true)
-        disabledRules.set(listOf("no-wildcard-imports"))
+        disabledRules.set(setOf("no-wildcard-imports"))
     }
 
     tasks.create<Exec>("bumpAndTagVersion") {
@@ -109,16 +110,17 @@ tasks.named<DokkaMultiModuleTask>("dokkaHtmlMultiModule") {
     moduleName.set("UMA Kotlin+Java SDKs")
     pluginsMapConfiguration.set(
         mapOf(
-            "org.jetbrains.dokka.base.DokkaBase" to """
-          {
-            "customStyleSheets": [
-              "${rootDir.resolve("docs/css/logo-styles.css")}"
-            ],
-            "customAssets" : [
-              "${rootDir.resolve("docs/images/uma-logo-white.svg")}"
-            ]
-          }
-            """.trimIndent(),
+            "org.jetbrains.dokka.base.DokkaBase" to
+                """
+                {
+                  "customStyleSheets": [
+                    "${rootDir.resolve("docs/css/logo-styles.css")}"
+                  ],
+                  "customAssets" : [
+                    "${rootDir.resolve("docs/images/uma-logo-white.svg")}"
+                  ]
+                }
+                """.trimIndent(),
         ),
     )
 }

@@ -15,14 +15,16 @@ interface UmaRequester {
 /**
  * A Ktor-based implementation of [UmaRequester].
  */
-class KtorUmaRequester @JvmOverloads constructor(private val client: HttpClient = HttpClient()) : UmaRequester {
-    override suspend fun makeGetRequest(url: String): String {
-        val response = client.get(url)
+class KtorUmaRequester
+    @JvmOverloads
+    constructor(private val client: HttpClient = HttpClient()) : UmaRequester {
+        override suspend fun makeGetRequest(url: String): String {
+            val response = client.get(url)
 
-        if (response.status.isSuccess()) {
-            return response.bodyAsText()
-        } else {
-            throw Exception("Error making request: ${response.status}")
+            if (response.status.isSuccess()) {
+                return response.bodyAsText()
+            } else {
+                throw Exception("Error making request: ${response.status}")
+            }
         }
     }
-}

@@ -1,9 +1,9 @@
 package me.uma
 
+import me.uma.utils.serialFormat
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
-import me.uma.utils.serialFormat
 
 const val MAJOR_VERSION = 1
 const val MINOR_VERSION = 0
@@ -58,20 +58,22 @@ class UnsupportedVersionException(
 }
 
 fun isVersionSupported(versionString: String): Boolean {
-    val version = try {
-        Version.parse(versionString)
-    } catch (e: IllegalArgumentException) {
-        return false
-    } catch (e: NumberFormatException) {
-        return false
-    }
+    val version =
+        try {
+            Version.parse(versionString)
+        } catch (e: IllegalArgumentException) {
+            return false
+        } catch (e: NumberFormatException) {
+            return false
+        }
     return supportedMajorVersions().contains(version.major)
 }
 
 fun selectHighestSupportedVersion(otherVaspSupportedMajorVersions: List<Int>): String? {
-    val highestSupportedMajorVersion = otherVaspSupportedMajorVersions.filter {
-        supportedMajorVersions().contains(it)
-    }.maxOrNull() ?: return null
+    val highestSupportedMajorVersion =
+        otherVaspSupportedMajorVersions.filter {
+            supportedMajorVersions().contains(it)
+        }.maxOrNull() ?: return null
     return getHighestSupportedVersionForMajorVersion(highestSupportedMajorVersion)
 }
 

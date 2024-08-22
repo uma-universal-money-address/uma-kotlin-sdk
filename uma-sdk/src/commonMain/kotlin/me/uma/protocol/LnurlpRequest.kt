@@ -5,10 +5,10 @@ package me.uma.protocol
 import io.ktor.http.Parameters
 import io.ktor.http.URLBuilder
 import io.ktor.http.URLProtocol
-import kotlin.contracts.ExperimentalContracts
 import me.uma.UnsupportedVersionException
 import me.uma.isVersionSupported
 import me.uma.utils.isDomainLocalhost
+import kotlin.contracts.ExperimentalContracts
 
 /**
  * The first request in the UMA/LNURL protocol.
@@ -41,19 +41,21 @@ data class LnurlpRequest(
             throw IllegalArgumentException("Invalid receiverAddress: $receiverAddress")
         }
         val scheme = if (isDomainLocalhost(receiverAddressParts[1])) URLProtocol.HTTP else URLProtocol.HTTPS
-        val url = URLBuilder(
-            protocol = scheme,
-            host = receiverAddressParts[1],
-            pathSegments = "/.well-known/lnurlp/${receiverAddressParts[0]}".split("/"),
-            parameters = Parameters.build {
-                vaspDomain?.let { append("vaspDomain", it) }
-                nonce?.let { append("nonce", it) }
-                signature?.let { append("signature", it) }
-                umaVersion?.let { append("umaVersion", it) }
-                timestamp?.let { append("timestamp", it.toString()) }
-                isSubjectToTravelRule?.let { append("isSubjectToTravelRule", it.toString()) }
-            },
-        ).build()
+        val url =
+            URLBuilder(
+                protocol = scheme,
+                host = receiverAddressParts[1],
+                pathSegments = "/.well-known/lnurlp/${receiverAddressParts[0]}".split("/"),
+                parameters =
+                    Parameters.build {
+                        vaspDomain?.let { append("vaspDomain", it) }
+                        nonce?.let { append("nonce", it) }
+                        signature?.let { append("signature", it) }
+                        umaVersion?.let { append("umaVersion", it) }
+                        timestamp?.let { append("timestamp", it.toString()) }
+                        isSubjectToTravelRule?.let { append("isSubjectToTravelRule", it.toString()) }
+                    },
+            ).build()
         return url.toString()
     }
 
@@ -94,11 +96,12 @@ data class LnurlpRequest(
             ) {
                 throw IllegalArgumentException("Invalid uma request path: $url")
             }
-            val port = if (urlBuilder.port != 443 && urlBuilder.port != 80 && urlBuilder.port != 0) {
-                ":${urlBuilder.port}"
-            } else {
-                ""
-            }
+            val port =
+                if (urlBuilder.port != 443 && urlBuilder.port != 80 && urlBuilder.port != 0) {
+                    ":${urlBuilder.port}"
+                } else {
+                    ""
+                }
             val receiverAddress = "${urlBuilder.pathSegments[3]}@${urlBuilder.host}$port"
             val vaspDomain = urlBuilder.parameters["vaspDomain"]
             val nonce = urlBuilder.parameters["nonce"]

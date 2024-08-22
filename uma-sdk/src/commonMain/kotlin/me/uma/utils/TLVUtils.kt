@@ -32,7 +32,7 @@ fun MutableList<ByteArray>.putString(tag: Int, value: String?): MutableList<Byte
 }
 
 fun MutableList<ByteArray>.putNumber(tag: Int, value: Number?): MutableList<ByteArray> {
-   if (value == null) return this
+    if (value == null) return this
     val tlvBuffer = { numberSize: Int ->
         ByteBuffer
             .allocate(2 + numberSize)
@@ -77,7 +77,7 @@ fun MutableList<ByteArray>.putBoolean(tag: Int, value: Boolean): MutableList<Byt
         ByteBuffer.allocate(2 + 1)
             .put(tag.toByte())
             .put(1)
-            .put(if(value) 1 else 0)
+            .put(if (value) 1 else 0)
             .array()
     )
     return this
@@ -147,20 +147,17 @@ fun ByteArray.getFLoat(offset: Int, length: Int): Float {
 fun ByteArray.getBoolean(offset: Int): Boolean = this[offset].toInt() == 1
 
 fun ByteArray.getString(offset: Int, length: Int): String {
-    val decodedResult = String(
-        slice(offset..<offset + length).toByteArray(),
-    )
+    val decodedResult =
+        String(
+            slice(offset..<offset + length).toByteArray(),
+        )
     return decodedResult
 }
 
-fun ByteArray.getTLV(
-    offset: Int, length: Int, tlvDecode: (ByteArray) -> TLVCodeable,
-): TLVCodeable {
+fun ByteArray.getTLV(offset: Int, length: Int, tlvDecode: (ByteArray) -> TLVCodeable): TLVCodeable {
     return tlvDecode(slice(offset..<offset + length).toByteArray())
 }
 
-fun ByteArray.getByteCodeable(
-    offset: Int, length: Int, byteDecode: (ByteArray) -> ByteCodeable,
-): ByteCodeable {
+fun ByteArray.getByteCodeable(offset: Int, length: Int, byteDecode: (ByteArray) -> ByteCodeable): ByteCodeable {
     return byteDecode(slice(offset..<offset + length).toByteArray())
 }

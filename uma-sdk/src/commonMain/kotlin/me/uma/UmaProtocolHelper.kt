@@ -2,7 +2,10 @@
 
 package me.uma
 
-import io.ktor.utils.io.charsets.Charset
+import me.uma.crypto.Secp256k1
+import me.uma.protocol.*
+import me.uma.utils.isDomainLocalhost
+import me.uma.utils.serialFormat
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 import kotlin.math.roundToLong
@@ -19,10 +22,6 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.encodeToJsonElement
-import me.uma.crypto.Secp256k1
-import me.uma.protocol.*
-import me.uma.utils.isDomainLocalhost
-import me.uma.utils.serialFormat
 
 /**
  * A helper class for interacting with the UMA protocol. It provides methods for creating and verifying UMA requests
@@ -407,7 +406,12 @@ class UmaProtocolHelper @JvmOverloads constructor(
         val unsignedCompliancePayerData = CompliancePayerData(
             utxos = payerUtxos ?: emptyList(),
             nodePubKey = payerNodePubKey,
-            encryptedTravelRuleInfo = travelRuleInfo?.let { encryptTravelRuleInfo(receiverEncryptionPubKey, it) },
+            encryptedTravelRuleInfo = travelRuleInfo?.let {
+                encryptTravelRuleInfo(
+                    receiverEncryptionPubKey,
+                    it,
+                )
+            },
             kycStatus = payerKycStatus,
             signature = "",
             signatureNonce = nonce,
@@ -421,7 +425,10 @@ class UmaProtocolHelper @JvmOverloads constructor(
     }
 
     private fun encryptTravelRuleInfo(receiverEncryptionPubKey: ByteArray, travelRuleInfoJson: String): String {
-        return Secp256k1.encryptEcies(travelRuleInfoJson.encodeToByteArray(), receiverEncryptionPubKey).toHexString()
+        return Secp256k1.encryptEcies(
+            travelRuleInfoJson.encodeToByteArray(),
+            receiverEncryptionPubKey,
+        ).toHexString()
     }
 
     /**
@@ -447,11 +454,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
      */
     @Throws(InvalidNonceException::class)
-    fun verifyPayReqSignature(
-        payReq: PayRequest,
-        pubKeyResponse: PubKeyResponse,
-        nonceCache: NonceCache,
-    ): Boolean {
+    fun verifyPayReqSignature(payReq: PayRequest, pubKeyResponse: PubKeyResponse, nonceCache: NonceCache): Boolean {
         if (!payReq.isUmaRequest()) return false
         val compliance = payReq.payerData?.compliance() ?: return false
         nonceCache.checkAndSaveNonce(compliance.signatureNonce, compliance.signatureTimestamp)
@@ -716,9 +719,8 @@ class UmaProtocolHelper @JvmOverloads constructor(
                 ),
             )
         }
-        val hasPaymentInfo = receivingCurrencyCode != null &&
-            receivingCurrencyDecimals != null &&
-            conversionRate != null
+        val hasPaymentInfo =
+            receivingCurrencyCode != null && receivingCurrencyDecimals != null && conversionRate != null
         if (Version.parse(senderUmaVersion).major < 1) {
             if (!hasPaymentInfo) {
                 throw IllegalArgumentException("Payment info is required for UMAv0")
@@ -853,7 +855,10 @@ class UmaProtocolHelper @JvmOverloads constructor(
         pubKeyResponse: PubKeyResponse,
         nonceCache: NonceCache,
     ): Boolean {
-        nonceCache.checkAndSaveNonce(postTransactionCallback.signatureNonce, postTransactionCallback.signatureTimestamp)
+        nonceCache.checkAndSaveNonce(
+            postTransactionCallback.signatureNonce,
+            postTransactionCallback.signatureTimestamp,
+        )
         return verifySignature(
             postTransactionCallback.signablePayload(),
             postTransactionCallback.signature,
@@ -900,7 +905,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         callback: String,
         privateSigningKey: ByteArray,
         kycStatus: KycStatus? = null,
-        requiredPayerData: CounterPartyDataOptions? = null
+        requiredPayerData: CounterPartyDataOptions? = null,
     ): Invoice {
         return Invoice(
             receiverUma = receiverUma,
@@ -933,11 +938,7 @@ interface UmaInvoiceCreator {
      * @return The encoded BOLT-11 invoice that should be returned to the sender for the given [PayRequest] wrapped in a
      *     [CompletableFuture].
      */
-    fun createUmaInvoice(
-        amountMsats: Long,
-        metadata: String,
-        receiverIdentifier: String?,
-    ): CompletableFuture<String>
+    fun createUmaInvoice(amountMsats: Long, metadata: String, receiverIdentifier: String?): CompletableFuture<String>
 }
 
 interface SyncUmaInvoiceCreator {
@@ -951,9 +952,5 @@ interface SyncUmaInvoiceCreator {
      * @param receiverIdentifier Optional identifier of the receiver.
      * @return The encoded BOLT-11 invoice that should be returned to the sender for the given [PayRequest].
      */
-    fun createUmaInvoice(
-        amountMsats: Long,
-        metadata: String,
-        receiverIdentifier: String?,
-    ): String
+    fun createUmaInvoice(amountMsats: Long, metadata: String, receiverIdentifier: String?): String
 }

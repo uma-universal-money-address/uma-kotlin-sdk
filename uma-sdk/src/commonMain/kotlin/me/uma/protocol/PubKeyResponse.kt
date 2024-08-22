@@ -1,13 +1,13 @@
 package me.uma.protocol
 
+import me.uma.utils.ByteArrayAsHexSerializer
+import me.uma.utils.X509CertificateSerializer
+import me.uma.utils.serialFormat
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.interfaces.ECPublicKey
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
-import me.uma.utils.ByteArrayAsHexSerializer
-import me.uma.utils.X509CertificateSerializer
-import me.uma.utils.serialFormat
 
 /**
  * Response from another VASP when requesting public keys.
@@ -23,8 +23,14 @@ import me.uma.utils.serialFormat
  */
 @Serializable
 data class PubKeyResponse internal constructor(
-    val signingCertChain: List<@Serializable(with = X509CertificateSerializer::class) X509Certificate>? = null,
-    val encryptionCertChain: List<@Serializable(with = X509CertificateSerializer::class) X509Certificate>? = null,
+    val signingCertChain: List<
+        @Serializable(with = X509CertificateSerializer::class)
+        X509Certificate
+        >? = null,
+    val encryptionCertChain: List<
+        @Serializable(with = X509CertificateSerializer::class)
+        X509Certificate
+        >? = null,
     @Serializable(with = ByteArrayAsHexSerializer::class)
     private val signingPubKey: ByteArray? = null,
     @Serializable(with = ByteArrayAsHexSerializer::class)
@@ -102,8 +108,9 @@ private fun String.toX509CertChain(): List<X509Certificate> {
 }
 
 private fun List<X509Certificate>.getPubKeyBytes(): ByteArray {
-    val publicKey = firstOrNull()?.publicKey
-        ?: throw IllegalStateException("Certificate chain is empty")
+    val publicKey =
+        firstOrNull()?.publicKey
+            ?: throw IllegalStateException("Certificate chain is empty")
     if (publicKey !is ECPublicKey || !publicKey.params.toString().contains("secp256k1")) {
         throw IllegalStateException("Public key extracted from certificate is not EC/secp256k1")
     }
