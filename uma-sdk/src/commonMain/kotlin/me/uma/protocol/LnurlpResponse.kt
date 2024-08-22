@@ -1,7 +1,7 @@
 package me.uma.protocol
 
-import kotlinx.serialization.*
 import me.uma.utils.serialFormat
+import kotlinx.serialization.*
 
 /**
  * Response from VASP2 to the [LnurlpRequest].
@@ -30,7 +30,10 @@ data class LnurlpResponse(
     val minSendable: Long,
     val maxSendable: Long,
     val metadata: String,
-    val currencies: List<@Serializable(with = CurrencySerializer::class) Currency>?,
+    val currencies: List<
+        @Serializable(with = CurrencySerializer::class)
+        Currency
+        >?,
     @SerialName("payerData")
     val requiredPayerData: CounterPartyDataOptions?,
     val compliance: LnurlComplianceResponse?,
@@ -42,30 +45,29 @@ data class LnurlpResponse(
     @EncodeDefault
     val tag: String = "payRequest",
 ) {
-    fun asUmaResponse(): UmaLnurlpResponse? =
-        if (
-            currencies != null &&
-            requiredPayerData != null &&
-            compliance != null &&
-            umaVersion != null
-        ) {
-            UmaLnurlpResponse(
-                callback,
-                minSendable,
-                maxSendable,
-                metadata,
-                currencies,
-                requiredPayerData,
-                compliance,
-                umaVersion,
-                commentCharsAllowed,
-                nostrPubkey,
-                allowsNostr,
-                tag,
-            )
-        } else {
-            null
-        }
+    fun asUmaResponse(): UmaLnurlpResponse? = if (
+        currencies != null &&
+        requiredPayerData != null &&
+        compliance != null &&
+        umaVersion != null
+    ) {
+        UmaLnurlpResponse(
+            callback,
+            minSendable,
+            maxSendable,
+            metadata,
+            currencies,
+            requiredPayerData,
+            compliance,
+            umaVersion,
+            commentCharsAllowed,
+            nostrPubkey,
+            allowsNostr,
+            tag,
+        )
+    } else {
+        null
+    }
 
     fun toJson() = serialFormat.encodeToString(this)
 }
@@ -77,7 +79,10 @@ data class UmaLnurlpResponse(
     val minSendable: Long,
     val maxSendable: Long,
     val metadata: String,
-    val currencies: List<@Serializable(with = CurrencySerializer::class) Currency>,
+    val currencies: List<
+        @Serializable(with = CurrencySerializer::class)
+        Currency
+        >,
     @SerialName("payerData")
     val requiredPayerData: CounterPartyDataOptions,
     val compliance: LnurlComplianceResponse,

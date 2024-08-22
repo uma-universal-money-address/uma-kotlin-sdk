@@ -2,13 +2,13 @@
 
 package me.uma.protocol
 
+import me.uma.utils.serialFormat
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
-import me.uma.utils.serialFormat
 
 typealias PayeeData = JsonObject
 

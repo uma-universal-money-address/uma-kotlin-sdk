@@ -1,8 +1,8 @@
 package me.uma.protocol
 
+import me.uma.utils.serialFormat
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
-import me.uma.utils.serialFormat
 
 /**
  * Post-payment callbacks exchanged between VASPs.

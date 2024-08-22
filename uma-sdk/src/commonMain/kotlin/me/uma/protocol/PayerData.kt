@@ -2,6 +2,7 @@
 
 package me.uma.protocol
 
+import me.uma.utils.serialFormat
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -14,7 +15,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonPrimitive
-import me.uma.utils.serialFormat
 
 typealias PayerData = JsonObject
 
@@ -25,9 +25,10 @@ fun createPayerData(
     name: String? = null,
     email: String? = null,
 ): PayerData {
-    val payerDataMap = mutableMapOf<String, JsonElement>(
-        "identifier" to JsonPrimitive(identifier),
-    )
+    val payerDataMap =
+        mutableMapOf<String, JsonElement>(
+            "identifier" to JsonPrimitive(identifier),
+        )
     if (compliance != null) {
         payerDataMap["compliance"] = serialFormat.encodeToJsonElement(compliance)
     }
@@ -65,19 +66,21 @@ fun PayerData.identifier(): String? = get("identifier")?.jsonPrimitive?.content
  *     indicates raw json or a custom format.
  */
 @Serializable
-data class CompliancePayerData @JvmOverloads constructor(
-    val utxos: List<String>,
-    val nodePubKey: String?,
-    val kycStatus: KycStatus,
-    val encryptedTravelRuleInfo: String?,
-    val utxoCallback: String,
-    val signature: String,
-    val signatureNonce: String,
-    val signatureTimestamp: Long,
-    val travelRuleFormat: TravelRuleFormat? = null,
-) {
-    fun signedWith(signature: String) = copy(signature = signature)
-}
+data class CompliancePayerData
+    @JvmOverloads
+    constructor(
+        val utxos: List<String>,
+        val nodePubKey: String?,
+        val kycStatus: KycStatus,
+        val encryptedTravelRuleInfo: String?,
+        val utxoCallback: String,
+        val signature: String,
+        val signatureNonce: String,
+        val signatureTimestamp: Long,
+        val travelRuleFormat: TravelRuleFormat? = null,
+    ) {
+        fun signedWith(signature: String) = copy(signature = signature)
+    }
 
 /**
  * A standardized format of the travel rule information.

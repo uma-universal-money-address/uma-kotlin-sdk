@@ -6,12 +6,14 @@ kotlin = "1.9.0"
 kotlinCoroutines = "1.6.4"
 kotlinxDateTime = "0.4.0"
 kotlinSerializationJson = "1.4.1"
-ktlint = "11.3.1"
+kotlinReflect = "2.0.0"
+ktlint = "12.1.1"
 ktor = "2.2.3"
 mavenPublish = "0.25.2"
 mockitoCore = "5.5.0"
 taskTree = "2.1.1"
 junit = "4.13.2"
+bitcoinj-core = "0.16.3"
 
 [libraries]
 gradleClasspath-dokka = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }

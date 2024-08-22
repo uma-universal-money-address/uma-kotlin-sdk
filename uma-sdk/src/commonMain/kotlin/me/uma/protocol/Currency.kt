@@ -2,13 +2,13 @@
 
 package me.uma.protocol
 
+import me.uma.UMA_VERSION_STRING
+import me.uma.Version
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
-import me.uma.UMA_VERSION_STRING
-import me.uma.Version
 
 sealed interface Currency {
     /**
@@ -91,10 +91,11 @@ fun createCurrency(
             name = name,
             symbol = symbol,
             millisatoshiPerUnit = millisatoshiPerUnit,
-            convertible = CurrencyConvertible(
-                min = minSendable,
-                max = maxSendable,
-            ),
+            convertible =
+                CurrencyConvertible(
+                    min = minSendable,
+                    max = maxSendable,
+                ),
             decimals = decimals,
         )
     }
@@ -107,16 +108,13 @@ internal data class CurrencyV1(
     override val symbol: String,
     @SerialName("multiplier")
     override val millisatoshiPerUnit: Double,
-
     /**
      * The minimum and maximum amounts that can be sent in this currency and converted from SATs by
      * the receiver.
      */
     val convertible: CurrencyConvertible,
-
     override val decimals: Int,
 ) : Currency {
-
     override fun minSendable() = convertible.min
 
     override fun maxSendable() = convertible.max
@@ -129,22 +127,18 @@ internal data class CurrencyV0(
     override val symbol: String,
     @SerialName("multiplier")
     override val millisatoshiPerUnit: Double,
-
     /**
      * Minimum amount that can be sent in this currency. This is in the smallest unit of the
      * currency (eg. cents for USD).
      */
     val minSendable: Long,
-
     /**
      * Maximum amount that can be sent in this currency. This is in the smallest unit of the
      * currency (eg. cents for USD).
      */
     val maxSendable: Long,
-
     override val decimals: Int,
 ) : Currency {
-
     override fun minSendable() = minSendable
 
     override fun maxSendable() = maxSendable
