@@ -2,6 +2,7 @@
 
 package me.uma
 
+import io.ktor.utils.io.charsets.Charset
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 import kotlin.math.roundToLong
@@ -897,7 +898,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         senderUma: String? = null,
         invoiceLimit: Int? = null,
         callback: String,
-        signature: ByteArray? = null,
+        privateSigningKey: ByteArray,
         kycStatus: KycStatus? = null,
         requiredPayerData: CounterPartyDataOptions? = null
     ): Invoice {
@@ -913,10 +914,12 @@ class UmaProtocolHelper @JvmOverloads constructor(
             senderUma = senderUma,
             invoiceLimit = invoiceLimit,
             callback = callback,
-            signature = signature,
             kycStatus = kycStatus,
             requiredPayerData = requiredPayerData,
-        )
+        ).apply {
+            val signedPayload = signPayload(toTLV(), privateSigningKey)
+            signature = signedPayload.toByteArray(Charsets.UTF_8)
+        }
     }
 }
 

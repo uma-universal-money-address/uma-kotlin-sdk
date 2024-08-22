@@ -14,7 +14,10 @@ import me.uma.protocol.*
 import me.uma.utils.serialFormat
 import org.junit.jupiter.api.assertThrows
 
-private const val BECH32_REFERENCE_STR = "uma1qqxzgen0daqxyctj9e3k7mgpy33nwcesxanx2cedvdnrqvpdxsenzced8ycnve3dxe3nzvmxvv6xyd3evcusyqsraqp3vqqr24f5gqgf24fjq3r0d3kxzuszqyjqxqgzqszqqr6zgqzszqgxrd3k7mtsd35kzmnrv5arztr9d4skjmp6xqkxuctdv5arqpcrxqhrxzcg2ez4yj2xf9z5grqudp68gurn8ghj7etcv9khqmr99e3k7mf0vdskcmrzv93kkeqfwd5kwmnpw36hyeg73rn40"
+private const val BECH32_REFERENCE_STR =
+    "uma1qqxzgen0daqxyctj9e3k7mgpy33nwcesxanx2cedvdnrqvpdxsenzced8ycnve3dxe3nzvmxvv6xyd3evcusyqsraqp3vqqr24f5gqgf24fj" +
+        "q3r0d3kxzuszqyjqxqgzqszqqr6zgqzszqgxrd3k7mtsd35kzmnrv5arztr9d4skjmp6xqkxuctdv5arqpcrxqhrxzcg2ez4yj2xf9z5grqu" +
+        "dp68gurn8ghj7etcv9khqmr99e3k7mf0vdskcmrzv93kkeqfwd5kwmnpw36hyeg73rn40"
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UmaTests {
@@ -26,7 +29,7 @@ class UmaTests {
             "usd",
             "us dollars",
             "$",
-            10
+            10,
         )
         val encoded = serialFormat.encodeToString(invoiceCurrency)
         val result = serialFormat.decodeFromString<InvoiceCurrency>(encoded)
@@ -48,12 +51,15 @@ class UmaTests {
     fun `deserializing an Invoice with missing required fields triggers error`() = runTest {
         val exception = assertThrows<MalformedUmaInvoiceException> {
             // missing receiverUma, invoiceUUID, and Amount
-            val malformedBech32str = "uma1qvtqqq642dzqzz242vsygmmvd3shyqspyspszqsyqsqq7sjqq5qszpsmvdhk6urvd9skucm98gcjcetdv95kcw3s93hxzmt98gcqwqes9ceskzzkg4fyj3jfg4zqc8rgw368que69uhk27rpd4cxcefwvdhk6tmrv9kxccnpvd4kgztnd9nkuct5w4ex2mxcdff"
+            val malformedBech32str =
+                "uma1qvtqqq642dzqzz242vsygmmvd3shyqspyspszqsyqsqq7sjqq5qszpsmvdhk6urvd9skucm98gcjcetdv95kcw3s93hxz" +
+                    "mt98gcqwqes9ceskzzkg4fyj3jfg4zqc8rgw368que69uhk27rpd4cxcefwvdhk6tmrv9kxccnpvd4kgztnd9nkuct5w4" +
+                    "ex2mxcdff"
             Invoice.fromBech32(malformedBech32str)
         }
         assertEquals(
             "missing required fields: [amount, invoiceUUID, receiverUma]",
-            exception.message
+            exception.message,
         )
     }
 
@@ -86,6 +92,7 @@ class UmaTests {
         assertEquals("https://example.com/callback", decodedInvoice.callback)
         assertEquals(InvoiceCurrency("USD", "US Dollar", "$", 2), decodedInvoice.receivingCurrency)
     }
+
     @Test
     fun `test create and parse payreq in receiving amount`() = runTest {
         val travelRuleInfo = "travel rule info"
@@ -211,8 +218,7 @@ class UmaTests {
         )
     }
 
-    private fun createInvoice(
-    ): Invoice {
+    private fun createInvoice(): Invoice {
         val requiredPayerData = mapOf(
             "name" to CounterPartyDataOption(false),
             "email" to CounterPartyDataOption(false),
@@ -225,7 +231,7 @@ class UmaTests {
             decimals = 2,
         )
 
-        return UmaProtocolHelper().getInvoice(
+        return Invoice(
             receiverUma = "\$foo@bar.com",
             invoiceUUID = "c7c07fec-cf00-431c-916f-6c13fc4b69f9",
             amount = 1000,

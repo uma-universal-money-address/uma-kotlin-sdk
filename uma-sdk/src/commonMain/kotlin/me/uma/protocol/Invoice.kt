@@ -128,7 +128,7 @@ class Invoice(
     val callback: String,
 
     /** The signature of the UMA invoice */
-    val signature: ByteArray? = null,
+    var signature: ByteArray? = null,
 ) : TLVCodeable {
 
     override fun toTLV() = mutableListOf<ByteArray>()
