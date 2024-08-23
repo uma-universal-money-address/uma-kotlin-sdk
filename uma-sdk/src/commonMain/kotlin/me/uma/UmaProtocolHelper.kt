@@ -880,6 +880,11 @@ class UmaProtocolHelper @JvmOverloads constructor(
         return Secp256k1.verifyEcdsa(payload, signature.hexToByteArray(), publicKey)
     }
 
+    @Throws(Exception::class)
+    private fun verifySignature(payload: ByteArray, signature: ByteArray, publicKey: ByteArray): Boolean {
+        return Secp256k1.verifyEcdsa(payload, signature, publicKey)
+    }
+
     fun getVaspDomainFromUmaAddress(identifier: String): String {
         val atIndex = identifier.indexOf('@')
         if (atIndex == -1) {
@@ -888,9 +893,19 @@ class UmaProtocolHelper @JvmOverloads constructor(
         return identifier.substring(atIndex + 1)
     }
 
-    /**
-     * Create an UMA invoice object
-     */
+    fun verifyUmaInvoice(
+        invoice: Invoice,
+        pubKeyResponse: PubKeyResponse,
+    ): Boolean {
+        return invoice.signature?.let { signature ->
+            verifySignature(
+                invoice.toSignablePayload(),
+                signature,
+                pubKeyResponse.getSigningPublicKey(),
+            )
+        } ?: false
+    }
+
     fun getInvoice(
         receiverUma: String,
         invoiceUUID: String,
@@ -922,8 +937,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             kycStatus = kycStatus,
             requiredPayerData = requiredPayerData,
         ).apply {
-            val signedPayload = signPayload(toTLV(), privateSigningKey)
-            signature = signedPayload.toByteArray(Charsets.UTF_8)
+            signature = Secp256k1.signEcdsa(toSignablePayload(), privateSigningKey)
         }
     }
 }

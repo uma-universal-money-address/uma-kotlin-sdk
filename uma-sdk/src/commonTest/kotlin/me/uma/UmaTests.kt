@@ -97,6 +97,31 @@ class UmaTests {
     }
 
     @Test
+    fun `test verify invoice signature`() {
+        val invoice = UmaProtocolHelper().getInvoice(
+            receiverUma = "\$foo@bar.com",
+            invoiceUUID = "c7c07fec-cf00-431c-916f-6c13fc4b69f9",
+            amount = 1000,
+            receivingCurrency = InvoiceCurrency(code = "USD", name = "US Dollar", symbol = "$", decimals = 2),
+            expiration = 1000000,
+            isSubjectToTravelRule = true,
+            requiredPayerData = mapOf(
+                "name" to CounterPartyDataOption(false),
+                "email" to CounterPartyDataOption(false),
+                "compliance" to CounterPartyDataOption(true),
+            ),
+            commentCharsAllowed = null,
+            senderUma = null,
+            invoiceLimit = null,
+            umaVersion = "0.3",
+            kycStatus = KycStatus.VERIFIED,
+            callback = "https://example.com/callback",
+            privateSigningKey = keys.privateKey
+        )
+        assertTrue(UmaProtocolHelper().verifyUmaInvoice(invoice, PubKeyResponse(keys.publicKey, keys.publicKey)))
+    }
+
+    @Test
     fun `test create and parse payreq in receiving amount`() = runTest {
         val travelRuleInfo = "travel rule info"
         val payreq =

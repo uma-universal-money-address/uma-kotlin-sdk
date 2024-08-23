@@ -22,8 +22,6 @@ data class InvoiceCurrency(
     val decimals: Int,
 ) : TLVCodeable {
     companion object {
-        val EMPTY = InvoiceCurrency("", "", "", 0)
-
         fun fromTLV(bytes: ByteArray): InvoiceCurrency {
             var code = ""
             var name = ""
@@ -70,7 +68,7 @@ class InvoiceCurrencyTLVSerializer : KSerializer<InvoiceCurrency> {
 }
 
 @Serializable(with = InvoiceTLVSerializer::class)
-class Invoice(
+data class Invoice(
     val receiverUma: String,
     /** Invoice UUID Served as both the identifier of the UMA invoice, and the validation of proof of payment.*/
     val invoiceUUID: String,
@@ -123,6 +121,15 @@ class Invoice(
             UMA_BECH32_PREFIX,
             this.toTLV(),
         )
+    }
+
+    /**
+     * return the Invoice serialized in TLV format, without signature
+     * this represents the payload that is then signed and then assigned to the signature
+     * property
+     */
+    fun toSignablePayload(): ByteArray {
+        return this.copy(signature = null).toTLV()
     }
 
     companion object {
