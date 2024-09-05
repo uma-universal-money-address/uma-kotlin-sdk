@@ -353,6 +353,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         travelRuleFormat: TravelRuleFormat? = null,
         requestedPayeeData: CounterPartyDataOptions? = null,
         comment: String? = null,
+        invoiceUUID: String? = null,
         receiverUmaVersion: String = UMA_VERSION_STRING,
     ): PayRequest {
         val compliancePayerData = getSignedCompliancePayerData(
@@ -386,6 +387,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
                 amount = amount,
                 requestedPayeeData = requestedPayeeData,
                 comment = comment,
+                invoiceUUID = invoiceUUID
             )
         }
     }
@@ -668,8 +670,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
         successAction: Map<String, String>? = null,
         senderUmaVersion: String = UMA_VERSION_STRING,
     ): PayReqResponse {
-        val encodedPayerData = query.payerData?.let { serialFormat.encodeToString(query.payerData) } ?: ""
-        val metadataWithPayerData = "$metadata$encodedPayerData"
+        val encodedPayerData = query.payerData?.let(serialFormat::encodeToString) ?: ""
+        val encodedInvoiceUUID = query.invoiceUUID()?.let(serialFormat::encodeToString) ?: ""
+        val metadataWithPayerData = "$metadata$encodedPayerData$encodedInvoiceUUID"
         if (query.sendingCurrencyCode() != null && query.sendingCurrencyCode() != receivingCurrencyCode) {
             throw IllegalArgumentException(
                 "Currency code in the pay request must match the receiving currency if not null.",
