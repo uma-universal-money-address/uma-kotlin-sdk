@@ -222,6 +222,7 @@ internal object PayRequestV1Serializer : KSerializer<PayRequestV1> {
                 value.requestedPayeeData,
             )
             value.comment?.let { encodeStringElement(descriptor, 4, it) }
+            value.invoiceUUID?.let { encodeStringElement(descriptor, 5, it) }
         }
     }
 

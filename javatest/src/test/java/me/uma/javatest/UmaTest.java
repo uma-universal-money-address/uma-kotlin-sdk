@@ -216,6 +216,7 @@ public class UmaTest {
                 null,
                 null,
                 "comment",
+                "sample-uuid-string",
                 "1.0"
         );
         assertNotNull(request);
@@ -248,6 +249,7 @@ public class UmaTest {
                 null,
                 null,
                 "comment",
+                "sample-uuid-string",
                 "0.3"
         );
         assertNotNull(request);
