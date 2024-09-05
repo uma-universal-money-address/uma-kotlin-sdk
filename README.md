@@ -40,7 +40,7 @@ dependencies {
 <dependency>
     <groupId>me.uma</groupId>
     <artifactId>uma-sdk</artifactId>
-    <version>1.2.1</version>
+    <version>1.3.0</version>
 </dependency>
 </dependencies>
 ```
