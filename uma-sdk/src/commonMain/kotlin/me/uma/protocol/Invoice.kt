@@ -34,7 +34,7 @@ data class InvoiceCurrency(
                     0 -> code = bytes.getString(offset.valueOffset(), length)
                     1 -> name = bytes.getString(offset.valueOffset(), length)
                     2 -> symbol = bytes.getString(offset.valueOffset(), length)
-                    3 -> decimals = bytes.getNumber(offset.valueOffset(), length)
+                    3 -> decimals = bytes.getNumber(offset.valueOffset(), length) as Int
                 }
                 offset = offset.valueOffset() + length
             }
@@ -77,7 +77,7 @@ data class Invoice(
     /** The currency of the invoice */
     val receivingCurrency: InvoiceCurrency,
     /** The unix timestamp the UMA invoice expires */
-    val expiration: Int,
+    val expiration: Number,
     /** Indicates whether the VASP is a financial institution that requires travel rule information. */
     val isSubjectToTravelRule: Boolean,
     /** RequiredPayerData the data about the payer that the sending VASP must provide in order to send a payment. */
@@ -141,12 +141,12 @@ data class Invoice(
                 when (bytes[offset].toInt()) {
                     0 -> ib.receiverUma = bytes.getString(offset.valueOffset(), length)
                     1 -> ib.invoiceUUID = bytes.getString(offset.valueOffset(), length)
-                    2 -> ib.amount = bytes.getNumber(offset.valueOffset(), length)
+                    2 -> ib.amount = bytes.getNumber(offset.valueOffset(), length).toInt()
                     3 ->
                         ib.receivingCurrency =
                             bytes.getTLV(offset.valueOffset(), length, InvoiceCurrency::fromTLV) as InvoiceCurrency
 
-                    4 -> ib.expiration = bytes.getNumber(offset.valueOffset(), length)
+                    4 -> ib.expiration = bytes.getNumber(offset.valueOffset(), length).toLong()
                     5 -> ib.isSubjectToTravelRule = bytes.getBoolean(offset.valueOffset())
                     6 ->
                         ib.requiredPayerData =
@@ -159,9 +159,9 @@ data class Invoice(
                             ).options
 
                     7 -> ib.umaVersion = bytes.getString(offset.valueOffset(), length)
-                    8 -> ib.commentCharsAllowed = bytes.getNumber(offset.valueOffset(), length)
+                    8 -> ib.commentCharsAllowed = bytes.getNumber(offset.valueOffset(), length).toInt()
                     9 -> ib.senderUma = bytes.getString(offset.valueOffset(), length)
-                    10 -> ib.invoiceLimit = bytes.getNumber(offset.valueOffset(), length)
+                    10 -> ib.invoiceLimit = bytes.getNumber(offset.valueOffset(), length).toInt()
                     11 ->
                         ib.kycStatus = (
                             bytes.getByteCodeable(
@@ -195,7 +195,7 @@ class InvoiceBuilder {
     var invoiceUUID: String? = null
     var amount: Int? = null
     var receivingCurrency: InvoiceCurrency? = null
-    var expiration: Int? = null
+    var expiration: Number? = null
     var isSubjectToTravelRule: Boolean? = null
     var requiredPayerData: CounterPartyDataOptions? = null
     var umaVersion: String? = null

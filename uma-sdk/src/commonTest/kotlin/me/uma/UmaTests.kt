@@ -49,6 +49,15 @@ class UmaTests {
     }
 
     @Test
+    fun `correctly serialized timestamps in invoices`() = runTest {
+        val timestamp = System.currentTimeMillis()
+        val invoice = createInvoice(timestamp)
+        val serializedInvoice = serialFormat.encodeToString(invoice)
+        val result = serialFormat.decodeFromString<Invoice>(serializedInvoice)
+        assertEquals(result.expiration, timestamp)
+    }
+
+    @Test
     fun `deserializing an Invoice with missing required fields triggers error`() = runTest {
         val exception =
             assertThrows<MalformedUmaInvoiceException> {
@@ -88,7 +97,7 @@ class UmaTests {
         assertEquals("\$foo@bar.com", decodedInvoice.receiverUma)
         assertEquals("c7c07fec-cf00-431c-916f-6c13fc4b69f9", decodedInvoice.invoiceUUID)
         assertEquals(1000, decodedInvoice.amount)
-        assertEquals(1000000, decodedInvoice.expiration)
+        assertEquals(1000000L, decodedInvoice.expiration)
         assertEquals(true, decodedInvoice.isSubjectToTravelRule)
         assertEquals("0.3", decodedInvoice.umaVersion)
         assertEquals(KycStatus.VERIFIED, decodedInvoice.kycStatus)
@@ -251,7 +260,7 @@ class UmaTests {
         )
     }
 
-    private fun createInvoice(): Invoice {
+    private fun createInvoice(timestamp: Long? = null): Invoice {
         val requiredPayerData =
             mapOf(
                 "name" to CounterPartyDataOption(false),
@@ -271,7 +280,7 @@ class UmaTests {
             invoiceUUID = "c7c07fec-cf00-431c-916f-6c13fc4b69f9",
             amount = 1000,
             receivingCurrency = invoiceCurrency,
-            expiration = 1000000,
+            expiration = timestamp ?: 1000000L,
             isSubjectToTravelRule = true,
             requiredPayerData = requiredPayerData,
             commentCharsAllowed = null,

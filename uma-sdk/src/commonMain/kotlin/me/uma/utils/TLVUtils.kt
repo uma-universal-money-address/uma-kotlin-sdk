@@ -41,6 +41,23 @@ fun MutableList<ByteArray>.putNumber(tag: Int, value: Number?): MutableList<Byte
     }
     add(
         when (value) {
+            is Long -> {
+                when (value) {
+                    in Byte.MIN_VALUE.toInt()..Byte.MAX_VALUE.toInt() -> {
+                        tlvBuffer(Byte.SIZE_BYTES).put(value.toByte())
+                    }
+                    in Short.MIN_VALUE.toInt()..Short.MAX_VALUE.toInt() -> {
+                        tlvBuffer(Short.SIZE_BYTES).putShort(value.toShort())
+                    }
+                    in Int.MIN_VALUE..Int.MAX_VALUE -> {
+                        tlvBuffer(Int.SIZE_BYTES).putInt(value.toInt())
+                    }
+                    else -> {
+                        tlvBuffer(Long.SIZE_BYTES).putLong(value)
+                    }
+                }
+            }
+
             is Int -> {
                 when (value) {
                     in Byte.MIN_VALUE.toInt()..Byte.MAX_VALUE.toInt() -> {
@@ -54,6 +71,7 @@ fun MutableList<ByteArray>.putNumber(tag: Int, value: Number?): MutableList<Byte
                     }
                 }
             }
+
             is Short -> {
                 when (value) {
                     in Byte.MIN_VALUE..Byte.MAX_VALUE -> {
@@ -62,12 +80,12 @@ fun MutableList<ByteArray>.putNumber(tag: Int, value: Number?): MutableList<Byte
                     else -> tlvBuffer(Short.SIZE_BYTES).putShort(value.toShort())
                 }
             }
+
             is Byte -> tlvBuffer(Byte.SIZE_BYTES).put(value.toByte())
             is Float -> tlvBuffer(Float.SIZE_BYTES).putFloat(value)
             is Double -> tlvBuffer(Double.SIZE_BYTES).putDouble(value)
-            is Long -> tlvBuffer(Long.SIZE_BYTES).putLong(value)
             else -> throw IllegalArgumentException("Unsupported type: ${value::class.simpleName}")
-        }.array()
+        }.array(),
     )
     return this
 }
@@ -128,12 +146,13 @@ fun MutableList<ByteArray>.array(): ByteArray {
     return buffer.array()
 }
 
-fun ByteArray.getNumber(offset: Int, length: Int): Int {
+fun ByteArray.getNumber(offset: Int, length: Int): Number {
     val buffer = ByteBuffer.wrap(slice(offset..<offset + length).toByteArray())
     return when (length) {
         1 -> this[offset].toInt()
         2 -> buffer.getShort().toInt()
         4 -> buffer.getInt()
+        8 -> buffer.getLong()
         else -> this[offset].toInt()
     }
 }
