@@ -34,7 +34,7 @@ data class InvoiceCurrency(
                     0 -> code = bytes.getString(offset.valueOffset(), length)
                     1 -> name = bytes.getString(offset.valueOffset(), length)
                     2 -> symbol = bytes.getString(offset.valueOffset(), length)
-                    3 -> decimals = bytes.getNumber(offset.valueOffset(), length).toInt()
+                    3 -> decimals = bytes.getInt(offset.valueOffset(), length)
                 }
                 offset = offset.valueOffset() + length
             }
@@ -141,12 +141,12 @@ data class Invoice(
                 when (bytes[offset].toInt()) {
                     0 -> ib.receiverUma = bytes.getString(offset.valueOffset(), length)
                     1 -> ib.invoiceUUID = bytes.getString(offset.valueOffset(), length)
-                    2 -> ib.amount = bytes.getNumber(offset.valueOffset(), length).toInt()
+                    2 -> ib.amount = bytes.getInt(offset.valueOffset(), length)
                     3 ->
                         ib.receivingCurrency =
                             bytes.getTLV(offset.valueOffset(), length, InvoiceCurrency::fromTLV) as InvoiceCurrency
 
-                    4 -> ib.expiration = bytes.getNumber(offset.valueOffset(), length).toLong()
+                    4 -> ib.expiration = bytes.getLong(offset.valueOffset(), length)
                     5 -> ib.isSubjectToTravelRule = bytes.getBoolean(offset.valueOffset())
                     6 ->
                         ib.requiredPayerData =
@@ -159,9 +159,9 @@ data class Invoice(
                             ).options
 
                     7 -> ib.umaVersion = bytes.getString(offset.valueOffset(), length)
-                    8 -> ib.commentCharsAllowed = bytes.getNumber(offset.valueOffset(), length).toInt()
+                    8 -> ib.commentCharsAllowed = bytes.getInt(offset.valueOffset(), length)
                     9 -> ib.senderUma = bytes.getString(offset.valueOffset(), length)
-                    10 -> ib.invoiceLimit = bytes.getNumber(offset.valueOffset(), length).toInt()
+                    10 -> ib.invoiceLimit = bytes.getInt(offset.valueOffset(), length)
                     11 ->
                         ib.kycStatus = (
                             bytes.getByteCodeable(

@@ -146,7 +146,22 @@ fun MutableList<ByteArray>.array(): ByteArray {
     return buffer.array()
 }
 
-fun ByteArray.getNumber(offset: Int, length: Int): Number {
+fun ByteArray.getInt(offset: Int, length: Int): Int {
+    return getNumber(offset, length).toInt()
+}
+
+fun ByteArray.getLong(offset: Int, length: Int): Long {
+    return getNumber(offset, length).toLong()
+}
+
+/**
+ * in Invoice's TLV, the numeric fields are stored in their smallest possible representation (ie, 9L would
+ * be stored as a single Byte)
+ * what this means is that when deserializing, we can't simply call buffer.getLong() for Long fields,
+ * as the encoded field may be as little as 1 byte, triggering a Buffer Underflow Exception.
+ * Instead, we read the value based on its byte length, and then case it to a Long or Int in a wrapper function
+ */
+private fun ByteArray.getNumber(offset: Int, length: Int): Number {
     val buffer = ByteBuffer.wrap(slice(offset..<offset + length).toByteArray())
     return when (length) {
         1 -> this[offset].toInt()
