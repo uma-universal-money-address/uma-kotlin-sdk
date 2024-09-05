@@ -122,10 +122,9 @@ class UmaTests {
             commentCharsAllowed = null,
             senderUma = null,
             invoiceLimit = null,
-            umaVersion = "0.3",
             kycStatus = KycStatus.VERIFIED,
             callback = "https://example.com/callback",
-            privateSigningKey = keys.privateKey
+            privateSigningKey = keys.privateKey,
         )
         assertTrue(UmaProtocolHelper().verifyUmaInvoice(invoice, PubKeyResponse(keys.publicKey, keys.publicKey)))
     }
@@ -145,12 +144,11 @@ class UmaTests {
                 utxoCallback = "https://example.com/utxo",
                 travelRuleInfo = "travel rule info",
                 travelRuleFormat = TravelRuleFormat("someFormat", "1.0"),
-                requestedPayeeData =
-                    createCounterPartyDataOptions(
-                        "email" to true,
-                        "name" to false,
-                        "compliance" to true,
-                    ),
+                requestedPayeeData = createCounterPartyDataOptions(
+                    "email" to true,
+                    "name" to false,
+                    "compliance" to true,
+                ),
                 receiverUmaVersion = "1.0",
             )
         assertTrue(payreq is PayRequestV1)
