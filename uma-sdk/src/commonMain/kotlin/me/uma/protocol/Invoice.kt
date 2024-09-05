@@ -34,7 +34,7 @@ data class InvoiceCurrency(
                     0 -> code = bytes.getString(offset.valueOffset(), length)
                     1 -> name = bytes.getString(offset.valueOffset(), length)
                     2 -> symbol = bytes.getString(offset.valueOffset(), length)
-                    3 -> decimals = bytes.getNumber(offset.valueOffset(), length) as Int
+                    3 -> decimals = bytes.getNumber(offset.valueOffset(), length).toInt()
                 }
                 offset = offset.valueOffset() + length
             }
