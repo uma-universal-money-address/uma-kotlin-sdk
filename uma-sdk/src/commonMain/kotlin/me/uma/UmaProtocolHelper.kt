@@ -893,10 +893,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         return identifier.substring(atIndex + 1)
     }
 
-    fun verifyUmaInvoice(
-        invoice: Invoice,
-        pubKeyResponse: PubKeyResponse,
-    ): Boolean {
+    fun verifyUmaInvoice(invoice: Invoice, pubKeyResponse: PubKeyResponse): Boolean {
         return invoice.signature?.let { signature ->
             verifySignature(
                 invoice.toSignablePayload(),
@@ -909,11 +906,10 @@ class UmaProtocolHelper @JvmOverloads constructor(
     fun getInvoice(
         receiverUma: String,
         invoiceUUID: String,
-        amount: Int,
+        amount: Long,
         receivingCurrency: InvoiceCurrency,
-        expiration: Int,
+        expiration: Long,
         isSubjectToTravelRule: Boolean,
-        umaVersion: String,
         commentCharsAllowed: Int? = null,
         senderUma: String? = null,
         invoiceLimit: Int? = null,
@@ -929,7 +925,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             receivingCurrency = receivingCurrency,
             expiration = expiration,
             isSubjectToTravelRule = isSubjectToTravelRule,
-            umaVersion = umaVersion,
+            umaVersion = UMA_VERSION_STRING,
             commentCharsAllowed = commentCharsAllowed,
             senderUma = senderUma,
             invoiceLimit = invoiceLimit,
