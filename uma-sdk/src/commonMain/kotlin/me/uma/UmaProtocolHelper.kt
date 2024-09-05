@@ -906,9 +906,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
     fun getInvoice(
         receiverUma: String,
         invoiceUUID: String,
-        amount: Int,
+        amount: Long,
         receivingCurrency: InvoiceCurrency,
-        expiration: Int,
+        expiration: Long,
         isSubjectToTravelRule: Boolean,
         commentCharsAllowed: Int? = null,
         senderUma: String? = null,

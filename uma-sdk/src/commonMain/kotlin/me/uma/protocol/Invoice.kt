@@ -73,11 +73,11 @@ data class Invoice(
     /** Invoice UUID Served as both the identifier of the UMA invoice, and the validation of proof of payment.*/
     val invoiceUUID: String,
     /** The amount of invoice to be paid in the smallest unit of the ReceivingCurrency. */
-    val amount: Int,
+    val amount: Long,
     /** The currency of the invoice */
     val receivingCurrency: InvoiceCurrency,
     /** The unix timestamp the UMA invoice expires */
-    val expiration: Number,
+    val expiration: Long,
     /** Indicates whether the VASP is a financial institution that requires travel rule information. */
     val isSubjectToTravelRule: Boolean,
     /** RequiredPayerData the data about the payer that the sending VASP must provide in order to send a payment. */
@@ -141,7 +141,7 @@ data class Invoice(
                 when (bytes[offset].toInt()) {
                     0 -> ib.receiverUma = bytes.getString(offset.valueOffset(), length)
                     1 -> ib.invoiceUUID = bytes.getString(offset.valueOffset(), length)
-                    2 -> ib.amount = bytes.getInt(offset.valueOffset(), length)
+                    2 -> ib.amount = bytes.getLong(offset.valueOffset(), length)
                     3 ->
                         ib.receivingCurrency =
                             bytes.getTLV(offset.valueOffset(), length, InvoiceCurrency::fromTLV) as InvoiceCurrency
@@ -193,9 +193,9 @@ data class Invoice(
 class InvoiceBuilder {
     var receiverUma: String? = null
     var invoiceUUID: String? = null
-    var amount: Int? = null
+    var amount: Long? = null
     var receivingCurrency: InvoiceCurrency? = null
-    var expiration: Number? = null
+    var expiration: Long? = null
     var isSubjectToTravelRule: Boolean? = null
     var requiredPayerData: CounterPartyDataOptions? = null
     var umaVersion: String? = null

@@ -276,7 +276,7 @@ class UmaTests {
         return Invoice(
             receiverUma = "\$foo@bar.com",
             invoiceUUID = "c7c07fec-cf00-431c-916f-6c13fc4b69f9",
-            amount = 1000,
+            amount = 1000L,
             receivingCurrency = invoiceCurrency,
             expiration = timestamp ?: 1000000L,
             isSubjectToTravelRule = true,
