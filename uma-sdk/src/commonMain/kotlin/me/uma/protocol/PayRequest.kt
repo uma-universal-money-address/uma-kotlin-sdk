@@ -149,7 +149,7 @@ internal data class PayRequestV1(
             map["payeeData"] = serialFormat.encodeToString(it)
         }
         comment?.let { map["comment"] = it }
-        invoiceUUID?.let { map["invoiceUUID"] = it}
+        invoiceUUID?.let { map["invoiceUUID"] = it }
         return map
     }
 }
@@ -261,7 +261,9 @@ internal object PayRequestV1Serializer : KSerializer<PayRequestV1> {
                             )
 
                     4 -> comment = decodeNullableSerializableElement(descriptor, index, String.serializer().nullable)
-                    5 -> invoiceUUID = decodeNullableSerializableElement(descriptor, index, String.serializer().nullable)
+                    5 ->
+                        invoiceUUID =
+                            decodeNullableSerializableElement(descriptor, index, String.serializer().nullable)
                 }
             }
 
