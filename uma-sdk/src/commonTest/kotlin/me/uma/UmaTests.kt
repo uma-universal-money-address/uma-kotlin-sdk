@@ -1,6 +1,5 @@
 package me.uma
 
-import io.ktor.util.Identity.encode
 import io.ktor.utils.io.core.toByteArray
 import me.uma.crypto.Secp256k1
 import me.uma.crypto.hexToByteArray
