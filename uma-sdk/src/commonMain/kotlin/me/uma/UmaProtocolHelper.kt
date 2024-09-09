@@ -20,6 +20,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 
@@ -353,6 +354,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         travelRuleFormat: TravelRuleFormat? = null,
         requestedPayeeData: CounterPartyDataOptions? = null,
         comment: String? = null,
+        invoiceUUID: String? = null,
         receiverUmaVersion: String = UMA_VERSION_STRING,
     ): PayRequest {
         val compliancePayerData = getSignedCompliancePayerData(
@@ -386,6 +388,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
                 amount = amount,
                 requestedPayeeData = requestedPayeeData,
                 comment = comment,
+                invoiceUUID = invoiceUUID
             )
         }
     }
@@ -668,8 +671,11 @@ class UmaProtocolHelper @JvmOverloads constructor(
         successAction: Map<String, String>? = null,
         senderUmaVersion: String = UMA_VERSION_STRING,
     ): PayReqResponse {
-        val encodedPayerData = query.payerData?.let { serialFormat.encodeToString(query.payerData) } ?: ""
-        val metadataWithPayerData = "$metadata$encodedPayerData"
+        val encodedPayerData = query.payerData?.let(serialFormat::encodeToString) ?: ""
+        val metadataWithInvoiceUUID = query.invoiceUUID()?.let {
+            addInvoiceUUIDtoMetadata(metadata, it)
+        } ?: metadata
+        val metadataWithPayerData = "$metadataWithInvoiceUUID$encodedPayerData"
         if (query.sendingCurrencyCode() != null && query.sendingCurrencyCode() != receivingCurrencyCode) {
             throw IllegalArgumentException(
                 "Currency code in the pay request must match the receiving currency if not null.",
@@ -757,6 +763,16 @@ class UmaProtocolHelper @JvmOverloads constructor(
             disposable = disposable,
             successAction = successAction,
         )
+    }
+
+    private fun addInvoiceUUIDtoMetadata(metadata: String, invoiceUUID: String): String {
+        return try {
+            val decodedMetadata = Json.decodeFromString<List<List<String>>>(metadata).toMutableList()
+            decodedMetadata.add(listOf("text/plain", invoiceUUID))
+            Json.encodeToString(decodedMetadata)
+        } catch (e: Exception) {
+            metadata
+        }
     }
 
     private fun getSignedCompliancePayeeData(

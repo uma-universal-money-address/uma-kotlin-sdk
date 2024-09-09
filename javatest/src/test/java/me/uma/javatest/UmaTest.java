@@ -2,7 +2,6 @@ package me.uma.javatest;
 
 import kotlin.coroutines.Continuation;
 import kotlinx.serialization.json.Json;
-import kotlinx.serialization.json.JsonElement;
 import kotlinx.serialization.json.JsonElementKt;
 import kotlinx.serialization.json.JsonObject;
 import me.uma.*;
@@ -24,6 +23,7 @@ public class UmaTest {
     UmaProtocolHelper umaProtocolHelper = new UmaProtocolHelper(new InMemoryPublicKeyCache(), new TestUmaRequester());
     private static final String PUBKEY_HEX = "04419c5467ea563f0010fd614f85e885ac99c21b8e8d416241175fdd5efd2244fe907e2e6fa3dd6631b1b17cd28798da8d882a34c4776d44cc4090781c7aadea1b";
     private static final String PRIVKEY_HEX = "77e891f0ecd265a3cda435eaa73792233ebd413aeb0dbb66f2940babfc9a2667";
+    private static final String encodedPayReqMetadata = "[[\"text/plain\",\"invoiceUUID\"],[\"text/plain\",\"otherInformations\"]]";
 
     private static final String CERT_CHAIN = "-----BEGIN CERTIFICATE-----\n" +
             "MIIB1zCCAXygAwIBAgIUGN3ihBj1RnKoeTM/auDFnNoThR4wCgYIKoZIzj0EAwIw\n" +
@@ -216,6 +216,7 @@ public class UmaTest {
                 null,
                 null,
                 "comment",
+                "sample-uuid-string",
                 "1.0"
         );
         assertNotNull(request);
@@ -248,6 +249,7 @@ public class UmaTest {
                 null,
                 null,
                 "comment",
+                "sample-uuid-string",
                 "0.3"
         );
         assertNotNull(request);
@@ -276,7 +278,7 @@ public class UmaTest {
         PayReqResponse response = umaProtocolHelper.getPayReqResponseSync(
                 request,
                 new TestSyncUmaInvoiceCreator(),
-                "metadata",
+                encodedPayReqMetadata,
                 "USD",
                 2,
                 12345.0,
@@ -320,7 +322,7 @@ public class UmaTest {
         PayReqResponse response = umaProtocolHelper.getPayReqResponseSync(
                 request,
                 new TestSyncUmaInvoiceCreator(),
-                "metadata",
+                encodedPayReqMetadata,
                 "USD",
                 2,
                 12345.0,
@@ -361,7 +363,7 @@ public class UmaTest {
         PayReqResponse response = umaProtocolHelper.getPayReqResponseFuture(
                 request,
                 new TestUmaInvoiceCreator(),
-                "metadata",
+                encodedPayReqMetadata,
                 "USD",
                 2,
                 12345.0,

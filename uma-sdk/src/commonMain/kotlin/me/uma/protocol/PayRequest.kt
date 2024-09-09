@@ -49,6 +49,8 @@ sealed interface PayRequest {
 
     fun comment(): String?
 
+    fun invoiceUUID(): String?
+
     fun toQueryParamMap(): Map<String, String>
 
     companion object {
@@ -72,6 +74,7 @@ sealed interface PayRequest {
                     )
                 }
             val comment = queryMap["comment"]?.firstOrNull()
+            val invoiceUUID = queryMap["invoiceUUID"]?.firstOrNull()
             return PayRequestV1(
                 sendingCurrencyCode,
                 receivingCurrencyCode,
@@ -100,6 +103,11 @@ internal data class PayRequestV1(
      * the comment must be less than or equal to the value of `commentAllowed`.
      */
     val comment: String? = null,
+    /**
+     * InvoiceUUID is the invoice UUID that the sender is paying.
+     * This only exists in the v1 pay request since the v0 SDK won't support invoices.
+     */
+    val invoiceUUID: String? = null,
 ) : PayRequest {
     override fun receivingCurrencyCode() = receivingCurrencyCode
 
@@ -122,6 +130,8 @@ internal data class PayRequestV1(
 
     override fun comment(): String? = comment
 
+    override fun invoiceUUID(): String? = invoiceUUID
+
     override fun toQueryParamMap(): Map<String, String> {
         val amountStr =
             if (sendingCurrencyCode != null) {
@@ -139,6 +149,7 @@ internal data class PayRequestV1(
             map["payeeData"] = serialFormat.encodeToString(it)
         }
         comment?.let { map["comment"] = it }
+        invoiceUUID?.let { map["invoiceUUID"] = it }
         return map
     }
 }
@@ -163,6 +174,8 @@ internal data class PayRequestV0(
 
     override fun comment(): String? = null
 
+    override fun invoiceUUID(): String? = null
+
     override fun signablePayload() = payerData.compliance()?.let {
         "${payerData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}".encodeToByteArray()
     } ?: payerData.identifier()?.encodeToByteArray()
@@ -186,6 +199,7 @@ internal object PayRequestV1Serializer : KSerializer<PayRequestV1> {
             element<PayerData>("payerData")
             element<CounterPartyDataOptions?>("payeeData", isOptional = true)
             element<String?>("comment", isOptional = true)
+            element<String?>("invoiceUUID", isOptional = true)
         }
 
     override fun serialize(encoder: Encoder, value: PayRequestV1) {
@@ -208,6 +222,7 @@ internal object PayRequestV1Serializer : KSerializer<PayRequestV1> {
                 value.requestedPayeeData,
             )
             value.comment?.let { encodeStringElement(descriptor, 4, it) }
+            value.invoiceUUID?.let { encodeStringElement(descriptor, 5, it) }
         }
     }
 
@@ -218,6 +233,7 @@ internal object PayRequestV1Serializer : KSerializer<PayRequestV1> {
         var payerData: PayerData? = null
         var requestedPayeeData: CounterPartyDataOptions? = null
         var comment: String? = null
+        var invoiceUUID: String? = null
 
         return decoder.decodeStructure(descriptor) {
             while (true) {
@@ -246,6 +262,9 @@ internal object PayRequestV1Serializer : KSerializer<PayRequestV1> {
                             )
 
                     4 -> comment = decodeNullableSerializableElement(descriptor, index, String.serializer().nullable)
+                    5 ->
+                        invoiceUUID =
+                            decodeNullableSerializableElement(descriptor, index, String.serializer().nullable)
                 }
             }
 
@@ -267,6 +286,7 @@ internal object PayRequestV1Serializer : KSerializer<PayRequestV1> {
                 payerData,
                 requestedPayeeData,
                 comment,
+                invoiceUUID
             )
         }
     }

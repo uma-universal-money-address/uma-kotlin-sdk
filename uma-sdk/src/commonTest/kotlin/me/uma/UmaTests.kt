@@ -11,6 +11,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -25,6 +26,14 @@ class UmaTests {
 
     @Test
     fun `test create invoice currency`() = runTest {
+        val data = listOf(
+            listOf("text/plain", "invoiceUUID"),
+            listOf("text/plain", "otherInformations"),
+        )
+        val encoded1 = Json.encodeToString(data)
+
+        val original = Json.decodeFromString<List<List<String>>>(encoded1)
+        println(original.size)
         val invoiceCurrency =
             InvoiceCurrency(
                 "usd",
