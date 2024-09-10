@@ -85,13 +85,13 @@ data class Invoice(
     /** UmaVersion is a list of UMA versions that the VASP supports for this transaction. It should be
      * containing the lowest minor version of each major version it supported, separated by commas.
      */
-    val umaVersion: String,
+    val umaVersions: String,
     /** CommentCharsAllowed is the number of characters that the sender can include in the comment field of the pay request. */
     val commentCharsAllowed: Int? = null,
     /** The sender's UMA address. If this field presents, the UMA invoice should directly go to the sending VASP instead of showing in other formats. */
     val senderUma: String? = null,
     /** The maximum number of the invoice can be paid */
-    val invoiceLimit: Int? = null,
+    val maxNumPayments: Int? = null,
     /** YC status of the receiver, default is verified. */
     val kycStatus: KycStatus? = null,
     /** The callback url that the sender should send the PayRequest to. */
@@ -107,10 +107,10 @@ data class Invoice(
         .putNumber(4, expiration)
         .putBoolean(5, isSubjectToTravelRule)
         .putByteCodeable(6, requiredPayerData?.let(::InvoiceCounterPartyDataOptions))
-        .putString(7, umaVersion)
+        .putString(7, umaVersions)
         .putNumber(8, commentCharsAllowed)
         .putString(9, senderUma)
-        .putNumber(10, invoiceLimit)
+        .putNumber(10, maxNumPayments)
         .putByteCodeable(11, kycStatus?.let(::InvoiceKycStatus))
         .putString(12, callback)
         .putByteArray(100, signature)
@@ -244,10 +244,10 @@ class InvoiceBuilder {
             expiration = expiration!!,
             isSubjectToTravelRule = isSubjectToTravelRule!!,
             requiredPayerData = requiredPayerData,
-            umaVersion = umaVersion!!,
+            umaVersions = umaVersion!!,
             commentCharsAllowed = commentCharsAllowed,
             senderUma = senderUma,
-            invoiceLimit = invoiceLimit,
+            maxNumPayments = invoiceLimit,
             kycStatus = kycStatus,
             callback = callback!!,
             signature = signature,

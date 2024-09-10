@@ -108,7 +108,7 @@ class UmaTests {
         assertEquals(1000, decodedInvoice.amount)
         assertEquals(1000000L, decodedInvoice.expiration)
         assertEquals(true, decodedInvoice.isSubjectToTravelRule)
-        assertEquals("0.3", decodedInvoice.umaVersion)
+        assertEquals("0.3", decodedInvoice.umaVersions)
         assertEquals(KycStatus.VERIFIED, decodedInvoice.kycStatus)
         assertEquals("https://example.com/callback", decodedInvoice.callback)
         assertEquals(InvoiceCurrency("USD", "US Dollar", "$", 2), decodedInvoice.receivingCurrency)
@@ -292,8 +292,8 @@ class UmaTests {
             requiredPayerData = requiredPayerData,
             commentCharsAllowed = null,
             senderUma = null,
-            invoiceLimit = null,
-            umaVersion = "0.3",
+            maxNumPayments = null,
+            umaVersions = "0.3",
             kycStatus = KycStatus.VERIFIED,
             callback = "https://example.com/callback",
             signature = "signature".toByteArray(),
@@ -308,8 +308,8 @@ class UmaTests {
         assertEquals(preEncodedInvoice.isSubjectToTravelRule, decodedInvoice.isSubjectToTravelRule)
         assertEquals(preEncodedInvoice.commentCharsAllowed, decodedInvoice.commentCharsAllowed)
         assertEquals(preEncodedInvoice.senderUma, decodedInvoice.senderUma)
-        assertEquals(preEncodedInvoice.invoiceLimit, decodedInvoice.invoiceLimit)
-        assertEquals(preEncodedInvoice.umaVersion, decodedInvoice.umaVersion)
+        assertEquals(preEncodedInvoice.maxNumPayments, decodedInvoice.maxNumPayments)
+        assertEquals(preEncodedInvoice.umaVersions, decodedInvoice.umaVersions)
         assertEquals(preEncodedInvoice.kycStatus, decodedInvoice.kycStatus)
         assertEquals(preEncodedInvoice.callback, decodedInvoice.callback)
         assertEquals(preEncodedInvoice.requiredPayerData, decodedInvoice.requiredPayerData)
