@@ -27,7 +27,7 @@ class UmaTests {
     @Test
     fun `test create invoice currency`() = runTest {
         val data = listOf(
-            listOf("text/plain", "invoiceUUID"),
+            listOf("text/uma-invoice", "invoiceUUID"),
             listOf("text/plain", "otherInformations"),
         )
         val encoded1 = Json.encodeToString(data)

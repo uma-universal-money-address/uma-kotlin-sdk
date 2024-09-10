@@ -768,7 +768,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
     private fun addInvoiceUUIDtoMetadata(metadata: String, invoiceUUID: String): String {
         return try {
             val decodedMetadata = Json.decodeFromString<List<List<String>>>(metadata).toMutableList()
-            decodedMetadata.add(listOf("text/plain", invoiceUUID))
+            decodedMetadata.add(listOf("text/uma-invoice", invoiceUUID))
             Json.encodeToString(decodedMetadata)
         } catch (e: Exception) {
             metadata
