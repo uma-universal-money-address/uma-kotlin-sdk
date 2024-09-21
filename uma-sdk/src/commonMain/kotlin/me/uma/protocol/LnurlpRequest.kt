@@ -102,6 +102,11 @@ data class LnurlpRequest(
                 } else {
                     ""
                 }
+            val username = urlBuilder.pathSegments[3]
+            val usernameRegex = "^[A-Za-z0-9._$+-]+$".toRegex()
+            if (!username.matches(usernameRegex)) {
+                throw IllegalArgumentException("Invalid username. Only alphanumeric characters and ._$+- are allowed.")
+            }
             val receiverAddress = "${urlBuilder.pathSegments[3]}@${urlBuilder.host}$port"
             val vaspDomain = urlBuilder.parameters["vaspDomain"]
             val nonce = urlBuilder.parameters["nonce"]
