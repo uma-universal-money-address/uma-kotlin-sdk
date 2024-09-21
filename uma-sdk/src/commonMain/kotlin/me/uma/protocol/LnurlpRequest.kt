@@ -47,14 +47,14 @@ data class LnurlpRequest(
                 host = receiverAddressParts[1],
                 pathSegments = "/.well-known/lnurlp/${receiverAddressParts[0]}".split("/"),
                 parameters =
-                Parameters.build {
-                    vaspDomain?.let { append("vaspDomain", it) }
-                    nonce?.let { append("nonce", it) }
-                    signature?.let { append("signature", it) }
-                    umaVersion?.let { append("umaVersion", it) }
-                    timestamp?.let { append("timestamp", it.toString()) }
-                    isSubjectToTravelRule?.let { append("isSubjectToTravelRule", it.toString()) }
-                },
+                    Parameters.build {
+                        vaspDomain?.let { append("vaspDomain", it) }
+                        nonce?.let { append("nonce", it) }
+                        signature?.let { append("signature", it) }
+                        umaVersion?.let { append("umaVersion", it) }
+                        timestamp?.let { append("timestamp", it.toString()) }
+                        isSubjectToTravelRule?.let { append("isSubjectToTravelRule", it.toString()) }
+                    },
             ).build()
         return url.toString()
     }
