@@ -47,14 +47,14 @@ data class LnurlpRequest(
                 host = receiverAddressParts[1],
                 pathSegments = "/.well-known/lnurlp/${receiverAddressParts[0]}".split("/"),
                 parameters =
-                    Parameters.build {
-                        vaspDomain?.let { append("vaspDomain", it) }
-                        nonce?.let { append("nonce", it) }
-                        signature?.let { append("signature", it) }
-                        umaVersion?.let { append("umaVersion", it) }
-                        timestamp?.let { append("timestamp", it.toString()) }
-                        isSubjectToTravelRule?.let { append("isSubjectToTravelRule", it.toString()) }
-                    },
+                Parameters.build {
+                    vaspDomain?.let { append("vaspDomain", it) }
+                    nonce?.let { append("nonce", it) }
+                    signature?.let { append("signature", it) }
+                    umaVersion?.let { append("umaVersion", it) }
+                    timestamp?.let { append("timestamp", it.toString()) }
+                    isSubjectToTravelRule?.let { append("isSubjectToTravelRule", it.toString()) }
+                },
             ).build()
         return url.toString()
     }
@@ -102,6 +102,11 @@ data class LnurlpRequest(
                 } else {
                     ""
                 }
+            val username = urlBuilder.pathSegments[3]
+            val usernameRegex = "^[A-Za-z0-9._$+-]+$".toRegex()
+            if (!username.matches(usernameRegex)) {
+                throw IllegalArgumentException("Invalid username. Only alphanumeric characters and ._$+- are allowed.")
+            }
             val receiverAddress = "${urlBuilder.pathSegments[3]}@${urlBuilder.host}$port"
             val vaspDomain = urlBuilder.parameters["vaspDomain"]
             val nonce = urlBuilder.parameters["nonce"]

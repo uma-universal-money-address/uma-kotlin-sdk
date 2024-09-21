@@ -228,6 +228,16 @@ class UmaTests {
     }
 
     @Test
+    fun `test parse Lnurlp URL with invalid user`() {
+        val umaLnurlpQuery =
+            "https://example.com/.well-known/lnurlp/\$bob(?vaspDomain=example.com&nonce=123&signature=123&" +
+                "isSubjectToTravelRule=true&timestamp=123&umaVersion=1.0"
+        assertThrows<IllegalArgumentException> {
+            UmaProtocolHelper().parseLnurlpRequest(umaLnurlpQuery)
+        }
+    }
+
+    @Test
     fun `test isUmaLnurlpQuery future-proofing`() {
         val umaLnurlpQuery =
             "https://example.com/.well-known/lnurlp/\$bob?vaspDomain=example.com&nonce=123&signature=123&" +

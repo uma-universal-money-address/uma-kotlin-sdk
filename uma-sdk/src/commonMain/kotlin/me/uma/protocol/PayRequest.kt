@@ -82,6 +82,7 @@ sealed interface PayRequest {
                 payerData,
                 requestedPayeeData,
                 comment,
+                invoiceUUID
             )
         }
     }
