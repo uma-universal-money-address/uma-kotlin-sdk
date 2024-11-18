@@ -1,5 +1,6 @@
 package me.uma.protocol
 
+import me.uma.crypto.Secp256k1
 import me.uma.utils.serialFormat
 import kotlinx.serialization.*
 import kotlinx.serialization.builtins.MapSerializer
@@ -52,6 +53,8 @@ sealed interface PayRequest {
     fun invoiceUUID(): String?
 
     fun toQueryParamMap(): Map<String, String>
+
+    fun appendBackingSignature(signingPrivateKey: ByteArray, domain: String): PayRequest
 
     companion object {
         fun fromQueryParamMap(queryMap: Map<String, List<String>>): PayRequest {
@@ -153,6 +156,21 @@ internal data class PayRequestV1(
         invoiceUUID?.let { map["invoiceUUID"] = it }
         return map
     }
+
+    @OptIn(kotlin.ExperimentalStdlibApi::class)
+    @Throws(Exception::class)
+    override fun appendBackingSignature(signingPrivateKey: ByteArray, domain: String): PayRequestV1 {
+        val signablePayload = signablePayload()
+        val signature = Secp256k1.signEcdsa(signablePayload, signingPrivateKey).toHexString()
+        val complianceData = payerData?.compliance() ?: throw IllegalArgumentException("Compliance payer data is missing")
+        val backingSignatures = (complianceData.backingSignatures ?: emptyList()).toMutableList()
+        backingSignatures.add(BackingSignature(domain = domain, signature = signature))
+        val updatedComplianceData = complianceData.copy(backingSignatures = backingSignatures)
+        val updatedPayerDataMap = payerData.toMutableMap()
+        updatedPayerDataMap["compliance"] = serialFormat.encodeToJsonElement(
+            CompliancePayerData.serializer(), updatedComplianceData)
+        return this.copy(payerData = PayerData(updatedPayerDataMap))
+    }
 }
 
 @Serializable
@@ -189,6 +207,8 @@ internal data class PayRequestV0(
         "convert" to currencyCode,
         "payerData" to serialFormat.encodeToString(payerData),
     )
+
+    override fun appendBackingSignature(signingPrivateKey: ByteArray, domain: String): PayRequestV0 = this
 }
 
 @OptIn(ExperimentalSerializationApi::class)

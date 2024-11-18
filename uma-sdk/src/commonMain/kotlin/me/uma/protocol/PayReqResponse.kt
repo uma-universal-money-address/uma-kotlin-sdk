@@ -1,6 +1,8 @@
 package me.uma.protocol
 
+import me.uma.crypto.Secp256k1
 import me.uma.utils.serialFormat
+import me.uma.protocol.CompliancePayeeData
 import kotlinx.serialization.*
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement
@@ -36,6 +38,13 @@ sealed interface PayReqResponse {
     fun isUmaResponse(): Boolean
 
     fun toJson(): String
+
+    fun appendBackingSignature(
+        signingPrivateKey: ByteArray,
+        domain: String,
+        payerIdentifier: String,
+        payeeIdentifier: String,
+    ): PayReqResponse
 }
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -88,6 +97,26 @@ internal data class PayReqResponseV1(
                 .encodeToByteArray()
         }
     }
+
+    @OptIn(kotlin.ExperimentalStdlibApi::class)
+    @Throws(Exception::class)
+    override fun appendBackingSignature(
+        signingPrivateKey: ByteArray,
+        domain: String,
+        payerIdentifier: String,
+        payeeIdentifier: String,
+    ): PayReqResponseV1 {
+        val signablePayload = signablePayload(payerIdentifier)
+        val signature = Secp256k1.signEcdsa(signablePayload, signingPrivateKey).toHexString()
+        val complianceData = payeeData?.payeeCompliance() ?: throw IllegalArgumentException("Compliance payee data is missing")
+        val backingSignatures = (complianceData.backingSignatures ?: emptyList()).toMutableList()
+        backingSignatures.add(BackingSignature(domain = domain, signature = signature))
+        val updatedComplianceData = complianceData.copy(backingSignatures = backingSignatures)
+        val updatedPayeeDataMap = payeeData.toMutableMap()
+        updatedPayeeDataMap["compliance"] = serialFormat.encodeToJsonElement(
+            CompliancePayeeData.serializer(), updatedComplianceData)
+        return this.copy(payeeData = PayeeData(updatedPayeeDataMap))
+    }
 }
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -112,6 +141,13 @@ internal data class PayReqResponseV0 constructor(
     override fun isUmaResponse() = true
 
     override fun toJson() = serialFormat.encodeToString(this)
+
+    override fun appendBackingSignature(
+        signingPrivateKey: ByteArray,
+        domain: String,
+        payerIdentifier: String,
+        payeeIdentifier: String,
+    ): PayReqResponseV0 = this
 }
 
 @Serializable

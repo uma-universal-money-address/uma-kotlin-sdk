@@ -51,6 +51,7 @@ fun PayeeData.payeeCompliance(): CompliancePayeeData? {
  * @property signature The signature of the receiver on the signable payload.
  * @property signatureNonce The nonce used in the signature.
  * @property signatureTimestamp The timestamp used in the signature.
+ * @property backingSignatures The list of backing signatures from VASPs that can attest to the authenticity of the message.
  */
 @Serializable
 data class CompliancePayeeData(
@@ -60,6 +61,7 @@ data class CompliancePayeeData(
     val signature: String,
     val signatureNonce: String,
     val signatureTimestamp: Long,
+    val backingSignatures: List<BackingSignature>? = null,
 ) {
     fun signedWith(signature: String) = copy(signature = signature)
 }

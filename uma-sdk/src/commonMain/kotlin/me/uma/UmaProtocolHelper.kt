@@ -170,6 +170,42 @@ class UmaProtocolHelper @JvmOverloads constructor(
     }
 
     /**
+     * Verifies the backing signatures on an UMA Lnurlp query. You may optionally call this function after
+     * verifyUmaLnurlpQuerySignature to verify signatures from backing VASPs.
+     *
+     * @param query The signed query to verify.
+     * @return true if all backing signatures are valid, false otherwise.
+     */
+    @Throws(Exception::class)
+    fun verifyUmaLnurlpQueryBackingSignaturesSync(query: UmaLnurlpRequest): Boolean = runBlocking {
+        verifyUmaLnurlpQueryBackingSignatures(query)
+    }
+
+    /**
+     * Verifies the backing signatures on an UMA Lnurlp query. You may optionally call this function after
+     * verifyUmaLnurlpQuerySignature to verify signatures from backing VASPs.
+     *
+     * @param query The signed query to verify.
+     * @return true if all backing signatures are valid, false otherwise.
+     */
+    @JvmName("KotlinOnly-verifyUmaLnurlpQueryBackingSignaturesSuspended")
+    @Throws(Exception::class)
+    suspend fun verifyUmaLnurlpQueryBackingSignatures(query: UmaLnurlpRequest): Boolean {
+        val backingSignatures = query.backingSignatures ?: return true
+        for (backingSignature in backingSignatures) {
+            val backingVaspPubKeyResponse = fetchPublicKeysForVasp(backingSignature.domain)
+            if (!verifySignature(
+                query.signablePayload(),
+                backingSignature.signature,
+                backingVaspPubKeyResponse.getSigningPublicKey()
+            )) {
+                return false
+            }
+        }
+        return true
+    }
+
+    /**
      * Creates a signed UMA [LnurlpResponse].
      *
      * @param query The [LnurlpRequest] sent by the sender.
@@ -303,6 +339,42 @@ class UmaProtocolHelper @JvmOverloads constructor(
             response.compliance.signature,
             pubKeyResponse.getSigningPublicKey(),
         )
+    }
+
+    /**
+     * Verifies the backing signatures on an UMA Lnurlp response. You may optionally call this function after
+     * verifyLnurlpResponseSignature to verify signatures from backing VASPs.
+     *
+     * @param response The signed [LnurlpResponse] to verify.
+     * @return true if all backing signatures are valid, false otherwise.
+     */
+    @Throws(Exception::class)
+    fun verifyLnurlpResponseBackingSignaturesSync(response: UmaLnurlpResponse): Boolean = runBlocking {
+        verifyLnurlpResponseBackingSignatures(response)
+    }
+
+    /**
+     * Verifies the backing signatures on an UMA Lnurlp response. You may optionally call this function after
+     * verifyLnurlpResponseSignature to verify signatures from backing VASPs.
+     *
+     * @param response The signed [LnurlpResponse] to verify.
+     * @return true if all backing signatures are valid, false otherwise.
+     */
+    @JvmName("KotlinOnly-verifyLnurlpResponseBackingSignaturesSuspended")
+    @Throws(Exception::class)
+    suspend fun verifyLnurlpResponseBackingSignatures(response: UmaLnurlpResponse): Boolean {
+        val backingSignatures = response.backingSignatures ?: return true
+        for (backingSignature in backingSignatures) {
+            val backingVaspPubKeyResponse = fetchPublicKeysForVasp(backingSignature.domain)
+            if (!verifySignature(
+                response.compliance.signablePayload(),
+                backingSignature.signature,
+                backingVaspPubKeyResponse.getSigningPublicKey()
+            )) {
+                return false
+            }
+        }
+        return true
     }
 
     /**
@@ -466,6 +538,44 @@ class UmaProtocolHelper @JvmOverloads constructor(
             compliance.signature,
             pubKeyResponse.getSigningPublicKey(),
         )
+    }
+
+    /**
+     * Verifies the backing signatures on a [PayRequest]. You may optionally call this function after
+     * verifyPayReqBackingSignatures to verify signatures from backing VASPs.
+     *
+     * @param payReq The signed [PayRequest] to verify.
+     * @return true if all backing signatures are valid, false otherwise.
+     */
+    @Throws(Exception::class)
+    fun verifyPayReqBackingSignaturesSync(payReq: PayRequest): Boolean = runBlocking {
+        verifyPayReqBackingSignatures(payReq)
+    }
+
+    /**
+     * Verifies the backing signatures on a [PayRequest]. You may optionally call this function after
+     * verifyPayReqBackingSignatures to verify signatures from backing VASPs.
+     *
+     * @param payReq The signed [PayRequest] to verify.
+     * @return true if all backing signatures are valid, false otherwise.
+     */
+    @JvmName("KotlinOnly-verifyPayReqBackingSignaturesSuspended")
+    @Throws(Exception::class)
+    suspend fun verifyPayReqBackingSignatures(payReq: PayRequest): Boolean {
+        if (!payReq.isUmaRequest()) return false
+        val compliance = payReq.payerData?.compliance() ?: return false
+        val backingSignatures = compliance.backingSignatures ?: return true
+        for (backingSignature in backingSignatures) {
+            val backingVaspPubKeyResponse = fetchPublicKeysForVasp(backingSignature.domain)
+            if (!verifySignature(
+                payReq.signablePayload(),
+                backingSignature.signature,
+                backingVaspPubKeyResponse.getSigningPublicKey()
+            )) {
+                return false
+            }
+        }
+        return true
     }
 
     /**
@@ -828,6 +938,53 @@ class UmaProtocolHelper @JvmOverloads constructor(
             compliance.signature,
             pubKeyResponse.getSigningPublicKey(),
         )
+    }
+
+    /**
+     * Verifies the backing signatures on a [PayReqResponse]. You may optionally call this function after
+     * verifyPayReqResponseSignature to verify signatures from backing VASPs.
+     *
+     * @param payReqResponse The signed [PayReqResponse] to verify.
+     * @param payerIdentifier The identifier of the sender. For example, $alice@vasp1.com
+     * @return true if all backing signatures are valid, false otherwise.
+     */
+    @Throws(Exception::class)
+    fun verifyPayReqResponseBackingSignaturesSync(
+        payReqResponse: PayReqResponse,
+        payerIdentifier: String,
+    ): Boolean = runBlocking {
+        verifyPayReqResponseBackingSignatures(payReqResponse, payerIdentifier)
+    }
+
+    /**
+     * Verifies the backing signatures on a [PayReqResponse]. You may optionally call this function after
+     * verifyPayReqResponseSignature to verify signatures from backing VASPs.
+     *
+     * @param payReqResponse The signed [PayReqResponse] to verify.
+     * @param payerIdentifier The identifier of the sender. For example, $alice@vasp1.com
+     * @return true if all backing signatures are valid, false otherwise.
+     */
+    @JvmName("KotlinOnly-verifyPayReqResponseBackingSignaturesSuspended")
+    @Throws(Exception::class)
+    suspend fun verifyPayReqResponseBackingSignatures(
+        payReqResponse: PayReqResponse,
+        payerIdentifier: String,
+    ): Boolean {
+        if (payReqResponse !is PayReqResponseV1) return true
+        if (!payReqResponse.isUmaResponse()) return false
+        val compliance = payReqResponse.payeeData?.payeeCompliance() ?: return false
+        val backingSignatures = compliance.backingSignatures ?: return true
+        for (backingSignature in backingSignatures) {
+            val backingVaspPubKeyResponse = fetchPublicKeysForVasp(backingSignature.domain)
+            if (!verifySignature(
+                payReqResponse.signablePayload(payerIdentifier),
+                backingSignature.signature,
+                backingVaspPubKeyResponse.getSigningPublicKey()
+            )) {
+                return false
+            }
+        }
+        return true
     }
 
     /**

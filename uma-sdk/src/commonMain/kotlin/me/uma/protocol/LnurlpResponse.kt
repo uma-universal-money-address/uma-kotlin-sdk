@@ -1,5 +1,6 @@
 package me.uma.protocol
 
+import me.uma.crypto.Secp256k1
 import me.uma.utils.serialFormat
 import kotlinx.serialization.*
 
@@ -22,6 +23,7 @@ import kotlinx.serialization.*
  * @property nostrPubkey An optional nostr pubkey used for nostr zaps (NIP-57). If set, it should be a valid
  *     BIP-340 public key in hex format.
  * @property allowsNostr Should be set to true if the receiving VASP allows nostr zaps (NIP-57).
+ * @property backingSignatures A list of backing signatures from VASPs that can attest to the authenticity of the message.
  */
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
@@ -44,6 +46,7 @@ data class LnurlpResponse(
     val allowsNostr: Boolean? = null,
     @EncodeDefault
     val tag: String = "payRequest",
+    val backingSignatures: List<BackingSignature>? = null,
 ) {
     fun asUmaResponse(): UmaLnurlpResponse? = if (
         currencies != null &&
@@ -64,6 +67,7 @@ data class LnurlpResponse(
             nostrPubkey,
             allowsNostr,
             tag,
+            backingSignatures,
         )
     } else {
         null
@@ -93,6 +97,24 @@ data class UmaLnurlpResponse(
     val allowsNostr: Boolean? = null,
     @EncodeDefault
     val tag: String = "payRequest",
+    val backingSignatures: List<BackingSignature>?,
 ) {
     fun toJson() = serialFormat.encodeToString(this)
+
+    /**
+     * Appends a backing signature to the UmaLnurlpResponse.
+     *
+     * @param signingPrivateKey The private key to use to sign the payload
+     * @param domain The domain of the VASP that is signing the payload. The associated public key will be fetched from
+     *              /.well-known/lnurlpubkey on this domain to verify the signature.
+     * @return response with the backing signature appended
+     */
+    @OptIn(kotlin.ExperimentalStdlibApi::class)
+    @Throws(Exception::class)
+    fun appendBackingSignature(signingPrivateKey: ByteArray, domain: String): UmaLnurlpResponse {
+        val signature = Secp256k1.signEcdsa(compliance.signablePayload(), signingPrivateKey).toHexString()
+        val newBackingSignatures = (backingSignatures ?: emptyList()).toMutableList()
+        newBackingSignatures.add(BackingSignature(domain = domain, signature = signature))
+        return copy(backingSignatures = newBackingSignatures)
+    }
 }
