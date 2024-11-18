@@ -2,7 +2,6 @@ package me.uma.protocol
 
 import me.uma.crypto.Secp256k1
 import me.uma.utils.serialFormat
-import me.uma.protocol.CompliancePayeeData
 import kotlinx.serialization.*
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement
@@ -108,20 +107,21 @@ internal data class PayReqResponseV1(
     ): PayReqResponseV1 {
         val signablePayload = signablePayload(payerIdentifier)
         val signature = Secp256k1.signEcdsa(signablePayload, signingPrivateKey).toHexString()
-        val complianceData = payeeData?.payeeCompliance() ?: throw IllegalArgumentException("Compliance payee data is missing")
+        val complianceData = payeeData?.payeeCompliance()
+            ?: throw IllegalArgumentException("Compliance payee data is missing")
         val backingSignatures = (complianceData.backingSignatures ?: emptyList()).toMutableList()
         backingSignatures.add(BackingSignature(domain = domain, signature = signature))
         val updatedComplianceData = complianceData.copy(backingSignatures = backingSignatures)
         val updatedPayeeDataMap = payeeData.toMutableMap()
-        updatedPayeeDataMap["compliance"] = serialFormat.encodeToJsonElement(
-            CompliancePayeeData.serializer(), updatedComplianceData)
+        updatedPayeeDataMap["compliance"] =
+            serialFormat.encodeToJsonElement(CompliancePayeeData.serializer(), updatedComplianceData)
         return this.copy(payeeData = PayeeData(updatedPayeeDataMap))
     }
 }
 
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
-internal data class PayReqResponseV0 constructor(
+internal data class PayReqResponseV0(
     @SerialName("pr")
     override val encodedInvoice: String,
     /**

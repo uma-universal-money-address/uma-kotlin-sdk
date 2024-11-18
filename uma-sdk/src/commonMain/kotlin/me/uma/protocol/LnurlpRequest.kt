@@ -2,12 +2,12 @@
 
 package me.uma.protocol
 
-import io.ktor.http.decodeURLQueryComponent
 import io.ktor.http.Parameters
 import io.ktor.http.URLBuilder
 import io.ktor.http.URLProtocol
-import me.uma.crypto.Secp256k1
+import io.ktor.http.decodeURLQueryComponent
 import me.uma.UnsupportedVersionException
+import me.uma.crypto.Secp256k1
 import me.uma.isVersionSupported
 import me.uma.utils.isDomainLocalhost
 import kotlin.contracts.ExperimentalContracts

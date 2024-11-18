@@ -162,13 +162,14 @@ internal data class PayRequestV1(
     override fun appendBackingSignature(signingPrivateKey: ByteArray, domain: String): PayRequestV1 {
         val signablePayload = signablePayload()
         val signature = Secp256k1.signEcdsa(signablePayload, signingPrivateKey).toHexString()
-        val complianceData = payerData?.compliance() ?: throw IllegalArgumentException("Compliance payer data is missing")
+        val complianceData = payerData?.compliance()
+            ?: throw IllegalArgumentException("Compliance payer data is missing")
         val backingSignatures = (complianceData.backingSignatures ?: emptyList()).toMutableList()
         backingSignatures.add(BackingSignature(domain = domain, signature = signature))
         val updatedComplianceData = complianceData.copy(backingSignatures = backingSignatures)
         val updatedPayerDataMap = payerData.toMutableMap()
-        updatedPayerDataMap["compliance"] = serialFormat.encodeToJsonElement(
-            CompliancePayerData.serializer(), updatedComplianceData)
+        updatedPayerDataMap["compliance"] =
+            serialFormat.encodeToJsonElement(CompliancePayerData.serializer(), updatedComplianceData)
         return this.copy(payerData = PayerData(updatedPayerDataMap))
     }
 }

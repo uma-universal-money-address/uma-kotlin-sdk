@@ -13,9 +13,8 @@ data class BackingSignature(
      * the domain at /.well-known/lnurlpubkey and used to verify the signature.
      */
     val domain: String,
-
     /**
      * Signature is the signature of the payload.
      */
-    val signature: String
+    val signature: String,
 )

@@ -194,11 +194,12 @@ class UmaProtocolHelper @JvmOverloads constructor(
         val backingSignatures = query.backingSignatures ?: return true
         for (backingSignature in backingSignatures) {
             val backingVaspPubKeyResponse = fetchPublicKeysForVasp(backingSignature.domain)
-            if (!verifySignature(
+            val isSignatureValid = verifySignature(
                 query.signablePayload(),
                 backingSignature.signature,
                 backingVaspPubKeyResponse.getSigningPublicKey()
-            )) {
+            )
+            if (!isSignatureValid) {
                 return false
             }
         }
@@ -366,11 +367,12 @@ class UmaProtocolHelper @JvmOverloads constructor(
         val backingSignatures = response.backingSignatures ?: return true
         for (backingSignature in backingSignatures) {
             val backingVaspPubKeyResponse = fetchPublicKeysForVasp(backingSignature.domain)
-            if (!verifySignature(
+            val isSignatureValid = verifySignature(
                 response.compliance.signablePayload(),
                 backingSignature.signature,
                 backingVaspPubKeyResponse.getSigningPublicKey()
-            )) {
+            )
+            if (!isSignatureValid) {
                 return false
             }
         }
@@ -567,11 +569,12 @@ class UmaProtocolHelper @JvmOverloads constructor(
         val backingSignatures = compliance.backingSignatures ?: return true
         for (backingSignature in backingSignatures) {
             val backingVaspPubKeyResponse = fetchPublicKeysForVasp(backingSignature.domain)
-            if (!verifySignature(
+            val isSignatureValid = verifySignature(
                 payReq.signablePayload(),
                 backingSignature.signature,
                 backingVaspPubKeyResponse.getSigningPublicKey()
-            )) {
+            )
+            if (!isSignatureValid) {
                 return false
             }
         }
@@ -949,12 +952,10 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @return true if all backing signatures are valid, false otherwise.
      */
     @Throws(Exception::class)
-    fun verifyPayReqResponseBackingSignaturesSync(
-        payReqResponse: PayReqResponse,
-        payerIdentifier: String,
-    ): Boolean = runBlocking {
-        verifyPayReqResponseBackingSignatures(payReqResponse, payerIdentifier)
-    }
+    fun verifyPayReqResponseBackingSignaturesSync(payReqResponse: PayReqResponse, payerIdentifier: String): Boolean =
+        runBlocking {
+            verifyPayReqResponseBackingSignatures(payReqResponse, payerIdentifier)
+        }
 
     /**
      * Verifies the backing signatures on a [PayReqResponse]. You may optionally call this function after
@@ -976,11 +977,12 @@ class UmaProtocolHelper @JvmOverloads constructor(
         val backingSignatures = compliance.backingSignatures ?: return true
         for (backingSignature in backingSignatures) {
             val backingVaspPubKeyResponse = fetchPublicKeysForVasp(backingSignature.domain)
-            if (!verifySignature(
+            val isSignatureValid = verifySignature(
                 payReqResponse.signablePayload(payerIdentifier),
                 backingSignature.signature,
                 backingVaspPubKeyResponse.getSigningPublicKey()
-            )) {
+            )
+            if (!isSignatureValid) {
                 return false
             }
         }
