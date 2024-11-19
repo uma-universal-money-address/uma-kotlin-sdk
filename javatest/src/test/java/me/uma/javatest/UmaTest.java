@@ -18,9 +18,11 @@ import java.util.concurrent.CompletableFuture;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.*;
 import static me.uma.protocol.CurrencyUtils.createCurrency;
+import static me.uma.utils.SerializationKt.getSerialFormat;
 
 public class UmaTest {
-    UmaProtocolHelper umaProtocolHelper = new UmaProtocolHelper(new InMemoryPublicKeyCache(), new TestUmaRequester());
+    PublicKeyCache publicKeyCache = new InMemoryPublicKeyCache();
+    UmaProtocolHelper umaProtocolHelper = new UmaProtocolHelper(publicKeyCache, new TestUmaRequester());
     private static final String PUBKEY_HEX = "04419c5467ea563f0010fd614f85e885ac99c21b8e8d416241175fdd5efd2244fe907e2e6fa3dd6631b1b17cd28798da8d882a34c4776d44cc4090781c7aadea1b";
     private static final String PRIVKEY_HEX = "77e891f0ecd265a3cda435eaa73792233ebd413aeb0dbb66f2940babfc9a2667";
     private static final String encodedPayReqMetadata = "[[\"text/uma-invoice\",\"invoiceUUID\"],[\"text/plain\",\"otherInformations\"]]";
@@ -198,6 +200,63 @@ public class UmaTest {
     }
 
     @Test
+    public void testSignAndVerifyLnurlpResponseWithBackingSignature() throws Exception {
+        String lnurlpUrl = umaProtocolHelper.getSignedLnurlpRequestUrl(
+                privateKeyBytes(),
+                "$bob@vasp2.com",
+                "https://vasp.com",
+                true);
+        LnurlpRequest request = umaProtocolHelper.parseLnurlpRequest(lnurlpUrl);
+        assertNotNull(request);
+        LnurlpResponse lnurlpResponse = umaProtocolHelper.getLnurlpResponse(
+                request,
+                privateKeyBytes(),
+                true,
+                "https://vasp2.com/callback",
+                "encoded metadata",
+                1,
+                10_000_000,
+                CounterPartyData.createCounterPartyDataOptions(
+                        Map.of(
+                                "name", false,
+                                "email", false,
+                                "identity", true,
+                                "compliance", true
+                        )
+                ),
+                List.of(
+                        createCurrency(
+                                "USD",
+                                "US Dollar",
+                                "$",
+                                34_150,
+                                2,
+                                1,
+                                10_000_000,
+                                "0.3"
+                        )
+                ),
+                KycStatus.VERIFIED
+        );
+        assertNotNull(lnurlpResponse);
+        String backingDomain = "backingvasp.com";
+        UmaLnurlpResponse umaResponse = lnurlpResponse.asUmaResponse();
+        assertNotNull(umaResponse);
+        UmaLnurlpResponse responseWithBackingSignature = umaResponse.appendBackingSignature(privateKeyBytes(), backingDomain);
+        String responseJson = responseWithBackingSignature.toJson();
+        LnurlpResponse parsedResponse = umaProtocolHelper.parseAsLnurlpResponse(responseJson);
+        assertNotNull(parsedResponse);
+        UmaLnurlpResponse parsedUmaResponse = parsedResponse.asUmaResponse();
+        assertNotNull(parsedUmaResponse);
+        assertNotNull(parsedUmaResponse.getBackingSignatures());
+        assertEquals(1, parsedUmaResponse.getBackingSignatures().size());
+        Long publicKeyCacheExpiry = System.currentTimeMillis() / 1000 + 10000;
+        PubKeyResponse backingVaspPubKeyResponse = new PubKeyResponse(publicKeyBytes(), publicKeyBytes(), publicKeyCacheExpiry);
+        publicKeyCache.addPublicKeysForVasp(backingDomain, backingVaspPubKeyResponse);
+        assertTrue(umaProtocolHelper.verifyLnurlpResponseBackingSignaturesSync(parsedUmaResponse));
+    }
+
+    @Test
     public void testGetPayRequest_umaV1() throws Exception {
         PayRequest request = umaProtocolHelper.getPayRequest(
                 publicKeyBytes(),
@@ -261,6 +320,38 @@ public class UmaTest {
         PayRequest parsedRequest = umaProtocolHelper.parseAsPayRequest(requestJson);
         assertNotNull(parsedRequest);
         assertEquals(request, parsedRequest);
+    }
+
+    @Test
+    public void testSignAndVerifyPayReqBackingSignatures() throws Exception {
+        PayRequest request = umaProtocolHelper.getPayRequest(
+                publicKeyBytes(),
+                privateKeyBytes(),
+                "USD",
+                1000L,
+                true,
+                "$alice@vasp1.com",
+                KycStatus.VERIFIED,
+                "/api/lnurl/utxocallback?txid=1234"
+        );
+        String backingDomain = "backingvasp.com";
+        PayRequest requestWithBackingSignatures = request.appendBackingSignature(privateKeyBytes(), backingDomain);
+        String requestJson = requestWithBackingSignatures.toJson();
+        PayRequest parsedRequest = umaProtocolHelper.parseAsPayRequest(requestJson);
+        assertNotNull(parsedRequest);
+        JsonObject payerData = parsedRequest.getPayerData();
+        assertNotNull(payerData);
+        CompliancePayerData complianceData = getSerialFormat().decodeFromJsonElement(
+                CompliancePayerData.Companion.serializer(),
+                payerData.get("compliance")
+        );
+        assertNotNull(complianceData);
+        assertNotNull(complianceData.getBackingSignatures());
+        assertEquals(1, complianceData.getBackingSignatures().size());
+        Long publicKeyCacheExpiry = System.currentTimeMillis() / 1000 + 10000;
+        PubKeyResponse backingVaspPubKeyResponse = new PubKeyResponse(publicKeyBytes(), publicKeyBytes(), publicKeyCacheExpiry);
+        publicKeyCache.addPublicKeysForVasp(backingDomain, backingVaspPubKeyResponse);
+        assertTrue(umaProtocolHelper.verifyPayReqBackingSignaturesSync(parsedRequest));
     }
 
     @Test
@@ -346,6 +437,55 @@ public class UmaTest {
         PayReqResponse parsedResponse = umaProtocolHelper.parseAsPayReqResponse(responseJson);
         assertNotNull(parsedResponse);
         assertEquals(response, parsedResponse);
+    }
+
+    @Test
+    public void testSignAndVerifyPayReqResponseBackingSignatures() throws Exception {
+        PayRequest request = umaProtocolHelper.getPayRequest(
+                publicKeyBytes(),
+                privateKeyBytes(),
+                "USD",
+                100L,
+                true,
+                "$alice@vasp1.com",
+                KycStatus.VERIFIED,
+                "/api/lnurl/utxocallback?txid=1234"
+        );
+        PayReqResponse response = umaProtocolHelper.getPayReqResponseSync(
+                request,
+                new TestSyncUmaInvoiceCreator(),
+                encodedPayReqMetadata,
+                "USD",
+                2,
+                24150.0,
+                100000L,
+                List.of("abcdef12345"),
+                null,
+                "/api/lnurl/utxocallback?txid=1234",
+                privateKeyBytes(),
+                PayeeData.createPayeeData(null, "$bob@vasp2.com"),
+                null,
+                null,
+                "1.0"
+        );
+        String backingDomain = "backingvasp.com";
+        PayReqResponse signedResponse = response.appendBackingSignature(privateKeyBytes(), backingDomain, "$alice@vasp1.com", "$bob@vasp2.com");
+        String responseJson = signedResponse.toJson();
+        PayReqResponse parsedResponse = umaProtocolHelper.parseAsPayReqResponse(responseJson);
+        assertNotNull(parsedResponse);
+        JsonObject payeeData = parsedResponse.payeeData();
+        assertNotNull(payeeData);
+        CompliancePayeeData complianceData = getSerialFormat().decodeFromJsonElement(
+                CompliancePayeeData.Companion.serializer(),
+                payeeData.get("compliance")
+        );
+        assertNotNull(complianceData);
+        assertNotNull(complianceData.getBackingSignatures());
+        assertEquals(1, complianceData.getBackingSignatures().size());
+        Long publicKeyCacheExpiry = System.currentTimeMillis() / 1000 + 10000;
+        PubKeyResponse backingVaspPubKeyResponse = new PubKeyResponse(publicKeyBytes(), publicKeyBytes(), publicKeyCacheExpiry);
+        publicKeyCache.addPublicKeysForVasp(backingDomain, backingVaspPubKeyResponse);
+        assertTrue(umaProtocolHelper.verifyPayReqResponseBackingSignaturesSync(parsedResponse, "$alice@vasp1.com"));
     }
 
     @Test
@@ -438,6 +578,32 @@ public class UmaTest {
 
         assertTrue(umaProtocolHelper.verifyUmaLnurlpQuerySignature(
                 requireNonNull(request.asUmaRequest()), new PubKeyResponse(publicKeyBytes(), publicKeyBytes()), nonceCache));
+    }
+
+    @Test
+    public void testSignAndVerifyLnurlpRequestWithBackingSignature() throws Exception {
+        String lnurlpUrl = umaProtocolHelper.getSignedLnurlpRequestUrl(
+                privateKeyBytes(),
+                "$bob@vasp2.com",
+                "https://vasp.com",
+                true);
+        LnurlpRequest request = umaProtocolHelper.parseLnurlpRequest(lnurlpUrl);
+        assertNotNull(request);
+        byte[] backingVaspPrivateKey = privateKeyBytes();
+        String backingDomain = "backingvasp.com";
+        UmaLnurlpRequest requestWithBackingSignature = request.asUmaRequest().appendBackingSignature(backingVaspPrivateKey, backingDomain);
+        String encodedUrl = requestWithBackingSignature.encodeToUrl();
+        LnurlpRequest parsedRequest = umaProtocolHelper.parseLnurlpRequest(encodedUrl);
+        assertNotNull(parsedRequest);
+        assertNotNull(parsedRequest.getBackingSignatures());
+        assertEquals(1, parsedRequest.getBackingSignatures().size());
+        Long publicKeyCacheExpiry = System.currentTimeMillis() / 1000 + 10000;
+        PubKeyResponse backingVaspPubKeyResponse = new PubKeyResponse(publicKeyBytes(), publicKeyBytes(), publicKeyCacheExpiry);
+        publicKeyCache.addPublicKeysForVasp(backingDomain, backingVaspPubKeyResponse);
+        assertTrue(umaProtocolHelper.verifyUmaLnurlpQuerySignature(requireNonNull(request.asUmaRequest()), new PubKeyResponse(publicKeyBytes(), publicKeyBytes()), new InMemoryNonceCache(1L)));
+        assertTrue(umaProtocolHelper.verifyUmaLnurlpQueryBackingSignaturesSync(
+                requireNonNull(parsedRequest.asUmaRequest())
+        ));
     }
 
     @Test

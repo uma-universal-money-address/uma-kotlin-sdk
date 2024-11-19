@@ -5,7 +5,9 @@ package me.uma.protocol
 import io.ktor.http.Parameters
 import io.ktor.http.URLBuilder
 import io.ktor.http.URLProtocol
+import io.ktor.http.decodeURLQueryComponent
 import me.uma.UnsupportedVersionException
+import me.uma.crypto.Secp256k1
 import me.uma.isVersionSupported
 import me.uma.utils.isDomainLocalhost
 import kotlin.contracts.ExperimentalContracts
@@ -21,6 +23,7 @@ import kotlin.contracts.ExperimentalContracts
  * @param timestamp The unix timestamp in seconds of the moment when the request was sent. Used in the signature.
  * @param umaVersion  The version of the UMA protocol that VASP1 prefers to use for this transaction. For the version
  *     negotiation flow, see https://static.swimlanes.io/87f5d188e080cb8e0494e46f80f2ae74.png
+ * @param backingSignatures A list of backing signatures from VASPs that can attest to the authenticity of the message.
  */
 data class LnurlpRequest(
     val receiverAddress: String,
@@ -30,6 +33,7 @@ data class LnurlpRequest(
     val vaspDomain: String?,
     val timestamp: Long?,
     val umaVersion: String?,
+    val backingSignatures: List<BackingSignature>? = null,
 ) {
     /**
      * Encodes the request to a URL that can be used to send the request to VASP2.
@@ -54,6 +58,12 @@ data class LnurlpRequest(
                         umaVersion?.let { append("umaVersion", it) }
                         timestamp?.let { append("timestamp", it.toString()) }
                         isSubjectToTravelRule?.let { append("isSubjectToTravelRule", it.toString()) }
+                        backingSignatures?.let { signatures ->
+                            append(
+                                "backingSignatures",
+                                signatures.joinToString(",") { "${it.domain}:${it.signature}" }
+                            )
+                        }
                     },
             ).build()
         return url.toString()
@@ -78,6 +88,7 @@ data class LnurlpRequest(
                 vaspDomain,
                 timestamp,
                 umaVersion,
+                backingSignatures,
             )
         } else {
             null
@@ -114,6 +125,19 @@ data class LnurlpRequest(
             val isSubjectToTravelRule = urlBuilder.parameters["isSubjectToTravelRule"]?.toBoolean()
             val timestamp = urlBuilder.parameters["timestamp"]?.toLong()
             val umaVersion = urlBuilder.parameters["umaVersion"]
+            val backingSignatures = urlBuilder.parameters["backingSignatures"]?.let { serialized ->
+                serialized.split(",").map { pair ->
+                    val decodedPair = pair.decodeURLQueryComponent()
+                    val lastColonIndex = decodedPair.lastIndexOf(':')
+                    if (lastColonIndex == -1) {
+                        throw IllegalArgumentException("Invalid backing signature format")
+                    }
+                    BackingSignature(
+                        domain = decodedPair.substring(0, lastColonIndex),
+                        signature = decodedPair.substring(lastColonIndex + 1)
+                    )
+                }
+            }
 
             if (umaVersion != null && !isVersionSupported(umaVersion)) {
                 throw UnsupportedVersionException(umaVersion)
@@ -127,6 +151,7 @@ data class LnurlpRequest(
                 vaspDomain,
                 timestamp,
                 umaVersion,
+                backingSignatures,
             )
         }
     }
@@ -145,6 +170,8 @@ data class LnurlpRequest(
  * @param timestamp The unix timestamp in seconds of the moment when the request was sent. Used in the signature.
  * @param umaVersion  The version of the UMA protocol that VASP1 prefers to use for this transaction. For the version
  *     negotiation flow, see https://static.swimlanes.io/87f5d188e080cb8e0494e46f80f2ae74.png
+ * @param backingSignatures A list of backing signatures from VASPs that can attest to the authenticity of the message,
+ *     along with their associated domains.
  */
 data class UmaLnurlpRequest(
     val receiverAddress: String,
@@ -154,6 +181,7 @@ data class UmaLnurlpRequest(
     val vaspDomain: String,
     val timestamp: Long,
     val umaVersion: String,
+    val backingSignatures: List<BackingSignature>?,
 ) {
     fun asLnurlpRequest() = LnurlpRequest(
         receiverAddress,
@@ -163,6 +191,7 @@ data class UmaLnurlpRequest(
         vaspDomain,
         timestamp,
         umaVersion,
+        backingSignatures,
     )
 
     /**
@@ -173,4 +202,12 @@ data class UmaLnurlpRequest(
     fun signedWith(signature: String) = copy(signature = signature)
 
     fun signablePayload() = "$receiverAddress|$nonce|$timestamp".encodeToByteArray()
+
+    @OptIn(kotlin.ExperimentalStdlibApi::class)
+    fun appendBackingSignature(signingPrivateKey: ByteArray, domain: String): UmaLnurlpRequest {
+        val signature = Secp256k1.signEcdsa(signablePayload(), signingPrivateKey).toHexString()
+        val newBackingSignatures = (backingSignatures ?: emptyList()).toMutableList()
+        newBackingSignatures.add(BackingSignature(domain = domain, signature = signature))
+        return copy(backingSignatures = newBackingSignatures)
+    }
 }

@@ -64,6 +64,7 @@ fun PayerData.identifier(): String? = get("identifier")?.jsonPrimitive?.content
  * @property signatureTimestamp The timestamp used in the signature.
  * @property travelRuleFormat An optional standardized format of the travel rule information (e.g. IVMS). Null
  *     indicates raw json or a custom format.
+ * @property backingSignatures The list of backing signatures from VASPs that can attest to the authenticity of the message.
  */
 @Serializable
 data class CompliancePayerData
@@ -78,6 +79,7 @@ data class CompliancePayerData
         val signatureNonce: String,
         val signatureTimestamp: Long,
         val travelRuleFormat: TravelRuleFormat? = null,
+        val backingSignatures: List<BackingSignature>? = null,
     ) {
         fun signedWith(signature: String) = copy(signature = signature)
     }
