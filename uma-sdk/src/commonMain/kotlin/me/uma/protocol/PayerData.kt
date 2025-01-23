@@ -3,18 +3,17 @@
 package me.uma.protocol
 
 import me.uma.utils.serialFormat
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.jsonPrimitive
+import java.io.ByteArrayInputStream
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
+import kotlinx.serialization.*
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.nullable
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.descriptors.*
+import kotlinx.serialization.encoding.*
+import kotlinx.serialization.json.*
 
 typealias PayerData = JsonObject
 
@@ -43,7 +42,7 @@ fun createPayerData(
 
 fun PayerData.compliance(): CompliancePayerData? {
     val jsonCompliance = get("compliance") ?: return null
-    return serialFormat.decodeFromJsonElement(jsonCompliance)
+    return serialFormat.decodeFromJsonElement(CompliancePayerDataSerializer, jsonCompliance)
 }
 
 fun PayerData.identifier(): String? = get("identifier")?.jsonPrimitive?.content
@@ -66,7 +65,7 @@ fun PayerData.identifier(): String? = get("identifier")?.jsonPrimitive?.content
  *     indicates raw json or a custom format.
  * @property backingSignatures The list of backing signatures from VASPs that can attest to the authenticity of the message.
  */
-@Serializable
+@Serializable(with = CompliancePayerDataSerializer::class)
 data class CompliancePayerData
     @JvmOverloads
     constructor(
@@ -80,9 +79,121 @@ data class CompliancePayerData
         val signatureTimestamp: Long,
         val travelRuleFormat: TravelRuleFormat? = null,
         val backingSignatures: List<BackingSignature>? = null,
+        // If adding new fields, please update the serializer below.
     ) {
         fun signedWith(signature: String) = copy(signature = signature)
     }
+
+/**
+ * The entire point of this custom serializer is to gracefully handle missing `utxos` fields because some SDKs allow
+ * for that field to be missing. This will be resolved in the next major version bump, but for now, this needs to be
+ * handled directly.
+ *
+ * Note: This can't just use JsonTransformingSerializer (although I'd love to) because they can't easily be registered
+ * as default serializers for a specific type without causing circular references or other runtime failures. I tried to
+ * make that work for a while because it's much cleaner, but eventually gave up.
+ */
+@OptIn(ExperimentalSerializationApi::class)
+internal object CompliancePayerDataSerializer : KSerializer<CompliancePayerData> {
+    override val descriptor: SerialDescriptor =
+        buildClassSerialDescriptor("CompliancePayerData") {
+            element<List<String>>("utxos")
+            element<String?>("nodePubKey", isOptional = true)
+            element<KycStatus>("kycStatus")
+            element<String?>("encryptedTravelRuleInfo", isOptional = true)
+            element<String>("utxoCallback")
+            element<String>("signature")
+            element<String>("signatureNonce")
+            element<Long>("signatureTimestamp")
+            element<TravelRuleFormat?>("travelRuleFormat", isOptional = true)
+            element<List<BackingSignature>?>("backingSignatures", isOptional = true)
+        }
+
+    override fun serialize(encoder: Encoder, value: CompliancePayerData) {
+        encoder.encodeStructure(descriptor) {
+            encodeSerializableElement(descriptor, 0, ListSerializer(String.serializer()), value.utxos)
+            encodeNullableSerializableElement(descriptor, 1, String.serializer().nullable, value.nodePubKey)
+            encodeSerializableElement(descriptor, 2, KycStatus.serializer(), value.kycStatus)
+            encodeNullableSerializableElement(
+                descriptor,
+                3,
+                String.serializer().nullable,
+                value.encryptedTravelRuleInfo
+            )
+            encodeStringElement(descriptor, 4, value.utxoCallback)
+            encodeStringElement(descriptor, 5, value.signature)
+            encodeStringElement(descriptor, 6, value.signatureNonce)
+            encodeLongElement(descriptor, 7, value.signatureTimestamp)
+            encodeNullableSerializableElement(
+                descriptor,
+                8,
+                TravelRuleFormatSerializer().nullable,
+                value.travelRuleFormat
+            )
+            encodeNullableSerializableElement(
+                descriptor,
+                9,
+                ListSerializer(BackingSignature.serializer()).nullable,
+                value.backingSignatures
+            )
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): CompliancePayerData {
+        return decoder.decodeStructure(descriptor) {
+            var utxos: List<String>? = null
+            var nodePubKey: String? = null
+            var kycStatus: KycStatus? = null
+            var encryptedTravelRuleInfo: String? = null
+            var utxoCallback: String? = null
+            var signature: String? = null
+            var signatureNonce: String? = null
+            var signatureTimestamp: Long? = null
+            var travelRuleFormat: TravelRuleFormat? = null
+            var backingSignatures: List<BackingSignature>? = null
+
+            while (true) {
+                when (val index = decodeElementIndex(descriptor)) {
+                    CompositeDecoder.DECODE_DONE -> break
+                    0 -> utxos = decodeSerializableElement(descriptor, 0, ListSerializer(String.serializer()))
+                    1 -> nodePubKey = decodeNullableSerializableElement(descriptor, 1, String.serializer().nullable)
+                    2 -> kycStatus = decodeSerializableElement(descriptor, 2, KycStatus.serializer())
+                    3 -> encryptedTravelRuleInfo =
+                        decodeNullableSerializableElement(descriptor, 3, String.serializer().nullable)
+
+                    4 -> utxoCallback = decodeStringElement(descriptor, 4)
+                    5 -> signature = decodeStringElement(descriptor, 5)
+                    6 -> signatureNonce = decodeStringElement(descriptor, 6)
+                    7 -> signatureTimestamp = decodeLongElement(descriptor, 7)
+                    8 -> travelRuleFormat =
+                        decodeNullableSerializableElement(descriptor, 8, TravelRuleFormatSerializer().nullable)
+
+                    9 -> backingSignatures = decodeNullableSerializableElement(
+                        descriptor,
+                        9,
+                        ListSerializer(BackingSignature.serializer()).nullable
+                    )
+
+                    else -> error("Unexpected index: $index")
+                }
+            }
+
+            CompliancePayerData(
+                utxos = utxos ?: emptyList(),
+                nodePubKey = nodePubKey,
+                kycStatus = kycStatus ?: throw IllegalArgumentException("kycStatus is missing"),
+                encryptedTravelRuleInfo = encryptedTravelRuleInfo,
+                utxoCallback = utxoCallback ?: throw IllegalArgumentException("utxoCallback is missing"),
+                signature = signature ?: throw IllegalArgumentException("signature is missing"),
+                signatureNonce = signatureNonce ?: throw IllegalArgumentException("signatureNonce is missing"),
+                signatureTimestamp = signatureTimestamp
+                    ?: throw IllegalArgumentException("signatureTimestamp is missing"),
+                travelRuleFormat = travelRuleFormat,
+                backingSignatures = backingSignatures,
+            )
+        }
+    }
+}
 
 /**
  * A standardized format of the travel rule information.
