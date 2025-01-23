@@ -3,12 +3,8 @@
 package me.uma.protocol
 
 import me.uma.utils.serialFormat
-import java.io.ByteArrayInputStream
-import java.security.cert.CertificateFactory
-import java.security.cert.X509Certificate
 import kotlinx.serialization.*
 import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.*
@@ -158,15 +154,17 @@ internal object CompliancePayerDataSerializer : KSerializer<CompliancePayerData>
                     0 -> utxos = decodeSerializableElement(descriptor, 0, ListSerializer(String.serializer()))
                     1 -> nodePubKey = decodeNullableSerializableElement(descriptor, 1, String.serializer().nullable)
                     2 -> kycStatus = decodeSerializableElement(descriptor, 2, KycStatus.serializer())
-                    3 -> encryptedTravelRuleInfo =
-                        decodeNullableSerializableElement(descriptor, 3, String.serializer().nullable)
+                    3 ->
+                        encryptedTravelRuleInfo =
+                            decodeNullableSerializableElement(descriptor, 3, String.serializer().nullable)
 
                     4 -> utxoCallback = decodeStringElement(descriptor, 4)
                     5 -> signature = decodeStringElement(descriptor, 5)
                     6 -> signatureNonce = decodeStringElement(descriptor, 6)
                     7 -> signatureTimestamp = decodeLongElement(descriptor, 7)
-                    8 -> travelRuleFormat =
-                        decodeNullableSerializableElement(descriptor, 8, TravelRuleFormatSerializer().nullable)
+                    8 ->
+                        travelRuleFormat =
+                            decodeNullableSerializableElement(descriptor, 8, TravelRuleFormatSerializer().nullable)
 
                     9 -> backingSignatures = decodeNullableSerializableElement(
                         descriptor,
