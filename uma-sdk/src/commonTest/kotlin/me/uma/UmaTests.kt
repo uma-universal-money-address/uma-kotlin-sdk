@@ -277,6 +277,37 @@ class UmaTests {
         )
     }
 
+    @Test
+    fun `test deserialization of missing utxos`() = runTest {
+        // Missing nodePubKey and encryptedTravelRuleInfo:
+        val jsonCompliancePayerData =
+            """
+            {
+                "kycStatus": "VERIFIED",
+                "utxoCallback": "utxoCallback",
+                "signature": "signature",
+                "signatureNonce": "1234",
+                "signatureTimestamp": 1234567,
+                "travelRuleFormat": null
+            }
+            """.trimIndent()
+
+        val compliancePayerData = serialFormat.decodeFromString<CompliancePayerData>(jsonCompliancePayerData)
+        assertEquals(
+            CompliancePayerData(
+                utxos = emptyList(),
+                kycStatus = KycStatus.VERIFIED,
+                utxoCallback = "utxoCallback",
+                signature = "signature",
+                signatureNonce = "1234",
+                signatureTimestamp = 1234567,
+                encryptedTravelRuleInfo = null,
+                nodePubKey = null,
+            ),
+            compliancePayerData,
+        )
+    }
+
     private fun createInvoice(timestamp: Long? = null): Invoice {
         val requiredPayerData =
             mapOf(
