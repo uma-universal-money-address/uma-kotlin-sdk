@@ -93,6 +93,7 @@ internal data class PayReqResponseV1(
                 ?: throw IllegalArgumentException("Compliance data is required")
         return complianceData.let {
             "$payerIdentifier|${payeeData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}"
+                .lowercase()
                 .encodeToByteArray()
         }
     }

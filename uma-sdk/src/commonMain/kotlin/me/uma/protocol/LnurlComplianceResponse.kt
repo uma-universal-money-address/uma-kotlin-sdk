@@ -21,7 +21,7 @@ data class LnurlComplianceResponse(
     val signatureNonce: String,
     val signatureTimestamp: Long,
 ) {
-    fun signablePayload() = "$receiverIdentifier|$signatureNonce|$signatureTimestamp".encodeToByteArray()
+    fun signablePayload() = "$receiverIdentifier|$signatureNonce|$signatureTimestamp".lowercase().encodeToByteArray()
 
     fun signedWith(signature: String) = copy(signature = signature)
 }

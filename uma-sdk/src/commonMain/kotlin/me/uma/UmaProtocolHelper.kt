@@ -496,7 +496,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             utxoCallback = utxoCallback,
             travelRuleFormat = travelRuleFormat,
         )
-        val signablePayload = "$payerIdentifier|$nonce|$timestamp".encodeToByteArray()
+        val signablePayload = "$payerIdentifier|$nonce|$timestamp".lowercase().encodeToByteArray()
         val signature = signPayload(signablePayload, sendingVaspPrivateKey)
         return unsignedCompliancePayerData.signedWith(signature)
     }
@@ -906,7 +906,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             signatureNonce = nonce,
             signatureTimestamp = timestamp,
         )
-        val signablePayload = "$payerIdentifier|$payeeIdentifier|$nonce|$timestamp".encodeToByteArray()
+        val signablePayload = "$payerIdentifier|$payeeIdentifier|$nonce|$timestamp".lowercase().encodeToByteArray()
         val signature = signPayload(signablePayload, receivingVaspPrivateKey)
         return unsignedCompliancePayeeData.signedWith(signature)
     }

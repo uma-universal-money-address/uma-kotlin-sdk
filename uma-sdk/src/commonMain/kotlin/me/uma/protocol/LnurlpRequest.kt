@@ -201,7 +201,7 @@ data class UmaLnurlpRequest(
 
     fun signedWith(signature: String) = copy(signature = signature)
 
-    fun signablePayload() = "$receiverAddress|$nonce|$timestamp".encodeToByteArray()
+    fun signablePayload() = "$receiverAddress|$nonce|$timestamp".lowercase().encodeToByteArray()
 
     @OptIn(kotlin.ExperimentalStdlibApi::class)
     fun appendBackingSignature(signingPrivateKey: ByteArray, domain: String): UmaLnurlpRequest {

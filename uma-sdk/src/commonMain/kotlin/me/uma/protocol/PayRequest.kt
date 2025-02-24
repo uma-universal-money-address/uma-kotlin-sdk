@@ -122,7 +122,7 @@ internal data class PayRequestV1(
         if (payerData.identifier() == null) throw IllegalArgumentException("Payer identifier is required for UMA")
         val complianceData = payerData.compliance() ?: throw IllegalArgumentException("Compliance data is required")
         return complianceData.let {
-            "${payerData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}".encodeToByteArray()
+            "${payerData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}".lowercase().encodeToByteArray()
         }
     }
 
@@ -197,8 +197,8 @@ internal data class PayRequestV0(
     override fun invoiceUUID(): String? = null
 
     override fun signablePayload() = payerData.compliance()?.let {
-        "${payerData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}".encodeToByteArray()
-    } ?: payerData.identifier()?.encodeToByteArray()
+        "${payerData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}".lowercase().encodeToByteArray()
+    } ?: payerData.identifier()?.lowercase()?.encodeToByteArray()
         ?: throw IllegalArgumentException("Payer identifier is required for UMA")
 
     override fun toJson() = serialFormat.encodeToString(this)

@@ -22,7 +22,7 @@ data class PostTransactionCallback(
     val signatureTimestamp: Long,
 ) {
     fun signablePayload(): ByteArray {
-        return "$signatureNonce|$signatureTimestamp".encodeToByteArray()
+        return "$signatureNonce|$signatureTimestamp".lowercase().encodeToByteArray()
     }
 
     fun signedWith(signature: String) = copy(signature = signature)
