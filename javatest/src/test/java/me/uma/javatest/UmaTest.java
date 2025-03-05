@@ -626,7 +626,7 @@ public class UmaTest {
     }
 
     @Test
-    public void serializeAndDeserializePubKeyResponse() {
+    public void serializeAndDeserializePubKeyResponse() throws UmaException {
         PubKeyResponse keysOnlyResponse =
                 new PubKeyResponse(UmaTest.hexToBytes("02d5fe"), UmaTest.hexToBytes("123456"));
         String json = keysOnlyResponse.toJson();
@@ -634,8 +634,7 @@ public class UmaTest {
         assertNotNull(parsedResponse);
         assertEquals(keysOnlyResponse, parsedResponse);
 
-        PubKeyResponse certsOnlyResponse =
-                new PubKeyResponse(CERT_CHAIN, CERT_CHAIN);
+        PubKeyResponse certsOnlyResponse = new PubKeyResponse(CERT_CHAIN, CERT_CHAIN);
         json = certsOnlyResponse.toJson();
         parsedResponse = umaProtocolHelper.parseAsPubKeyResponse(json);
         assertNotNull(parsedResponse);

@@ -1,6 +1,8 @@
 package me.uma.protocol
 
+import me.uma.UmaException
 import me.uma.crypto.Secp256k1
+import me.uma.generated.ErrorCode
 import me.uma.utils.serialFormat
 import kotlinx.serialization.*
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
@@ -85,12 +87,23 @@ internal data class PayReqResponseV1(
         payeeData.identifier() != null &&
         paymentInfo != null
 
+    @Throws(UmaException::class)
     fun signablePayload(payerIdentifier: String): ByteArray {
-        if (payeeData == null) throw IllegalArgumentException("Payee data is required for UMA")
-        if (payeeData.identifier() == null) throw IllegalArgumentException("Payee identifier is required for UMA")
+        if (payeeData == null) {
+            throw UmaException(
+                "Payee data is required for UMA",
+                ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS
+            )
+        }
+        if (payeeData.identifier() == null) {
+            throw UmaException(
+                "Payee identifier is required for UMA",
+                ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS
+            )
+        }
         val complianceData =
             payeeData.payeeCompliance()
-                ?: throw IllegalArgumentException("Compliance data is required")
+                ?: throw UmaException("Compliance data is required", ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS)
         return complianceData.let {
             "$payerIdentifier|${payeeData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}"
                 .encodeToByteArray()
@@ -98,7 +111,7 @@ internal data class PayReqResponseV1(
     }
 
     @OptIn(kotlin.ExperimentalStdlibApi::class)
-    @Throws(Exception::class)
+    @Throws(UmaException::class)
     override fun appendBackingSignature(
         signingPrivateKey: ByteArray,
         domain: String,
@@ -108,7 +121,7 @@ internal data class PayReqResponseV1(
         val signablePayload = signablePayload(payerIdentifier)
         val signature = Secp256k1.signEcdsa(signablePayload, signingPrivateKey).toHexString()
         val complianceData = payeeData?.payeeCompliance()
-            ?: throw IllegalArgumentException("Compliance payee data is missing")
+            ?: throw UmaException("Compliance payee data is missing", ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS)
         val backingSignatures = (complianceData.backingSignatures ?: emptyList()).toMutableList()
         backingSignatures.add(BackingSignature(domain = domain, signature = signature))
         val updatedComplianceData = complianceData.copy(backingSignatures = backingSignatures)

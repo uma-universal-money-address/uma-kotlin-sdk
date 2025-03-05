@@ -3,6 +3,7 @@
 package me.uma
 
 import me.uma.crypto.Secp256k1
+import me.uma.generated.ErrorCode
 import me.uma.protocol.*
 import me.uma.utils.isDomainLocalhost
 import me.uma.utils.serialFormat
@@ -17,7 +18,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.future.future
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -105,6 +105,8 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *     parameter should only be overridden in cases where the receiving VASP does not support the default version
      *     for this SDK. For the version negotiation flow, see
      *     https://static.swimlanes.io/87f5d188e080cb8e0494e46f80f2ae74.png
+     * @return the signed [UmaLnurlpRequest], encoded to a URL.
+     * @throws UmaException if there was an error constructing the signed request URL.
      */
     @JvmOverloads
     @Throws(Exception::class)
@@ -125,7 +127,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             timestamp = timestamp,
             signature = "",
             umaVersion = umaVersion,
-        ).asUmaRequest() ?: throw IllegalArgumentException("Invalid LnurlpRequest")
+        ).asUmaRequest() ?: throw UmaException("Invalid LnurlpRequest", ErrorCode.INTERNAL_ERROR)
         val signature = signPayload(unsignedRequest.signablePayload(), signingPrivateKey)
         return unsignedRequest.signedWith(signature).encodeToUrl()
     }
@@ -144,6 +146,12 @@ class UmaProtocolHelper @JvmOverloads constructor(
         }
     }
 
+    /**
+     * Parses a [LnurlpRequest] from a URL.
+     * @throws UmaException if the request is invalid.
+     * @throws UnsupportedVersionException if the UMA version is not supported.
+     */
+    @Throws(UmaException::class, UnsupportedVersionException::class)
     fun parseLnurlpRequest(url: String) = LnurlpRequest.decodeFromUrl(url)
 
     /**
@@ -154,8 +162,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param nonceCache The persistent [NonceCache] implementation that will cache previously seen nonces.
      * @return true if the signature is valid, false otherwise.
      * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
+     * @throws UmaException if there was an error verifying the signature.
      */
-    @Throws(InvalidNonceException::class)
+    @Throws(InvalidNonceException::class, UmaException::class)
     fun verifyUmaLnurlpQuerySignature(
         query: UmaLnurlpRequest,
         pubKeyResponse: PubKeyResponse,
@@ -176,7 +185,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param query The signed query to verify.
      * @return true if all backing signatures are valid, false otherwise.
      */
-    @Throws(Exception::class)
+    @Throws(UmaException::class)
     fun verifyUmaLnurlpQueryBackingSignaturesSync(query: UmaLnurlpRequest): Boolean = runBlocking {
         verifyUmaLnurlpQueryBackingSignatures(query)
     }
@@ -187,9 +196,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *
      * @param query The signed query to verify.
      * @return true if all backing signatures are valid, false otherwise.
+     * @throws UmaException if there was an error verifying the signatures.
      */
     @JvmName("KotlinOnly-verifyUmaLnurlpQueryBackingSignaturesSuspended")
-    @Throws(Exception::class)
     suspend fun verifyUmaLnurlpQueryBackingSignatures(query: UmaLnurlpRequest): Boolean {
         val backingSignatures = query.backingSignatures ?: return true
         for (backingSignature in backingSignatures) {
@@ -226,9 +235,10 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param nostrPubkey An optional nostr pubkey used for nostr zaps (NIP-57). If set, it should be a valid
      *    BIP-340 public key in hex format.
      * @return The [LnurlpResponse] that should be sent to the sender for the given [LnurlpRequest].
-     * @throws IllegalArgumentException if the receiverAddress is not in the format of "user@domain".
+     * @throws UmaException if there was an error creating the response.
      */
     @JvmOverloads
+    @Throws(UmaException::class)
     fun getLnurlpResponse(
         query: LnurlpRequest,
         privateKeyBytes: ByteArray,
@@ -253,8 +263,12 @@ class UmaProtocolHelper @JvmOverloads constructor(
             compliance = null,
             umaVersion = null,
         )
-        requireNotNull(receiverKycStatus) { "Receiver KYC status is required for UMA" }
-        requireNotNull(currencyOptions) { "Currency options are required for UMA" }
+        if (receiverKycStatus == null) {
+            throw UmaException("Receiver KYC status is required for UMA", ErrorCode.INTERNAL_ERROR)
+        }
+        if (currencyOptions == null) {
+            throw UmaException("Currency options are required for UMA", ErrorCode.INTERNAL_ERROR)
+        }
         val complianceResponse =
             getSignedLnurlpComplianceResponse(query, privateKeyBytes, requiresTravelRuleInfo, receiverKycStatus)
         val umaVersion = minOf(Version.parse(umaRequest.umaVersion), Version.parse(UMA_VERSION_STRING)).toString()
@@ -327,8 +341,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param nonceCache The persistent [NonceCache] implementation that will cache previously seen nonces.
      * @return true if the signature is valid, false otherwise.
      * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
+     * @throws UmaException if there was an error when verifying the signature.
      */
-    @Throws(InvalidNonceException::class)
+    @Throws(InvalidNonceException::class, UmaException::class)
     fun verifyLnurlpResponseSignature(
         response: UmaLnurlpResponse,
         pubKeyResponse: PubKeyResponse,
@@ -349,7 +364,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param response The signed [LnurlpResponse] to verify.
      * @return true if all backing signatures are valid, false otherwise.
      */
-    @Throws(Exception::class)
+    @Throws(UmaException::class)
     fun verifyLnurlpResponseBackingSignaturesSync(response: UmaLnurlpResponse): Boolean = runBlocking {
         verifyLnurlpResponseBackingSignatures(response)
     }
@@ -360,9 +375,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *
      * @param response The signed [LnurlpResponse] to verify.
      * @return true if all backing signatures are valid, false otherwise.
+     * @throws UmaException if there was an error verifying the signatures.
      */
     @JvmName("KotlinOnly-verifyLnurlpResponseBackingSignaturesSuspended")
-    @Throws(Exception::class)
     suspend fun verifyLnurlpResponseBackingSignatures(response: UmaLnurlpResponse): Boolean {
         val backingSignatures = response.backingSignatures ?: return true
         for (backingSignature in backingSignatures) {
@@ -409,8 +424,10 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *    less than or equal to the value of `commentAllowed`.
      * @param receiverUmaVersion The UMA version of the receiver VASP. This information can be obtained from the [LnurlpResponse]
      * @return The [PayRequest] that should be sent to the receiver.
+     * @throws UmaException if there was an error creating the request.
      */
     @JvmOverloads
+    @Throws(UmaException::class)
     fun getPayRequest(
         receiverEncryptionPubKey: ByteArray,
         sendingVaspPrivateKey: ByteArray,
@@ -513,10 +530,10 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *
      * @param request The json requestBody sent by the sender.
      * @return The [PayRequest] sent by the sender.
-     * @throws IllegalArgumentException if the requestBody is not a valid [PayRequest].
+     * @throws UmaException if the requestBody is not a valid [PayRequest].
      * @throws SerializationException if the requestBody is not a valid json.
      */
-    @Throws(IllegalArgumentException::class)
+    @Throws(UmaException::class)
     fun parseAsPayRequest(request: String): PayRequest {
         return serialFormat.decodeFromString(PayRequestSerializer, request)
     }
@@ -529,8 +546,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param nonceCache The persistent [NonceCache] implementation that will cache previously seen nonces.
      * @return true if the signature is valid, false otherwise.
      * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
+     * @throws UmaException if there was error when verifying the signature.
      */
-    @Throws(InvalidNonceException::class)
+    @Throws(InvalidNonceException::class, UmaException::class)
     fun verifyPayReqSignature(payReq: PayRequest, pubKeyResponse: PubKeyResponse, nonceCache: NonceCache): Boolean {
         if (!payReq.isUmaRequest()) return false
         val compliance = payReq.payerData?.compliance() ?: return false
@@ -549,7 +567,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param payReq The signed [PayRequest] to verify.
      * @return true if all backing signatures are valid, false otherwise.
      */
-    @Throws(Exception::class)
+    @Throws(UmaException::class)
     fun verifyPayReqBackingSignaturesSync(payReq: PayRequest): Boolean = runBlocking {
         verifyPayReqBackingSignatures(payReq)
     }
@@ -560,9 +578,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *
      * @param payReq The signed [PayRequest] to verify.
      * @return true if all backing signatures are valid, false otherwise.
+     * @throws UmaException if there was an error verifying the signatures.
      */
     @JvmName("KotlinOnly-verifyPayReqBackingSignaturesSuspended")
-    @Throws(Exception::class)
     suspend fun verifyPayReqBackingSignatures(payReq: PayRequest): Boolean {
         if (!payReq.isUmaRequest()) return false
         val compliance = payReq.payerData?.compliance() ?: return false
@@ -615,7 +633,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @return A [CompletableFuture] [PayReqResponse] that should be returned to the sender for the given [PayRequest].
      */
     @JvmOverloads
-    @Throws(IllegalArgumentException::class, CancellationException::class)
+    @Throws(UmaException::class, CancellationException::class)
     fun getPayReqResponseFuture(
         query: PayRequest,
         invoiceCreator: UmaInvoiceCreator,
@@ -687,7 +705,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @return A [PayReqResponse] that should be returned to the sender for the given [PayRequest].
      */
     @JvmOverloads
-    @Throws(Exception::class, IllegalArgumentException::class, CancellationException::class)
+    @Throws(Exception::class, UmaException::class, CancellationException::class)
     fun getPayReqResponseSync(
         query: PayRequest,
         invoiceCreator: SyncUmaInvoiceCreator,
@@ -765,6 +783,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param successAction An action that the wallet should take once the payment is complete. See LUD-09.
      * @param senderUmaVersion The UMA version of the sender VASP. This information can be obtained from the [LnurlpRequest].
      * @return The [PayReqResponse] that should be returned to the sender for the given [PayRequest].
+     * @throws UmaException if there was an error constructing the response.
      */
     @JvmName("KotlinOnly-getPayReqResponseSuspended")
     suspend fun getPayReqResponse(
@@ -790,8 +809,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
         } ?: metadata
         val metadataWithPayerData = "$metadataWithInvoiceUUID$encodedPayerData"
         if (query.sendingCurrencyCode() != null && query.sendingCurrencyCode() != receivingCurrencyCode) {
-            throw IllegalArgumentException(
+            throw UmaException(
                 "Currency code in the pay request must match the receiving currency if not null.",
+                ErrorCode.INVALID_CURRENCY,
             )
         }
         val requiredUmaFields: Map<String, Any?> = mapOf(
@@ -806,7 +826,10 @@ class UmaProtocolHelper @JvmOverloads constructor(
         if (query.isUmaRequest()) {
             val missingFields = requiredUmaFields.filterValues { it == null }.keys
             if (missingFields.isNotEmpty()) {
-                throw IllegalArgumentException("Missing required fields for UMA: $missingFields")
+                throw UmaException(
+                    "Missing required fields for UMA: $missingFields",
+                    ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS
+                )
             }
         }
         val isAmountInMsats = query.sendingCurrencyCode() == null
@@ -833,7 +856,10 @@ class UmaProtocolHelper @JvmOverloads constructor(
                     receivingVaspPrivateKey!!,
                     payerIdentifier = query.payerData!!.identifier()!!,
                     payeeIdentifier = payeeData?.identifier()
-                        ?: throw IllegalArgumentException("Payee identifier is required for UMA"),
+                        ?: throw UmaException(
+                            "Payee identifier is required for UMA",
+                            ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS
+                        ),
                     utxoCallback ?: "",
                 ),
             )
@@ -842,7 +868,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             receivingCurrencyCode != null && receivingCurrencyDecimals != null && conversionRate != null
         if (Version.parse(senderUmaVersion).major < 1) {
             if (!hasPaymentInfo) {
-                throw IllegalArgumentException("Payment info is required for UMAv0")
+                throw UmaException("Payment info is required for UMAv0", ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS)
             }
             return PayReqResponseV0(
                 encodedInvoice = invoice,
@@ -924,8 +950,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param nonceCache The persistent [NonceCache] implementation that will cache previously seen nonces.
      * @return true if the signature is valid, false otherwise.
      * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
+     * @throws UmaException if there was an error verifying signatures.
      */
-    @Throws(InvalidNonceException::class)
+    @Throws(InvalidNonceException::class, UmaException::class)
     fun verifyPayReqResponseSignature(
         payReqResponse: PayReqResponse,
         pubKeyResponse: PubKeyResponse,
@@ -951,7 +978,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param payerIdentifier The identifier of the sender. For example, $alice@vasp1.com
      * @return true if all backing signatures are valid, false otherwise.
      */
-    @Throws(Exception::class)
+    @Throws(UmaException::class)
     fun verifyPayReqResponseBackingSignaturesSync(payReqResponse: PayReqResponse, payerIdentifier: String): Boolean =
         runBlocking {
             verifyPayReqResponseBackingSignatures(payReqResponse, payerIdentifier)
@@ -964,9 +991,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param payReqResponse The signed [PayReqResponse] to verify.
      * @param payerIdentifier The identifier of the sender. For example, $alice@vasp1.com
      * @return true if all backing signatures are valid, false otherwise.
+     * @throws UmaException if there was an error verifying signatures.
      */
     @JvmName("KotlinOnly-verifyPayReqResponseBackingSignaturesSuspended")
-    @Throws(Exception::class)
     suspend fun verifyPayReqResponseBackingSignatures(
         payReqResponse: PayReqResponse,
         payerIdentifier: String,
@@ -996,7 +1023,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param vaspDomain Domain name of the VASP sending the callback.
      * @param vaspPrivateKey The private signing key of the VASP sending the callback. Used to sign the message.
      * @return the [PostTransactionCallback] to be sent to the counterparty.
+     * @throws UmaException if there was an error creating the signed callback.
      */
+    @Throws(UmaException::class)
     fun getPostTransactionCallback(
         utxos: List<UtxoWithAmount>,
         vaspDomain: String,
@@ -1023,8 +1052,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param nonceCache The persistent [NonceCache] implementation that will cache previously seen nonces.
      * @return true if the signature is valid, false otherwise.
      * @throws InvalidNonceException if the nonce has already been used/timestamp is too old.
+     * @throws UmaException if there was an error verifying the signature.
      */
-    @Throws(InvalidNonceException::class)
+    @Throws(InvalidNonceException::class, UmaException::class)
     fun verifyPostTransactionCallbackSignature(
         postTransactionCallback: PostTransactionCallback,
         pubKeyResponse: PubKeyResponse,
@@ -1060,14 +1090,19 @@ class UmaProtocolHelper @JvmOverloads constructor(
         return Secp256k1.verifyEcdsa(payload, signature, publicKey)
     }
 
+    @Throws(UmaException::class)
     fun getVaspDomainFromUmaAddress(identifier: String): String {
         val atIndex = identifier.indexOf('@')
         if (atIndex == -1) {
-            throw IllegalArgumentException("Invalid identifier: $identifier. Must be of format \$user@domain.com")
+            throw UmaException(
+                "Invalid identifier: $identifier. Must be of format \$user@domain.com",
+                ErrorCode.INVALID_INPUT
+            )
         }
         return identifier.substring(atIndex + 1)
     }
 
+    @Throws(UmaException::class)
     fun verifyUmaInvoice(invoice: Invoice, pubKeyResponse: PubKeyResponse): Boolean {
         return invoice.signature?.let { signature ->
             verifySignature(

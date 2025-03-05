@@ -69,7 +69,7 @@ class UmaTests {
     @Test
     fun `deserializing an Invoice with missing required fields triggers error`() = runTest {
         val exception =
-            assertThrows<MalformedUmaInvoiceException> {
+            assertThrows<UmaException> {
                 // missing receiverUma, invoiceUUID, and Amount
                 val malformedBech32str =
                     "uma1qvtqqq642dzqzz242vsygmmvd3shyqspyspszqsyqsqq7sjqq5qszpsmvdhk6urvd9skucm98gcjcetdv95kcw3s93hx" +
@@ -232,7 +232,7 @@ class UmaTests {
         val umaLnurlpQuery =
             "https://example.com/.well-known/lnurlp/\$bob(?vaspDomain=example.com&nonce=123&signature=123&" +
                 "isSubjectToTravelRule=true&timestamp=123&umaVersion=1.0"
-        assertThrows<IllegalArgumentException> {
+        assertThrows<UmaException> {
             UmaProtocolHelper().parseLnurlpRequest(umaLnurlpQuery)
         }
     }

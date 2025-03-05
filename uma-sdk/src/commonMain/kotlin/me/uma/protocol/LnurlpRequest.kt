@@ -6,8 +6,10 @@ import io.ktor.http.Parameters
 import io.ktor.http.URLBuilder
 import io.ktor.http.URLProtocol
 import io.ktor.http.decodeURLQueryComponent
+import me.uma.UmaException
 import me.uma.UnsupportedVersionException
 import me.uma.crypto.Secp256k1
+import me.uma.generated.ErrorCode
 import me.uma.isVersionSupported
 import me.uma.utils.isDomainLocalhost
 import kotlin.contracts.ExperimentalContracts
@@ -37,12 +39,12 @@ data class LnurlpRequest(
 ) {
     /**
      * Encodes the request to a URL that can be used to send the request to VASP2.
-     * @throws IllegalArgumentException if the receiverAddress is not in the format of "$user@domain.com".
+     * @throws UmaException if the receiverAddress is not in the format of "$user@domain.com".
      */
     fun encodeToUrl(): String {
         val receiverAddressParts = receiverAddress.split("@")
         if (receiverAddressParts.size != 2) {
-            throw IllegalArgumentException("Invalid receiverAddress: $receiverAddress")
+            throw UmaException("Invalid receiverAddress: $receiverAddress", ErrorCode.INVALID_INPUT)
         }
         val scheme = if (isDomainLocalhost(receiverAddressParts[1])) URLProtocol.HTTP else URLProtocol.HTTPS
         val url =
@@ -96,16 +98,21 @@ data class LnurlpRequest(
     }
 
     companion object {
+        /**
+         * Parses a [LnurlpRequest] from a URL.
+         * @throws UmaException if the request is invalid.
+         * @throws UnsupportedVersionException if the UMA version is not supported.
+         */
         fun decodeFromUrl(url: String): LnurlpRequest {
             val urlBuilder = URLBuilder(url)
             if (urlBuilder.protocol != URLProtocol.HTTP && urlBuilder.protocol != URLProtocol.HTTPS) {
-                throw IllegalArgumentException("Invalid URL schema: $url")
+                throw UmaException("Invalid URL schema: $url", ErrorCode.PARSE_LNURLP_REQUEST_ERROR)
             }
             if (urlBuilder.pathSegments.size != 4 ||
                 urlBuilder.pathSegments[1] != ".well-known" ||
                 urlBuilder.pathSegments[2] != "lnurlp"
             ) {
-                throw IllegalArgumentException("Invalid uma request path: $url")
+                throw UmaException("Invalid uma request path: $url", ErrorCode.PARSE_LNURLP_REQUEST_ERROR)
             }
             val port =
                 if (urlBuilder.port != 443 && urlBuilder.port != 80 && urlBuilder.port != 0) {
@@ -116,7 +123,10 @@ data class LnurlpRequest(
             val username = urlBuilder.pathSegments[3]
             val usernameRegex = "^[A-Za-z0-9._$+-]+$".toRegex()
             if (!username.matches(usernameRegex)) {
-                throw IllegalArgumentException("Invalid username. Only alphanumeric characters and ._$+- are allowed.")
+                throw UmaException(
+                    "Invalid username. Only alphanumeric characters and ._$+- are allowed.",
+                    ErrorCode.PARSE_LNURLP_REQUEST_ERROR
+                )
             }
             val receiverAddress = "${urlBuilder.pathSegments[3]}@${urlBuilder.host}$port"
             val vaspDomain = urlBuilder.parameters["vaspDomain"]
@@ -130,7 +140,7 @@ data class LnurlpRequest(
                     val decodedPair = pair.decodeURLQueryComponent()
                     val lastColonIndex = decodedPair.lastIndexOf(':')
                     if (lastColonIndex == -1) {
-                        throw IllegalArgumentException("Invalid backing signature format")
+                        throw UmaException("Invalid backing signature format", ErrorCode.PARSE_LNURLP_REQUEST_ERROR)
                     }
                     BackingSignature(
                         domain = decodedPair.substring(0, lastColonIndex),

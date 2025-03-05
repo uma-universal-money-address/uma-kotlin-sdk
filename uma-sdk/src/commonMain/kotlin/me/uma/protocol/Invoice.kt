@@ -1,7 +1,9 @@
 package me.uma.protocol
 
 import io.ktor.utils.io.core.toByteArray
+import me.uma.UmaException
 import me.uma.crypto.Bech32
+import me.uma.generated.ErrorCode
 import me.uma.utils.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -12,7 +14,6 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 private const val UMA_BECH32_PREFIX = "uma"
-typealias MalformedUmaInvoiceException = IllegalArgumentException
 
 @Serializable(with = InvoiceCurrencyTLVSerializer::class)
 data class InvoiceCurrency(
@@ -227,7 +228,10 @@ class InvoiceBuilder {
                 }
             }
         if (missingRequiredFields.isNotEmpty()) {
-            throw MalformedUmaInvoiceException("missing required fields: $missingRequiredFields")
+            throw UmaException(
+                "missing required fields: $missingRequiredFields",
+                ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS
+            )
         }
     }
 

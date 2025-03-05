@@ -1,6 +1,8 @@
 package me.uma.protocol
 
+import me.uma.UmaException
 import me.uma.crypto.Secp256k1
+import me.uma.generated.ErrorCode
 import me.uma.utils.serialFormat
 import kotlinx.serialization.*
 import kotlinx.serialization.builtins.MapSerializer
@@ -42,6 +44,7 @@ sealed interface PayRequest {
 
     fun isUmaRequest(): Boolean
 
+    @Throws(UmaException::class)
     fun signablePayload(): ByteArray
 
     fun toJson(): String
@@ -57,12 +60,13 @@ sealed interface PayRequest {
     fun appendBackingSignature(signingPrivateKey: ByteArray, domain: String): PayRequest
 
     companion object {
+        @Throws(UmaException::class)
         fun fromQueryParamMap(queryMap: Map<String, List<String>>): PayRequest {
             val receivingCurrencyCode = queryMap["convert"]?.firstOrNull()
 
             val amountStr =
                 queryMap["amount"]?.firstOrNull()
-                    ?: throw IllegalArgumentException("Amount is required")
+                    ?: throw UmaException("Amount is required", ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS)
             val parts = amountStr.split(".")
             val sendingCurrencyCode = if (parts.size == 2) parts[1] else null
             val amount = parts[0].toLong()
@@ -118,9 +122,20 @@ internal data class PayRequestV1(
     override fun sendingCurrencyCode() = sendingCurrencyCode
 
     override fun signablePayload(): ByteArray {
-        if (payerData == null) throw IllegalArgumentException("Payer data is required for UMA")
-        if (payerData.identifier() == null) throw IllegalArgumentException("Payer identifier is required for UMA")
-        val complianceData = payerData.compliance() ?: throw IllegalArgumentException("Compliance data is required")
+        if (payerData == null) {
+            throw UmaException(
+                "Payer data is required for UMA",
+                ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS
+            )
+        }
+        if (payerData.identifier() == null) {
+            throw UmaException(
+                "Payer identifier is required for UMA",
+                ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS
+            )
+        }
+        val complianceData = payerData.compliance()
+            ?: throw UmaException("Compliance data is required", ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS)
         return complianceData.let {
             "${payerData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}".encodeToByteArray()
         }
@@ -158,12 +173,12 @@ internal data class PayRequestV1(
     }
 
     @OptIn(kotlin.ExperimentalStdlibApi::class)
-    @Throws(Exception::class)
+    @Throws(UmaException::class)
     override fun appendBackingSignature(signingPrivateKey: ByteArray, domain: String): PayRequestV1 {
         val signablePayload = signablePayload()
         val signature = Secp256k1.signEcdsa(signablePayload, signingPrivateKey).toHexString()
         val complianceData = payerData?.compliance()
-            ?: throw IllegalArgumentException("Compliance payer data is missing")
+            ?: throw UmaException("Compliance payer data is missing", ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS)
         val backingSignatures = (complianceData.backingSignatures ?: emptyList()).toMutableList()
         backingSignatures.add(BackingSignature(domain = domain, signature = signature))
         val updatedComplianceData = complianceData.copy(backingSignatures = backingSignatures)
@@ -199,7 +214,7 @@ internal data class PayRequestV0(
     override fun signablePayload() = payerData.compliance()?.let {
         "${payerData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}".encodeToByteArray()
     } ?: payerData.identifier()?.encodeToByteArray()
-        ?: throw IllegalArgumentException("Payer identifier is required for UMA")
+        ?: throw UmaException("Payer identifier is required for UMA", ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS)
 
     override fun toJson() = serialFormat.encodeToString(this)
 
@@ -299,7 +314,7 @@ internal object PayRequestV1Serializer : KSerializer<PayRequestV1> {
                     } else {
                         it.toLong()
                     }
-                } ?: throw IllegalArgumentException("Amount is required")
+                } ?: throw UmaException("Amount is required", ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS)
 
             PayRequestV1(
                 sendingCurrencyCode,
