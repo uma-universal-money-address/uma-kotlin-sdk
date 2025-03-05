@@ -2,6 +2,8 @@
 
 package me.uma.protocol
 
+import me.uma.UmaException
+import me.uma.generated.ErrorCode
 import me.uma.utils.serialFormat
 import kotlinx.serialization.*
 import kotlinx.serialization.builtins.ListSerializer
@@ -172,20 +174,27 @@ internal object CompliancePayerDataSerializer : KSerializer<CompliancePayerData>
                         ListSerializer(BackingSignature.serializer()).nullable
                     )
 
-                    else -> error("Unexpected index: $index")
+                    else -> throw UmaException(
+                        "Unexpected field index $index when deserializing CompliancePayerData",
+                        ErrorCode.PARSE_PAYREQ_REQUEST_ERROR
+                    )
                 }
             }
 
             CompliancePayerData(
                 utxos = utxos ?: emptyList(),
                 nodePubKey = nodePubKey,
-                kycStatus = kycStatus ?: throw IllegalArgumentException("kycStatus is missing"),
+                kycStatus = kycStatus
+                    ?: throw UmaException("kycStatus is missing", ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS),
                 encryptedTravelRuleInfo = encryptedTravelRuleInfo,
-                utxoCallback = utxoCallback ?: throw IllegalArgumentException("utxoCallback is missing"),
-                signature = signature ?: throw IllegalArgumentException("signature is missing"),
-                signatureNonce = signatureNonce ?: throw IllegalArgumentException("signatureNonce is missing"),
+                utxoCallback = utxoCallback
+                    ?: throw UmaException("utxoCallback is missing", ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS),
+                signature = signature
+                    ?: throw UmaException("signature is missing", ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS),
+                signatureNonce = signatureNonce
+                    ?: throw UmaException("signatureNonce is missing", ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS),
                 signatureTimestamp = signatureTimestamp
-                    ?: throw IllegalArgumentException("signatureTimestamp is missing"),
+                    ?: throw UmaException("signatureTimestamp is missing", ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS),
                 travelRuleFormat = travelRuleFormat,
                 backingSignatures = backingSignatures,
             )

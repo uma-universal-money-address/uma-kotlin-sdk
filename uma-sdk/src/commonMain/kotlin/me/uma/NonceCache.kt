@@ -1,5 +1,7 @@
 package me.uma
 
+import me.uma.generated.ErrorCode
+
 /**
  * An interface for caching of nonces used in signatures. This is used to prevent replay attacks.
  * Implementations of this interface should be thread-safe.
@@ -22,7 +24,7 @@ interface NonceCache {
     fun purgeNoncesOlderThan(timestamp: Long)
 }
 
-class InvalidNonceException(message: String) : Exception(message)
+class InvalidNonceException(message: String) : UmaException(message, code = ErrorCode.INVALID_NONCE)
 
 /**
  * InMemoryNonceCache is an in-memory implementation of NonceCache.

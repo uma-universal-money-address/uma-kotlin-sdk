@@ -1,5 +1,7 @@
 package me.uma.protocol
 
+import me.uma.UmaException
+import me.uma.generated.ErrorCode
 import me.uma.utils.ByteArrayAsHexSerializer
 import me.uma.utils.X509CertificateSerializer
 import me.uma.utils.serialFormat
@@ -47,6 +49,7 @@ data class PubKeyResponse internal constructor(
     )
 
     @JvmOverloads
+    @Throws(UmaException::class)
     constructor(signingCertChain: String, encryptionCertChain: String, expirationTs: Long? = null) : this(
         signingCertChain = signingCertChain.toX509CertChain(),
         encryptionCertChain = encryptionCertChain.toX509CertChain(),
@@ -55,19 +58,21 @@ data class PubKeyResponse internal constructor(
         expirationTimestamp = expirationTs,
     )
 
+    @Throws(UmaException::class)
     fun getSigningPublicKey(): ByteArray {
         return if (signingCertChain != null) {
             signingCertChain.getPubKeyBytes()
         } else {
-            signingPubKey ?: throw IllegalStateException("No signing public key")
+            signingPubKey ?: throw UmaException("No signing public key", ErrorCode.INVALID_PUBKEY_FORMAT)
         }
     }
 
+    @Throws(UmaException::class)
     fun getEncryptionPublicKey(): ByteArray {
         return if (encryptionCertChain != null) {
             encryptionCertChain.getPubKeyBytes()
         } else {
-            encryptionPubKey ?: throw IllegalStateException("No encryption public key")
+            encryptionPubKey ?: throw UmaException("No encryption public key", ErrorCode.INVALID_PUBKEY_FORMAT)
         }
     }
 
@@ -103,16 +108,16 @@ private fun String.toX509CertChain(): List<X509Certificate> {
         .generateCertificates(byteInputStream())
         .map {
             it as? X509Certificate
-                ?: throw IllegalStateException("Could not be parsed as X.509 certificate")
+                ?: throw UmaException("Could not be parsed as X.509 certificate", ErrorCode.INTERNAL_ERROR)
         }
 }
 
 private fun List<X509Certificate>.getPubKeyBytes(): ByteArray {
     val publicKey =
         firstOrNull()?.publicKey
-            ?: throw IllegalStateException("Certificate chain is empty")
+            ?: throw UmaException("Certificate chain is empty", ErrorCode.INTERNAL_ERROR)
     if (publicKey !is ECPublicKey || !publicKey.params.toString().contains("secp256k1")) {
-        throw IllegalStateException("Public key extracted from certificate is not EC/secp256k1")
+        throw UmaException("Public key extracted from certificate is not EC/secp256k1", ErrorCode.INTERNAL_ERROR)
     }
     // encryptionPubKey.publicKey is an ASN.1/DER encoded X.509/SPKI key, the last 65
     // bytes are the uncompressed public key

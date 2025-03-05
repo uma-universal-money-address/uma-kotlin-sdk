@@ -1,6 +1,8 @@
 package me.uma
 
+import me.uma.generated.ErrorCode
 import me.uma.utils.serialFormat
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
@@ -37,9 +39,13 @@ data class Version(val major: Int, val minor: Int) : Comparable<Version> {
         fun parse(versionString: String): Version {
             val parts = versionString.split(".")
             if (parts.size != 2) {
-                throw IllegalArgumentException("Invalid version string: $versionString")
+                throw UmaException("Invalid version string: $versionString", ErrorCode.INVALID_INPUT)
             }
-            return Version(parts[0].toInt(), parts[1].toInt())
+            return try {
+                Version(parts[0].toInt(), parts[1].toInt())
+            } catch (e: NumberFormatException) {
+                throw UmaException("Invalid version string: $versionString", ErrorCode.INVALID_INPUT, e)
+            }
         }
     }
 }
@@ -47,7 +53,10 @@ data class Version(val major: Int, val minor: Int) : Comparable<Version> {
 class UnsupportedVersionException(
     val unsupportedVersion: String,
     val supportedMajorVersions: Set<Int> = supportedMajorVersions(),
-) : Exception("Unsupported version: $unsupportedVersion. Supported major versions: $supportedMajorVersions") {
+) : UmaException(
+        "Unsupported version: $unsupportedVersion. Supported major versions: $supportedMajorVersions",
+        ErrorCode.UNSUPPORTED_UMA_VERSION
+    ) {
     fun toLnurlpResponseJson(): String {
         return buildJsonObject {
             put("reason", "Unsupported version: $unsupportedVersion.")
@@ -55,15 +64,20 @@ class UnsupportedVersionException(
             put("unsupportedVersion", unsupportedVersion)
         }.toString()
     }
+
+    override fun getAdditionalParams(): Map<String, String> {
+        return mapOf(
+            "supportedMajorVersions" to serialFormat.encodeToString(supportedMajorVersions),
+            "unsupportedVersion" to unsupportedVersion,
+        )
+    }
 }
 
 fun isVersionSupported(versionString: String): Boolean {
     val version =
         try {
             Version.parse(versionString)
-        } catch (e: IllegalArgumentException) {
-            return false
-        } catch (e: NumberFormatException) {
+        } catch (e: UmaException) {
             return false
         }
     return supportedMajorVersions().contains(version.major)
