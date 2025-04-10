@@ -54,10 +54,10 @@ fun PayeeData.payeeCompliance(): CompliancePayeeData? {
  * @property backingSignatures The list of backing signatures from VASPs that can attest to the authenticity of the message.
  */
 @Serializable
-data class CompliancePayeeData(
+data class CompliancePayeeData @JvmOverloads constructor(
     val utxos: List<String>,
     val nodePubKey: String?,
-    val utxoCallback: String,
+    val utxoCallback: String = "",
     val signature: String,
     val signatureNonce: String,
     val signatureTimestamp: Long,

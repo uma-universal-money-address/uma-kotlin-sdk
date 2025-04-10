@@ -278,13 +278,12 @@ class UmaTests {
     }
 
     @Test
-    fun `test deserialization of missing utxos`() = runTest {
+    fun `test deserialization of missing utxos and utxoCallback in payer data`() = runTest {
         // Missing nodePubKey and encryptedTravelRuleInfo:
         val jsonCompliancePayerData =
             """
             {
                 "kycStatus": "VERIFIED",
-                "utxoCallback": "utxoCallback",
                 "signature": "signature",
                 "signatureNonce": "1234",
                 "signatureTimestamp": 1234567,
@@ -297,12 +296,40 @@ class UmaTests {
             CompliancePayerData(
                 utxos = emptyList(),
                 kycStatus = KycStatus.VERIFIED,
-                utxoCallback = "utxoCallback",
+                utxoCallback = "",
                 signature = "signature",
                 signatureNonce = "1234",
                 signatureTimestamp = 1234567,
                 encryptedTravelRuleInfo = null,
                 nodePubKey = null,
+            ),
+            compliancePayerData,
+        )
+    }
+
+    @Test
+    fun `test deserialization of missing utxoCallback in payee data`() = runTest {
+        // Missing utxoCallback:
+        val jsonCompliancePayeeData =
+            """
+            {
+                "utxos": [],
+                "signature": "signature",
+                "signatureNonce": "1234",
+                "signatureTimestamp": 1234567
+            }
+            """.trimIndent()
+
+        val compliancePayerData = serialFormat.decodeFromString<CompliancePayeeData>(jsonCompliancePayeeData)
+        assertEquals(
+            CompliancePayeeData(
+                utxos = emptyList(),
+                nodePubKey = null,
+                utxoCallback = "",
+                signature = "signature",
+                signatureNonce = "1234",
+                signatureTimestamp = 1234567,
+                backingSignatures = null,
             ),
             compliancePayerData,
         )
