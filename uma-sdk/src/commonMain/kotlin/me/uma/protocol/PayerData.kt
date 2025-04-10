@@ -187,8 +187,7 @@ internal object CompliancePayerDataSerializer : KSerializer<CompliancePayerData>
                 kycStatus = kycStatus
                     ?: throw UmaException("kycStatus is missing", ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS),
                 encryptedTravelRuleInfo = encryptedTravelRuleInfo,
-                utxoCallback = utxoCallback
-                    ?: throw UmaException("utxoCallback is missing", ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS),
+                utxoCallback = utxoCallback ?: "",
                 signature = signature
                     ?: throw UmaException("signature is missing", ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS),
                 signatureNonce = signatureNonce
