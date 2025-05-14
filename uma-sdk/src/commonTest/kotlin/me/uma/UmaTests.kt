@@ -1,11 +1,6 @@
 package me.uma
 
 import io.ktor.utils.io.core.toByteArray
-import me.uma.crypto.Secp256k1
-import me.uma.crypto.hexToByteArray
-import me.uma.protocol.*
-import me.uma.utils.serialFormat
-import org.junit.jupiter.api.assertThrows
 import kotlin.test.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -14,11 +9,16 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import me.uma.crypto.Secp256k1
+import me.uma.crypto.hexToByteArray
+import me.uma.protocol.*
+import me.uma.utils.serialFormat
+import org.junit.jupiter.api.assertThrows
 
 private const val BECH32_REFERENCE_STR =
-    "uma1qqxzgen0daqxyctj9e3k7mgpy33nwcesxanx2cedvdnrqvpdxsenzced8ycnve3dxe3nzvmxvv6xyd3evcusyqsraqp3vqqr24f5gqgf24fj" +
-        "q3r0d3kxzuszqyjqxqgzqszqqr6zgqzszqgxrd3k7mtsd35kzmnrv5arztr9d4skjmp6xqkxuctdv5arqpcrxqhrxzcg2ez4yj2xf9z5grqu" +
-        "dp68gurn8ghj7etcv9khqmr99e3k7mf0vdskcmrzv93kkeqfwd5kwmnpw36hyeg73rn40"
+  "uma1qqxzgen0daqxyctj9e3k7mgpy33nwcesxanx2cedvdnrqvpdxsenzced8ycnve3dxe3nzvmxvv6xyd3evcusyqsraqp3vqqr24f5gqgf24fj" +
+    "q3r0d3kxzuszqyjqxqgzqszqqr6zgqzszqgxrd3k7mtsd35kzmnrv5arztr9d4skjmp6xqkxuctdv5arqpcrxqhrxzcg2ez4yj2xf9z5grqu" +
+    "dp68gurn8ghj7etcv9khqmr99e3k7mf0vdskcmrzv93kkeqfwd5kwmnpw36hyeg73rn40"
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UmaTests {
@@ -26,21 +26,12 @@ class UmaTests {
 
     @Test
     fun `test create invoice currency`() = runTest {
-        val data = listOf(
-            listOf("text/uma-invoice", "invoiceUUID"),
-            listOf("text/plain", "otherInformations"),
-        )
+        val data = listOf(listOf("text/uma-invoice", "invoiceUUID"), listOf("text/plain", "otherInformations"))
         val encoded1 = Json.encodeToString(data)
 
         val original = Json.decodeFromString<List<List<String>>>(encoded1)
         println(original.size)
-        val invoiceCurrency =
-            InvoiceCurrency(
-                "usd",
-                "us dollars",
-                "$",
-                10,
-            )
+        val invoiceCurrency = InvoiceCurrency("usd", "us dollars", "$", 10)
         val encoded = serialFormat.encodeToString(invoiceCurrency)
         val result = serialFormat.decodeFromString<InvoiceCurrency>(encoded)
         assertEquals("usd", result.code)
@@ -69,29 +60,26 @@ class UmaTests {
     @Test
     fun `deserializing an Invoice with missing required fields triggers error`() = runTest {
         val exception =
-            assertThrows<UmaException> {
-                // missing receiverUma, invoiceUUID, and Amount
-                val malformedBech32str =
-                    "uma1qvtqqq642dzqzz242vsygmmvd3shyqspyspszqsyqsqq7sjqq5qszpsmvdhk6urvd9skucm98gcjcetdv95kcw3s93hx" +
-                        "zmt98gcqwqes9ceskzzkg4fyj3jfg4zqc8rgw368que69uhk27rpd4cxcefwvdhk6tmrv9kxccnpvd4kgztnd9nkuct5" +
-                        "w4ex2mxcdff"
-                Invoice.fromBech32(malformedBech32str)
-            }
-        assertEquals(
-            "missing required fields: [amount, invoiceUUID, receiverUma]",
-            exception.message,
-        )
+          assertThrows<UmaException> {
+              // missing receiverUma, invoiceUUID, and Amount
+              val malformedBech32str =
+                "uma1qvtqqq642dzqzz242vsygmmvd3shyqspyspszqsyqsqq7sjqq5qszpsmvdhk6urvd9skucm98gcjcetdv95kcw3s93hx" +
+                  "zmt98gcqwqes9ceskzzkg4fyj3jfg4zqc8rgw368que69uhk27rpd4cxcefwvdhk6tmrv9kxccnpvd4kgztnd9nkuct5" +
+                  "w4ex2mxcdff"
+              Invoice.fromBech32(malformedBech32str)
+          }
+        assertEquals("missing required fields: [amount, invoiceUUID, receiverUma]", exception.message)
     }
 
     @Test
     fun `test encode invoice as bech32`() = runTest {
         val invoice = createInvoice()
         val bech32str =
-            try {
-                invoice.toBech32()
-            } catch (e: IndexOutOfBoundsException) {
-                ""
-            }
+          try {
+              invoice.toBech32()
+          } catch (e: IndexOutOfBoundsException) {
+              ""
+          }
         assertEquals("uma", bech32str.slice(0..2))
         assertEquals(BECH32_REFERENCE_STR, bech32str)
 
@@ -116,25 +104,28 @@ class UmaTests {
 
     @Test
     fun `test verify invoice signature`() {
-        val invoice = UmaProtocolHelper().getInvoice(
-            receiverUma = "\$foo@bar.com",
-            invoiceUUID = "c7c07fec-cf00-431c-916f-6c13fc4b69f9",
-            amount = 1000,
-            receivingCurrency = InvoiceCurrency(code = "USD", name = "US Dollar", symbol = "$", decimals = 2),
-            expiration = 1000000,
-            isSubjectToTravelRule = true,
-            requiredPayerData = mapOf(
-                CounterPartyDataKeys.NAME to CounterPartyDataOption(false),
-                CounterPartyDataKeys.EMAIL to CounterPartyDataOption(false),
-                CounterPartyDataKeys.COMPLIANCE to CounterPartyDataOption(true),
-            ),
-            commentCharsAllowed = null,
-            senderUma = null,
-            invoiceLimit = null,
-            kycStatus = KycStatus.VERIFIED,
-            callback = "https://example.com/callback",
-            privateSigningKey = keys.privateKey,
-        )
+        val invoice =
+          UmaProtocolHelper()
+            .getInvoice(
+              receiverUma = "\$foo@bar.com",
+              invoiceUUID = "c7c07fec-cf00-431c-916f-6c13fc4b69f9",
+              amount = 1000,
+              receivingCurrency = InvoiceCurrency(code = "USD", name = "US Dollar", symbol = "$", decimals = 2),
+              expiration = 1000000,
+              isSubjectToTravelRule = true,
+              requiredPayerData =
+                mapOf(
+                  "name" to CounterPartyDataOption(false),
+                  "email" to CounterPartyDataOption(false),
+                  "compliance" to CounterPartyDataOption(true),
+                ),
+              commentCharsAllowed = null,
+              senderUma = null,
+              invoiceLimit = null,
+              kycStatus = KycStatus.VERIFIED,
+              callback = "https://example.com/callback",
+              privateSigningKey = keys.privateKey,
+            )
         assertTrue(UmaProtocolHelper().verifyUmaInvoice(invoice, PubKeyResponse(keys.publicKey, keys.publicKey)))
     }
 
@@ -142,23 +133,21 @@ class UmaTests {
     fun `test create and parse payreq in receiving amount`() = runTest {
         val travelRuleInfo = "travel rule info"
         val payreq =
-            UmaProtocolHelper().getPayRequest(
-                receiverEncryptionPubKey = keys.publicKey,
-                sendingVaspPrivateKey = keys.privateKey,
-                receivingCurrencyCode = "USD",
-                amount = 100,
-                isAmountInReceivingCurrency = true,
-                payerIdentifier = "test@test.com",
-                payerKycStatus = KycStatus.VERIFIED,
-                utxoCallback = "https://example.com/utxo",
-                travelRuleInfo = "travel rule info",
-                travelRuleFormat = TravelRuleFormat("someFormat", "1.0"),
-                requestedPayeeData = createCounterPartyDataOptions(
-                    CounterPartyDataKeys.EMAIL to true,
-                    CounterPartyDataKeys.NAME to false,
-                    CounterPartyDataKeys.COMPLIANCE to true,
-                ),
-                receiverUmaVersion = "1.0",
+          UmaProtocolHelper()
+            .getPayRequest(
+              receiverEncryptionPubKey = keys.publicKey,
+              sendingVaspPrivateKey = keys.privateKey,
+              receivingCurrencyCode = "USD",
+              amount = 100,
+              isAmountInReceivingCurrency = true,
+              payerIdentifier = "test@test.com",
+              payerKycStatus = KycStatus.VERIFIED,
+              utxoCallback = "https://example.com/utxo",
+              travelRuleInfo = "travel rule info",
+              travelRuleFormat = TravelRuleFormat("someFormat", "1.0"),
+              requestedPayeeData =
+                createCounterPartyDataOptions("email" to true, "name" to false, "compliance" to true),
+              receiverUmaVersion = "1.0",
             )
         assertTrue(payreq is PayRequestV1)
         assertEquals("USD", payreq.receivingCurrencyCode())
@@ -171,10 +160,10 @@ class UmaTests {
         assertEquals(payreq, decodedPayReq)
 
         val encryptedTravelRuleInfo =
-            decodedPayReq.payerData?.compliance()?.encryptedTravelRuleInfo ?: fail("travel rule info not found")
+          decodedPayReq.payerData?.compliance()?.encryptedTravelRuleInfo ?: fail("travel rule info not found")
         assertEquals(
-            travelRuleInfo,
-            String(Secp256k1.decryptEcies(encryptedTravelRuleInfo.hexToByteArray(), keys.privateKey)),
+          travelRuleInfo,
+          String(Secp256k1.decryptEcies(encryptedTravelRuleInfo.hexToByteArray(), keys.privateKey)),
         )
     }
 
@@ -182,16 +171,17 @@ class UmaTests {
     @Test
     fun `test create and parse payreq in msats`() = runTest {
         val payreq =
-            UmaProtocolHelper().getPayRequest(
-                receiverEncryptionPubKey = keys.publicKey,
-                sendingVaspPrivateKey = keys.privateKey,
-                receivingCurrencyCode = "USD",
-                amount = 100,
-                isAmountInReceivingCurrency = false,
-                payerIdentifier = "test@test.com",
-                payerKycStatus = KycStatus.VERIFIED,
-                utxoCallback = "https://example.com/utxo",
-                receiverUmaVersion = "1.0",
+          UmaProtocolHelper()
+            .getPayRequest(
+              receiverEncryptionPubKey = keys.publicKey,
+              sendingVaspPrivateKey = keys.privateKey,
+              receivingCurrencyCode = "USD",
+              amount = 100,
+              isAmountInReceivingCurrency = false,
+              payerIdentifier = "test@test.com",
+              payerKycStatus = KycStatus.VERIFIED,
+              utxoCallback = "https://example.com/utxo",
+              receiverUmaVersion = "1.0",
             )
         assertTrue(payreq is PayRequestV1)
         assertNull(payreq.sendingCurrencyCode())
@@ -208,16 +198,17 @@ class UmaTests {
     @Test
     fun `test create and parse payreq umav0`() = runTest {
         val payreq =
-            UmaProtocolHelper().getPayRequest(
-                receiverEncryptionPubKey = keys.publicKey,
-                sendingVaspPrivateKey = keys.privateKey,
-                receivingCurrencyCode = "USD",
-                amount = 100,
-                isAmountInReceivingCurrency = false,
-                payerIdentifier = "test@test.com",
-                payerKycStatus = KycStatus.VERIFIED,
-                utxoCallback = "https://example.com/utxo",
-                receiverUmaVersion = "0.3",
+          UmaProtocolHelper()
+            .getPayRequest(
+              receiverEncryptionPubKey = keys.publicKey,
+              sendingVaspPrivateKey = keys.privateKey,
+              receivingCurrencyCode = "USD",
+              amount = 100,
+              isAmountInReceivingCurrency = false,
+              payerIdentifier = "test@test.com",
+              payerKycStatus = KycStatus.VERIFIED,
+              utxoCallback = "https://example.com/utxo",
+              receiverUmaVersion = "0.3",
             )
         assertTrue(payreq is PayRequestV0)
         assertNull(payreq.sendingCurrencyCode())
@@ -230,18 +221,16 @@ class UmaTests {
     @Test
     fun `test parse Lnurlp URL with invalid user`() {
         val umaLnurlpQuery =
-            "https://example.com/.well-known/lnurlp/\$bob(?vaspDomain=example.com&nonce=123&signature=123&" +
-                "isSubjectToTravelRule=true&timestamp=123&umaVersion=1.0"
-        assertThrows<UmaException> {
-            UmaProtocolHelper().parseLnurlpRequest(umaLnurlpQuery)
-        }
+          "https://example.com/.well-known/lnurlp/\$bob(?vaspDomain=example.com&nonce=123&signature=123&" +
+            "isSubjectToTravelRule=true&timestamp=123&umaVersion=1.0"
+        assertThrows<UmaException> { UmaProtocolHelper().parseLnurlpRequest(umaLnurlpQuery) }
     }
 
     @Test
     fun `test isUmaLnurlpQuery future-proofing`() {
         val umaLnurlpQuery =
-            "https://example.com/.well-known/lnurlp/\$bob?vaspDomain=example.com&nonce=123&signature=123&" +
-                "isSubjectToTravelRule=true&timestamp=123&umaVersion=100.0"
+          "https://example.com/.well-known/lnurlp/\$bob?vaspDomain=example.com&nonce=123&signature=123&" +
+            "isSubjectToTravelRule=true&timestamp=123&umaVersion=100.0"
         assertEquals(true, UmaProtocolHelper().isUmaLnurlpQuery(umaLnurlpQuery))
     }
 
@@ -249,7 +238,7 @@ class UmaTests {
     fun `test serialization nulls`() = runTest {
         // Missing nodePubKey and encryptedTravelRuleInfo:
         val jsonCompliancePayerData =
-            """
+          """
             {
                 "utxos": ["utxo1", "utxo2"],
                 "kycStatus": "VERIFIED",
@@ -259,21 +248,22 @@ class UmaTests {
                 "signatureTimestamp": 1234567,
                 "travelRuleFormat": null
             }
-            """.trimIndent()
+            """
+            .trimIndent()
 
         val compliancePayerData = serialFormat.decodeFromString<CompliancePayerData>(jsonCompliancePayerData)
         assertEquals(
-            CompliancePayerData(
-                utxos = listOf("utxo1", "utxo2"),
-                kycStatus = KycStatus.VERIFIED,
-                utxoCallback = "utxoCallback",
-                signature = "signature",
-                signatureNonce = "1234",
-                signatureTimestamp = 1234567,
-                encryptedTravelRuleInfo = null,
-                nodePubKey = null,
-            ),
-            compliancePayerData,
+          CompliancePayerData(
+            utxos = listOf("utxo1", "utxo2"),
+            kycStatus = KycStatus.VERIFIED,
+            utxoCallback = "utxoCallback",
+            signature = "signature",
+            signatureNonce = "1234",
+            signatureTimestamp = 1234567,
+            encryptedTravelRuleInfo = null,
+            nodePubKey = null,
+          ),
+          compliancePayerData,
         )
     }
 
@@ -281,7 +271,7 @@ class UmaTests {
     fun `test deserialization of missing utxos and utxoCallback in payer data`() = runTest {
         // Missing nodePubKey and encryptedTravelRuleInfo:
         val jsonCompliancePayerData =
-            """
+          """
             {
                 "kycStatus": "VERIFIED",
                 "signature": "signature",
@@ -289,21 +279,22 @@ class UmaTests {
                 "signatureTimestamp": 1234567,
                 "travelRuleFormat": null
             }
-            """.trimIndent()
+            """
+            .trimIndent()
 
         val compliancePayerData = serialFormat.decodeFromString<CompliancePayerData>(jsonCompliancePayerData)
         assertEquals(
-            CompliancePayerData(
-                utxos = emptyList(),
-                kycStatus = KycStatus.VERIFIED,
-                utxoCallback = "",
-                signature = "signature",
-                signatureNonce = "1234",
-                signatureTimestamp = 1234567,
-                encryptedTravelRuleInfo = null,
-                nodePubKey = null,
-            ),
-            compliancePayerData,
+          CompliancePayerData(
+            utxos = emptyList(),
+            kycStatus = KycStatus.VERIFIED,
+            utxoCallback = "",
+            signature = "signature",
+            signatureNonce = "1234",
+            signatureTimestamp = 1234567,
+            encryptedTravelRuleInfo = null,
+            nodePubKey = null,
+          ),
+          compliancePayerData,
         )
     }
 
@@ -311,60 +302,55 @@ class UmaTests {
     fun `test deserialization of missing utxoCallback in payee data`() = runTest {
         // Missing utxoCallback:
         val jsonCompliancePayeeData =
-            """
+          """
             {
                 "utxos": [],
                 "signature": "signature",
                 "signatureNonce": "1234",
                 "signatureTimestamp": 1234567
             }
-            """.trimIndent()
+            """
+            .trimIndent()
 
         val compliancePayerData = serialFormat.decodeFromString<CompliancePayeeData>(jsonCompliancePayeeData)
         assertEquals(
-            CompliancePayeeData(
-                utxos = emptyList(),
-                nodePubKey = null,
-                utxoCallback = "",
-                signature = "signature",
-                signatureNonce = "1234",
-                signatureTimestamp = 1234567,
-                backingSignatures = null,
-            ),
-            compliancePayerData,
+          CompliancePayeeData(
+            utxos = emptyList(),
+            nodePubKey = null,
+            utxoCallback = "",
+            signature = "signature",
+            signatureNonce = "1234",
+            signatureTimestamp = 1234567,
+            backingSignatures = null,
+          ),
+          compliancePayerData,
         )
     }
 
     private fun createInvoice(timestamp: Long? = null): Invoice {
         val requiredPayerData =
-            mapOf(
-                CounterPartyDataKeys.NAME to CounterPartyDataOption(false),
-                CounterPartyDataKeys.EMAIL to CounterPartyDataOption(false),
-                CounterPartyDataKeys.COMPLIANCE to CounterPartyDataOption(true),
-            )
-        val invoiceCurrency =
-            InvoiceCurrency(
-                code = "USD",
-                name = "US Dollar",
-                symbol = "$",
-                decimals = 2,
-            )
+          mapOf(
+            "name" to CounterPartyDataOption(false),
+            "email" to CounterPartyDataOption(false),
+            "compliance" to CounterPartyDataOption(true),
+          )
+        val invoiceCurrency = InvoiceCurrency(code = "USD", name = "US Dollar", symbol = "$", decimals = 2)
 
         return Invoice(
-            receiverUma = "\$foo@bar.com",
-            invoiceUUID = "c7c07fec-cf00-431c-916f-6c13fc4b69f9",
-            amount = 1000L,
-            receivingCurrency = invoiceCurrency,
-            expiration = timestamp ?: 1000000L,
-            isSubjectToTravelRule = true,
-            requiredPayerData = requiredPayerData,
-            commentCharsAllowed = null,
-            senderUma = null,
-            maxNumPayments = null,
-            umaVersions = "0.3",
-            kycStatus = KycStatus.VERIFIED,
-            callback = "https://example.com/callback",
-            signature = "signature".toByteArray(),
+          receiverUma = "\$foo@bar.com",
+          invoiceUUID = "c7c07fec-cf00-431c-916f-6c13fc4b69f9",
+          amount = 1000L,
+          receivingCurrency = invoiceCurrency,
+          expiration = timestamp ?: 1000000L,
+          isSubjectToTravelRule = true,
+          requiredPayerData = requiredPayerData,
+          commentCharsAllowed = null,
+          senderUma = null,
+          maxNumPayments = null,
+          umaVersions = "0.3",
+          kycStatus = KycStatus.VERIFIED,
+          callback = "https://example.com/callback",
+          signature = "signature".toByteArray(),
         )
     }
 

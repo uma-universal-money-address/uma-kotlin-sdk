@@ -21,7 +21,5 @@ tasks.test {
 
     maxHeapSize = "1G"
 
-    testLogging {
-        events("passed")
-    }
+    testLogging { events("passed") }
 }

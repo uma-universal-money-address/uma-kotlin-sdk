@@ -3,13 +3,13 @@ package me.uma
 import me.uma.generated.ErrorCode
 
 /**
- * An interface for caching of nonces used in signatures. This is used to prevent replay attacks.
- * Implementations of this interface should be thread-safe.
+ * An interface for caching of nonces used in signatures. This is used to prevent replay attacks. Implementations of
+ * this interface should be thread-safe.
  */
 interface NonceCache {
     /**
-     * Checks if the given nonce has been used before, and if not, saves it.
-     * If the nonce has been used before, or if timestamp is too old, throws [InvalidNonceException].
+     * Checks if the given nonce has been used before, and if not, saves it. If the nonce has been used before, or if
+     * timestamp is too old, throws [InvalidNonceException].
      *
      * @param nonce The nonce to cache.
      * @param timestamp Timestamp corresponding to the nonce in seconds since epoch.
@@ -27,9 +27,9 @@ interface NonceCache {
 class InvalidNonceException(message: String) : UmaException(message, code = ErrorCode.INVALID_NONCE)
 
 /**
- * InMemoryNonceCache is an in-memory implementation of NonceCache.
- * It is not recommended to use this in production, as it will not persist across restarts. You likely want to implement
- * your own NonceCache that persists to a database of some sort.
+ * InMemoryNonceCache is an in-memory implementation of NonceCache. It is not recommended to use this in production, as
+ * it will not persist across restarts. You likely want to implement your own NonceCache that persists to a database of
+ * some sort.
  */
 class InMemoryNonceCache(private var oldestValidTimestamp: Long) : NonceCache {
     private val cache = mutableMapOf<String, Long>()

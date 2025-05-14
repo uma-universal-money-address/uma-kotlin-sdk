@@ -1,12 +1,12 @@
 package me.uma
 
-import me.uma.generated.ErrorCode
-import org.junit.jupiter.api.Assertions.assertEquals
 import kotlin.test.Test
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonPrimitive
+import me.uma.generated.ErrorCode
+import org.junit.jupiter.api.Assertions.assertEquals
 
 class UmaExceptionTests {
     @Test
@@ -38,8 +38,8 @@ class UmaExceptionTests {
         val errorMap: Map<String, JsonElement> = Json.decodeFromString(json)
         assertEquals("ERROR", errorMap["status"]?.jsonPrimitive?.content)
         assertEquals(
-            "Unsupported version: 1.2. Supported major versions: [0, 1]",
-            errorMap["reason"]?.jsonPrimitive?.content
+          "Unsupported version: 1.2. Supported major versions: [0, 1]",
+          errorMap["reason"]?.jsonPrimitive?.content,
         )
         assertEquals("UNSUPPORTED_UMA_VERSION", errorMap["code"]?.jsonPrimitive?.content)
         assertEquals("[0,1]", errorMap["supportedMajorVersions"]?.jsonPrimitive?.content)

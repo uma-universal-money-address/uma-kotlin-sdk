@@ -1,8 +1,8 @@
 package me.uma.protocol
 
-import me.uma.utils.serialFormat
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
+import me.uma.utils.serialFormat
 
 /**
  * Post-payment callbacks exchanged between VASPs.
@@ -15,11 +15,11 @@ import kotlinx.serialization.encodeToString
  */
 @Serializable
 data class PostTransactionCallback(
-    val utxos: List<UtxoWithAmount>,
-    val vaspDomain: String,
-    val signature: String,
-    val signatureNonce: String,
-    val signatureTimestamp: Long,
+  val utxos: List<UtxoWithAmount>,
+  val vaspDomain: String,
+  val signature: String,
+  val signatureNonce: String,
+  val signatureTimestamp: Long,
 ) {
     fun signablePayload(): ByteArray {
         return "$signatureNonce|$signatureTimestamp".encodeToByteArray()

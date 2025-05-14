@@ -1,20 +1,21 @@
+import org.gradle.kotlin.dsl.configure
+
 plugins {
     kotlin("multiplatform")
     alias(libs.plugins.kotlinSerialization)
     id(libs.plugins.dokka.get().pluginId)
     id(libs.plugins.mavenPublish.get().pluginId)
+    alias(libs.plugins.spotless)
 }
+
+configure<com.diffplug.gradle.spotless.SpotlessExtension> { kotlin { targetExclude("**/internal/UmaCrypto.kt") } }
 
 kotlin {
     jvmToolchain(11)
     jvm {
         jvmToolchain(11)
         withJava()
-        testRuns.named("test") {
-            executionTask.configure {
-                useJUnitPlatform()
-            }
-        }
+        testRuns.named("test") { executionTask.configure { useJUnitPlatform() } }
     }
 
     // Will add other platforms as needed.
@@ -44,11 +45,5 @@ kotlin {
             }
         }
         val jvmTest by getting
-    }
-}
-
-ktlint {
-    filter {
-        exclude("**/internal/UmaCrypto.kt")
     }
 }

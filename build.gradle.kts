@@ -1,8 +1,8 @@
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SonatypeHost
+import java.net.URI
 import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
 import org.jetbrains.dokka.gradle.DokkaTaskPartial
-import java.net.URL
 
 buildscript {
     dependencies {
@@ -55,15 +55,7 @@ configure<com.diffplug.gradle.spotless.SpotlessExtension> {
 }
 
 subprojects {
-    apply(plugin = "org.jlleitschuh.gradle.ktlint")
-    configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-        outputToConsole.set(true)
-        debug.set(true)
-        verbose.set(true)
-        disabledRules.set(setOf("no-wildcard-imports"))
-    }
-
-    tasks.create<Exec>("bumpAndTagVersion") {
+    tasks.register<Exec>("bumpAndTagVersion") {
         group = "release"
         description = "Tags the current version in git."
         val cmd = mutableListOf("../scripts/versions.main.kts", "-f", "-t")
@@ -73,7 +65,7 @@ subprojects {
         commandLine(*cmd.toTypedArray())
     }
 
-    tasks.create<Exec>("bumpVersion") {
+    tasks.register<Exec>("bumpVersion") {
         group = "release"
         description = "Tags the current version in git."
         val cmd = mutableListOf("../scripts/versions.main.kts", "-f")
@@ -96,8 +88,8 @@ subprojects {
             }
             externalDocumentationLink {
                 // TODO: Update this link when API Reference docs are hosted publicly.
-                url.set(URL("https://app.lightspark.com/docs/reference/kotlin"))
-                packageListUrl.set(URL("https://app.lightspark.com/docs/reference/kotlin/package-list"))
+                url.set(URI("https://app.lightspark.com/docs/reference/kotlin").toURL())
+                packageListUrl.set(URI("https://app.lightspark.com/docs/reference/kotlin/package-list").toURL())
             }
         }
     }
@@ -120,7 +112,7 @@ subprojects {
                 scm {
                     connection.set("scm:git:https://github.com/uma-universal-money-address/uma-kotlin-sdk.git")
                     developerConnection.set(
-                        "scm:git:ssh://git@github.com/uma-universal-money-address/uma-kotlin-sdk.git",
+                      "scm:git:ssh://git@github.com/uma-universal-money-address/uma-kotlin-sdk.git"
                     )
                     url.set("https://github.com/uma-universal-money-address/uma-kotlin-sdk")
                 }
@@ -139,9 +131,9 @@ subprojects {
 tasks.named<DokkaMultiModuleTask>("dokkaHtmlMultiModule") {
     moduleName.set("UMA Kotlin+Java SDKs")
     pluginsMapConfiguration.set(
-        mapOf(
-            "org.jetbrains.dokka.base.DokkaBase" to
-                """
+      mapOf(
+        "org.jetbrains.dokka.base.DokkaBase" to
+          """
                 {
                   "customStyleSheets": [
                     "${rootDir.resolve("docs/css/logo-styles.css")}"
@@ -150,7 +142,8 @@ tasks.named<DokkaMultiModuleTask>("dokkaHtmlMultiModule") {
                     "${rootDir.resolve("docs/images/uma-logo-white.svg")}"
                   ]
                 }
-                """.trimIndent(),
-        ),
+                """
+            .trimIndent()
+      )
     )
 }

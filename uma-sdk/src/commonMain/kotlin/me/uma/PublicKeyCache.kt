@@ -17,7 +17,8 @@ class InMemoryPublicKeyCache : PublicKeyCache {
 
     override fun getPublicKeysForVasp(vaspDomain: String): PubKeyResponse? {
         val pubKeyResponse = cache[vaspDomain]
-        return if (pubKeyResponse?.expirationTimestamp == null ||
+        return if (
+          pubKeyResponse?.expirationTimestamp == null ||
             pubKeyResponse.expirationTimestamp < System.currentTimeMillis() / 1000
         ) {
             cache.remove(vaspDomain)
@@ -28,7 +29,8 @@ class InMemoryPublicKeyCache : PublicKeyCache {
     }
 
     override fun addPublicKeysForVasp(vaspDomain: String, pubKeyResponse: PubKeyResponse) {
-        if (pubKeyResponse.expirationTimestamp != null &&
+        if (
+          pubKeyResponse.expirationTimestamp != null &&
             pubKeyResponse.expirationTimestamp > System.currentTimeMillis() / 1000
         ) {
             cache[vaspDomain] = pubKeyResponse

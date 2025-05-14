@@ -14,5 +14,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "uma-kotlin-sdk"
+
 include("uma-sdk")
+
 include("javatest")

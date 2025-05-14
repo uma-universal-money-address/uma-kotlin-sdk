@@ -18,7 +18,7 @@ class X509CertificateSerializer : KSerializer<X509Certificate> {
 
     override fun deserialize(decoder: Decoder): X509Certificate {
         val bytes = decoder.decodeString().hexToByteArray()
-        return CertificateFactory.getInstance("X.509")
-            .generateCertificate(ByteArrayInputStream(bytes)) as X509Certificate
+        return CertificateFactory.getInstance("X.509").generateCertificate(ByteArrayInputStream(bytes))
+          as X509Certificate
     }
 }

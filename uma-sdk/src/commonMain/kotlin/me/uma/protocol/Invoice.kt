@@ -1,10 +1,6 @@
 package me.uma.protocol
 
 import io.ktor.utils.io.core.toByteArray
-import me.uma.UmaException
-import me.uma.crypto.Bech32
-import me.uma.generated.ErrorCode
-import me.uma.utils.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -12,16 +8,15 @@ import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import me.uma.UmaException
+import me.uma.crypto.Bech32
+import me.uma.generated.ErrorCode
+import me.uma.utils.*
 
 private const val UMA_BECH32_PREFIX = "uma"
 
 @Serializable(with = InvoiceCurrencyTLVSerializer::class)
-data class InvoiceCurrency(
-    val code: String,
-    val name: String,
-    val symbol: String,
-    val decimals: Int,
-) : TLVCodeable {
+data class InvoiceCurrency(val code: String, val name: String, val symbol: String, val decimals: Int) : TLVCodeable {
     companion object {
         fun fromTLV(bytes: ByteArray): InvoiceCurrency {
             var code = ""
@@ -43,7 +38,8 @@ data class InvoiceCurrency(
         }
     }
 
-    override fun toTLV() = mutableListOf<ByteArray>()
+    override fun toTLV() =
+      mutableListOf<ByteArray>()
         .putString(0, code)
         .putString(1, name)
         .putString(2, symbol)
@@ -57,50 +53,54 @@ class InvoiceCurrencyTLVSerializer : KSerializer<InvoiceCurrency> {
     override val descriptor = SerialDescriptor("InvoiceCurrency", delegateSerializer.descriptor)
 
     override fun serialize(encoder: Encoder, value: InvoiceCurrency) {
-        encoder.encodeSerializableValue(
-            delegateSerializer,
-            value.toTLV(),
-        )
+        encoder.encodeSerializableValue(delegateSerializer, value.toTLV())
     }
 
-    override fun deserialize(decoder: Decoder) = InvoiceCurrency.fromTLV(
-        decoder.decodeSerializableValue(delegateSerializer),
-    )
+    override fun deserialize(decoder: Decoder) =
+      InvoiceCurrency.fromTLV(decoder.decodeSerializableValue(delegateSerializer))
 }
 
 @Serializable(with = InvoiceTLVSerializer::class)
 data class Invoice(
-    val receiverUma: String,
-    /** Invoice UUID Served as both the identifier of the UMA invoice, and the validation of proof of payment.*/
-    val invoiceUUID: String,
-    /** The amount of invoice to be paid in the smallest unit of the ReceivingCurrency. */
-    val amount: Long,
-    /** The currency of the invoice */
-    val receivingCurrency: InvoiceCurrency,
-    /** The unix timestamp the UMA invoice expires */
-    val expiration: Long,
-    /** Indicates whether the VASP is a financial institution that requires travel rule information. */
-    val isSubjectToTravelRule: Boolean,
-    /** RequiredPayerData the data about the payer that the sending VASP must provide in order to send a payment. */
-    val requiredPayerData: CounterPartyDataOptions? = null,
-    /** UmaVersion is a list of UMA versions that the VASP supports for this transaction. It should be
-     * containing the lowest minor version of each major version it supported, separated by commas.
-     */
-    val umaVersions: String,
-    /** CommentCharsAllowed is the number of characters that the sender can include in the comment field of the pay request. */
-    val commentCharsAllowed: Int? = null,
-    /** The sender's UMA address. If this field presents, the UMA invoice should directly go to the sending VASP instead of showing in other formats. */
-    val senderUma: String? = null,
-    /** The maximum number of the invoice can be paid */
-    val maxNumPayments: Int? = null,
-    /** YC status of the receiver, default is verified. */
-    val kycStatus: KycStatus? = null,
-    /** The callback url that the sender should send the PayRequest to. */
-    val callback: String,
-    /** The signature of the UMA invoice */
-    var signature: ByteArray? = null,
+  val receiverUma: String,
+  /** Invoice UUID Served as both the identifier of the UMA invoice, and the validation of proof of payment. */
+  val invoiceUUID: String,
+  /** The amount of invoice to be paid in the smallest unit of the ReceivingCurrency. */
+  val amount: Long,
+  /** The currency of the invoice */
+  val receivingCurrency: InvoiceCurrency,
+  /** The unix timestamp the UMA invoice expires */
+  val expiration: Long,
+  /** Indicates whether the VASP is a financial institution that requires travel rule information. */
+  val isSubjectToTravelRule: Boolean,
+  /** RequiredPayerData the data about the payer that the sending VASP must provide in order to send a payment. */
+  val requiredPayerData: CounterPartyDataOptions? = null,
+  /**
+   * UmaVersion is a list of UMA versions that the VASP supports for this transaction. It should be containing the
+   * lowest minor version of each major version it supported, separated by commas.
+   */
+  val umaVersions: String,
+  /**
+   * CommentCharsAllowed is the number of characters that the sender can include in the comment field of the pay
+   * request.
+   */
+  val commentCharsAllowed: Int? = null,
+  /**
+   * The sender's UMA address. If this field presents, the UMA invoice should directly go to the sending VASP instead of
+   * showing in other formats.
+   */
+  val senderUma: String? = null,
+  /** The maximum number of the invoice can be paid */
+  val maxNumPayments: Int? = null,
+  /** YC status of the receiver, default is verified. */
+  val kycStatus: KycStatus? = null,
+  /** The callback url that the sender should send the PayRequest to. */
+  val callback: String,
+  /** The signature of the UMA invoice */
+  var signature: ByteArray? = null,
 ) : TLVCodeable {
-    override fun toTLV() = mutableListOf<ByteArray>()
+    override fun toTLV() =
+      mutableListOf<ByteArray>()
         .putString(0, receiverUma)
         .putString(1, invoiceUUID)
         .putNumber(2, amount)
@@ -118,16 +118,12 @@ data class Invoice(
         .array()
 
     fun toBech32(): String {
-        return Bech32.encodeBech32(
-            UMA_BECH32_PREFIX,
-            this.toTLV(),
-        )
+        return Bech32.encodeBech32(UMA_BECH32_PREFIX, this.toTLV())
     }
 
     /**
-     * return the Invoice serialized in TLV format, without signature
-     * this represents the payload that is then signed and then assigned to the signature
-     * property
+     * return the Invoice serialized in TLV format, without signature this represents the payload that is then signed
+     * and then assigned to the signature property
      */
     fun toSignablePayload(): ByteArray {
         return this.copy(signature = null).toTLV()
@@ -144,40 +140,29 @@ data class Invoice(
                     1 -> ib.invoiceUUID = bytes.getString(offset.valueOffset(), length)
                     2 -> ib.amount = bytes.getLong(offset.valueOffset(), length)
                     3 ->
-                        ib.receivingCurrency =
-                            bytes.getTLV(offset.valueOffset(), length, InvoiceCurrency::fromTLV) as InvoiceCurrency
+                      ib.receivingCurrency =
+                        bytes.getTLV(offset.valueOffset(), length, InvoiceCurrency::fromTLV) as InvoiceCurrency
 
                     4 -> ib.expiration = bytes.getLong(offset.valueOffset(), length)
                     5 -> ib.isSubjectToTravelRule = bytes.getBoolean(offset.valueOffset())
                     6 ->
-                        ib.requiredPayerData =
-                            (
-                                bytes.getByteCodeable(
-                                    offset.valueOffset(),
-                                    length,
-                                    InvoiceCounterPartyDataOptions::fromBytes,
-                                ) as InvoiceCounterPartyDataOptions
-                            ).options
+                      ib.requiredPayerData =
+                        (bytes.getByteCodeable(offset.valueOffset(), length, InvoiceCounterPartyDataOptions::fromBytes)
+                            as InvoiceCounterPartyDataOptions)
+                          .options
 
                     7 -> ib.umaVersion = bytes.getString(offset.valueOffset(), length)
                     8 -> ib.commentCharsAllowed = bytes.getInt(offset.valueOffset(), length)
                     9 -> ib.senderUma = bytes.getString(offset.valueOffset(), length)
                     10 -> ib.invoiceLimit = bytes.getInt(offset.valueOffset(), length)
                     11 ->
-                        ib.kycStatus = (
-                            bytes.getByteCodeable(
-                                offset.valueOffset(),
-                                length,
-                                InvoiceKycStatus::fromBytes,
-                            ) as InvoiceKycStatus
-                        ).status
+                      ib.kycStatus =
+                        (bytes.getByteCodeable(offset.valueOffset(), length, InvoiceKycStatus::fromBytes)
+                            as InvoiceKycStatus)
+                          .status
 
                     12 -> ib.callback = bytes.getString(offset.valueOffset(), length)
-                    100 ->
-                        ib.signature =
-                            bytes.sliceArray(
-                                offset.valueOffset()..<offset.valueOffset() + length,
-                            )
+                    100 -> ib.signature = bytes.sliceArray(offset.valueOffset()..<offset.valueOffset() + length)
                 }
                 offset = offset.valueOffset() + length
             }
@@ -209,52 +194,50 @@ class InvoiceBuilder {
 
     private fun validate() {
         val requiredFields =
-            listOf(
-                "receiverUma",
-                "invoiceUUID",
-                "amount",
-                "receivingCurrency",
-                "expiration",
-                "isSubjectToTravelRule",
-                "umaVersion",
-                "callback",
-            )
+          listOf(
+            "receiverUma",
+            "invoiceUUID",
+            "amount",
+            "receivingCurrency",
+            "expiration",
+            "isSubjectToTravelRule",
+            "umaVersion",
+            "callback",
+          )
         val missingRequiredFields =
-            this::class.members.mapNotNull {
-                if (it.name in requiredFields && it.call(this) == null) {
-                    it.name
-                } else {
-                    null
-                }
-            }
+          this::class.members.mapNotNull {
+              if (it.name in requiredFields && it.call(this) == null) {
+                  it.name
+              } else {
+                  null
+              }
+          }
         if (missingRequiredFields.isNotEmpty()) {
             throw UmaException(
-                "missing required fields: $missingRequiredFields",
-                ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS
+              "missing required fields: $missingRequiredFields",
+              ErrorCode.MISSING_REQUIRED_UMA_PARAMETERS,
             )
         }
     }
 
-    /**
-     * build invoice object.  Certain fields are required to be non null
-     */
+    /** build invoice object. Certain fields are required to be non null */
     fun build(): Invoice {
         validate()
         return Invoice(
-            receiverUma = receiverUma!!,
-            invoiceUUID = invoiceUUID!!,
-            amount = amount!!,
-            receivingCurrency = receivingCurrency!!,
-            expiration = expiration!!,
-            isSubjectToTravelRule = isSubjectToTravelRule!!,
-            requiredPayerData = requiredPayerData,
-            umaVersions = umaVersion!!,
-            commentCharsAllowed = commentCharsAllowed,
-            senderUma = senderUma,
-            maxNumPayments = invoiceLimit,
-            kycStatus = kycStatus,
-            callback = callback!!,
-            signature = signature,
+          receiverUma = receiverUma!!,
+          invoiceUUID = invoiceUUID!!,
+          amount = amount!!,
+          receivingCurrency = receivingCurrency!!,
+          expiration = expiration!!,
+          isSubjectToTravelRule = isSubjectToTravelRule!!,
+          requiredPayerData = requiredPayerData,
+          umaVersions = umaVersion!!,
+          commentCharsAllowed = commentCharsAllowed,
+          senderUma = senderUma,
+          maxNumPayments = invoiceLimit,
+          kycStatus = kycStatus,
+          callback = callback!!,
+          signature = signature,
         )
     }
 }
@@ -265,41 +248,35 @@ class InvoiceTLVSerializer : KSerializer<Invoice> {
     override val descriptor = SerialDescriptor("Invoice", delegateSerializer.descriptor)
 
     override fun serialize(encoder: Encoder, value: Invoice) {
-        encoder.encodeSerializableValue(
-            delegateSerializer,
-            value.toTLV(),
-        )
+        encoder.encodeSerializableValue(delegateSerializer, value.toTLV())
     }
 
-    override fun deserialize(decoder: Decoder) = Invoice.fromTLV(
-        decoder.decodeSerializableValue(delegateSerializer),
-    )
+    override fun deserialize(decoder: Decoder) = Invoice.fromTLV(decoder.decodeSerializableValue(delegateSerializer))
 }
 
-data class InvoiceCounterPartyDataOptions(
-    val options: CounterPartyDataOptions,
-) : ByteCodeable {
+data class InvoiceCounterPartyDataOptions(val options: CounterPartyDataOptions) : ByteCodeable {
     override fun toBytes(): ByteArray {
         return options.entries
-            .sortedBy { it.key }
-            .joinToString(",") { (key, option) ->
-                "$key:${if (option.mandatory) 1 else 0}"
-            }
-            .toByteArray(Charsets.UTF_8)
+          .sortedBy { it.key }
+          .joinToString(",") { (key, option) -> "$key:${if (option.mandatory) 1 else 0}" }
+          .toByteArray(Charsets.UTF_8)
     }
 
     companion object {
         fun fromBytes(bytes: ByteArray): InvoiceCounterPartyDataOptions {
             val optionsString = String(bytes)
             return InvoiceCounterPartyDataOptions(
-                optionsString.split(",").mapNotNull {
+              optionsString
+                .split(",")
+                .mapNotNull {
                     val options = it.split(':')
                     if (options.size == 2) {
                         options[0] to CounterPartyDataOption(options[1] == "1")
                     } else {
                         null
                     }
-                }.toMap(),
+                }
+                .toMap()
             )
         }
     }
@@ -312,9 +289,7 @@ data class InvoiceKycStatus(val status: KycStatus) : ByteCodeable {
 
     companion object {
         fun fromBytes(bytes: ByteArray): InvoiceKycStatus {
-            return InvoiceKycStatus(
-                KycStatus.fromRawValue(bytes.toString(Charsets.UTF_8)),
-            )
+            return InvoiceKycStatus(KycStatus.fromRawValue(bytes.toString(Charsets.UTF_8)))
         }
     }
 }

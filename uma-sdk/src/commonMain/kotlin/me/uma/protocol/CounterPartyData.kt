@@ -4,10 +4,7 @@ package me.uma.protocol
 
 import kotlinx.serialization.Serializable
 
-@Serializable
-data class CounterPartyDataOption(
-    val mandatory: Boolean,
-)
+@Serializable data class CounterPartyDataOption(val mandatory: Boolean)
 
 typealias CounterPartyDataOptions = Map<String, CounterPartyDataOption>
 
@@ -19,9 +16,7 @@ fun createCounterPartyDataOptions(vararg pairs: Pair<String, Boolean>): CounterP
     return createCounterPartyDataOptions(pairs.toMap())
 }
 
-/**
- * Common keys used in counterparty data exchanges between VASPs.
- */
+/** Common keys used in counterparty data exchanges between VASPs. */
 object CounterPartyDataKeys {
     /** The UMA address of the counterparty */
     const val IDENTIFIER = "identifier"
