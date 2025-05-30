@@ -292,8 +292,8 @@ class UmaProtocolHelper @JvmOverloads constructor(
             currencyOptions
         }
         val umaPayerDataOptions = payerDataOptions?.toMutableMap() ?: mutableMapOf()
-        umaPayerDataOptions.putIfAbsent("compliance", CounterPartyDataOption(true))
-        umaPayerDataOptions.putIfAbsent("identifier", CounterPartyDataOption(true))
+        umaPayerDataOptions.putIfAbsent(CounterPartyDataKeys.COMPLIANCE, CounterPartyDataOption(true))
+        umaPayerDataOptions.putIfAbsent(CounterPartyDataKeys.IDENTIFIER, CounterPartyDataOption(true))
         return LnurlpResponse(
             callback = callback,
             minSendable = minSendableSats * 1000,
@@ -414,8 +414,8 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param payerUtxos The list of UTXOs of the sender's channels that might be used to fund the payment.
      * @param payerNodePubKey If known, the public key of the sender's node. If supported by the receiving VASP's
      *     compliance provider, this will be used to pre-screen the sender's UTXOs for compliance purposes.
-     * @param payerName The name of the sender (optional).
-     * @param payerEmail The email of the sender (optional).
+     * @param payerName The name of the sender (optional). **Deprecated: Use payerData parameter instead**
+     * @param payerEmail The email of the sender (optional). **Deprecated: Use payerData parameter instead**
      * @param travelRuleFormat An optional standardized format of the travel rule information (e.g. IVMS). Null
      *    indicates raw json or a custom format.
      * @param requestedPayeeData The data that the sender requests the receiver to send to identify themselves.
@@ -423,6 +423,8 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *    if the receiver included the `commentAllowed` field in the lnurlp response. The length of the comment must be
      *    less than or equal to the value of `commentAllowed`.
      * @param receiverUmaVersion The UMA version of the receiver VASP. This information can be obtained from the [LnurlpResponse]
+     * @param payerData The data that the sender must send to the receiver to identify themselves. This should
+     *    include the mandatory fields requested by the receiver in the [LnurlpResponse].
      * @return The [PayRequest] that should be sent to the receiver.
      * @throws UmaException if there was an error creating the request.
      */
@@ -447,6 +449,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         comment: String? = null,
         invoiceUUID: String? = null,
         receiverUmaVersion: String = UMA_VERSION_STRING,
+        payerData: PayerData = PayerData(mapOf()),
     ): PayRequest {
         val compliancePayerData = getSignedCompliancePayerData(
             receiverEncryptionPubKey,
@@ -459,22 +462,26 @@ class UmaProtocolHelper @JvmOverloads constructor(
             utxoCallback,
             travelRuleFormat,
         )
-        val payerData = createPayerData(
-            identifier = payerIdentifier,
-            name = payerName,
-            email = payerEmail,
-            compliance = compliancePayerData,
+
+        val combinedPayerData = JsonObject(
+            createPayerData(
+                identifier = payerIdentifier,
+                name = payerName,
+                email = payerEmail,
+                compliance = compliancePayerData,
+            ) + payerData
         )
+
         if (Version.parse(receiverUmaVersion).major < 1) {
             return PayRequestV0(
                 currencyCode = receivingCurrencyCode,
                 amount = amount,
-                payerData = payerData,
+                payerData = combinedPayerData,
             )
         } else {
             return PayRequestV1(
                 sendingCurrencyCode = if (isAmountInReceivingCurrency) receivingCurrencyCode else null,
-                payerData = payerData,
+                payerData = combinedPayerData,
                 receivingCurrencyCode = receivingCurrencyCode,
                 amount = amount,
                 requestedPayeeData = requestedPayeeData,
@@ -775,7 +782,8 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *     used to receive the payment once it completes.
      * @param receivingVaspPrivateKey The signing private key of the VASP that is receiving the payment. This will be
      *      used to sign the response.
-     * @param payeeData The data requested by the sending VASP about the receiver.
+     * @param payeeData The data requested by the sending VASP about the receiver. This should include the
+     *      mandatory fields requested by the receiver in the [PayRequest].
      * @param disposable This field may be used by a WALLET to decide whether the initial LNURL link will be stored
      *      locally for later reuse or erased. If disposable is null, it should be interpreted as true, so if SERVICE
      *      intends its LNURL links to be stored it must return `disposable: false`. UMA should always return
@@ -849,7 +857,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         ).await()
         val mutablePayeeData = payeeData?.toMutableMap() ?: mutableMapOf()
         if (query.isUmaRequest()) {
-            mutablePayeeData["compliance"] = serialFormat.encodeToJsonElement(
+            mutablePayeeData[CounterPartyDataKeys.COMPLIANCE] = serialFormat.encodeToJsonElement(
                 getSignedCompliancePayeeData(
                     receiverChannelUtxos ?: emptyList(),
                     receiverNodePubKey,

@@ -24,26 +24,26 @@ fun createPayerData(
 ): PayerData {
     val payerDataMap =
         mutableMapOf<String, JsonElement>(
-            "identifier" to JsonPrimitive(identifier),
+            CounterPartyDataKeys.IDENTIFIER to JsonPrimitive(identifier),
         )
     if (compliance != null) {
-        payerDataMap["compliance"] = serialFormat.encodeToJsonElement(compliance)
+        payerDataMap[CounterPartyDataKeys.COMPLIANCE] = serialFormat.encodeToJsonElement(compliance)
     }
     if (name != null) {
-        payerDataMap["name"] = JsonPrimitive(name)
+        payerDataMap[CounterPartyDataKeys.NAME] = JsonPrimitive(name)
     }
     if (email != null) {
-        payerDataMap["email"] = JsonPrimitive(email)
+        payerDataMap[CounterPartyDataKeys.EMAIL] = JsonPrimitive(email)
     }
     return JsonObject(payerDataMap)
 }
 
 fun PayerData.compliance(): CompliancePayerData? {
-    val jsonCompliance = get("compliance") ?: return null
+    val jsonCompliance = get(CounterPartyDataKeys.COMPLIANCE) ?: return null
     return serialFormat.decodeFromJsonElement(CompliancePayerDataSerializer, jsonCompliance)
 }
 
-fun PayerData.identifier(): String? = get("identifier")?.jsonPrimitive?.content
+fun PayerData.identifier(): String? = get(CounterPartyDataKeys.IDENTIFIER)?.jsonPrimitive?.content
 
 /**
  * The compliance data from the sender, including utxo info.

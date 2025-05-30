@@ -21,22 +21,22 @@ fun createPayeeData(
 ): PayerData {
     val payerDataMap = mutableMapOf<String, JsonElement>()
     if (compliance != null) {
-        payerDataMap["compliance"] = serialFormat.encodeToJsonElement(compliance)
+        payerDataMap[CounterPartyDataKeys.COMPLIANCE] = serialFormat.encodeToJsonElement(compliance)
     }
     if (identifier != null) {
-        payerDataMap["identifier"] = JsonPrimitive(identifier)
+        payerDataMap[CounterPartyDataKeys.IDENTIFIER] = JsonPrimitive(identifier)
     }
     if (name != null) {
-        payerDataMap["name"] = JsonPrimitive(name)
+        payerDataMap[CounterPartyDataKeys.NAME] = JsonPrimitive(name)
     }
     if (email != null) {
-        payerDataMap["email"] = JsonPrimitive(email)
+        payerDataMap[CounterPartyDataKeys.EMAIL] = JsonPrimitive(email)
     }
     return JsonObject(payerDataMap)
 }
 
 fun PayeeData.payeeCompliance(): CompliancePayeeData? {
-    val jsonCompliance = get("compliance") ?: return null
+    val jsonCompliance = get(CounterPartyDataKeys.COMPLIANCE) ?: return null
     return serialFormat.decodeFromJsonElement(jsonCompliance)
 }
 
