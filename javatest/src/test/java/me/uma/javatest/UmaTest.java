@@ -135,10 +135,10 @@ public class UmaTest {
         assertNotNull(parsedResponse.asUmaResponse());
         assertEquals(1, parsedResponse.asUmaResponse().getCurrencies().get(0).minSendable());
         assertEquals(10_000_000, parsedResponse.asUmaResponse().getCurrencies().get(0).maxSendable());
-        CounterPartyDataOption complianceOption = parsedResponse.asUmaResponse().getRequiredPayerData().get("compliance");
+        CounterPartyDataOption complianceOption = parsedResponse.asUmaResponse().getRequiredPayerData().get(CounterPartyDataKeys.COMPLIANCE);
         assertNotNull(complianceOption);
         assertTrue(complianceOption.getMandatory());
-        CounterPartyDataOption identifierOption = parsedResponse.asUmaResponse().getRequiredPayerData().get("identifier");
+        CounterPartyDataOption identifierOption = parsedResponse.asUmaResponse().getRequiredPayerData().get(CounterPartyDataKeys.IDENTIFIER);
         assertNotNull(identifierOption);
         assertTrue(identifierOption.getMandatory());
         assertTrue(umaProtocolHelper.verifyLnurlpResponseSignature(
@@ -165,10 +165,10 @@ public class UmaTest {
                 10_000_000,
                 CounterPartyData.createCounterPartyDataOptions(
                         Map.of(
-                                "name", false,
-                                "email", false,
-                                "identity", true,
-                                "compliance", true
+                                CounterPartyDataKeys.NAME, false,
+                                CounterPartyDataKeys.EMAIL, false,
+                                CounterPartyDataKeys.IDENTIFIER, true,
+                                CounterPartyDataKeys.COMPLIANCE, true
                         )
                 ),
                 List.of(
@@ -218,10 +218,10 @@ public class UmaTest {
                 10_000_000,
                 CounterPartyData.createCounterPartyDataOptions(
                         Map.of(
-                                "name", false,
-                                "email", false,
-                                "identity", true,
-                                "compliance", true
+                                CounterPartyDataKeys.NAME, false,
+                                CounterPartyDataKeys.EMAIL, false,
+                                CounterPartyDataKeys.IDENTIFIER, true,
+                                CounterPartyDataKeys.COMPLIANCE, true
                         )
                 ),
                 List.of(
@@ -343,7 +343,7 @@ public class UmaTest {
         assertNotNull(payerData);
         CompliancePayerData complianceData = getSerialFormat().decodeFromJsonElement(
                 CompliancePayerData.Companion.serializer(),
-                payerData.get("compliance")
+                payerData.get(CounterPartyDataKeys.COMPLIANCE)
         );
         assertNotNull(complianceData);
         assertNotNull(complianceData.getBackingSignatures());
@@ -477,7 +477,7 @@ public class UmaTest {
         assertNotNull(payeeData);
         CompliancePayeeData complianceData = getSerialFormat().decodeFromJsonElement(
                 CompliancePayeeData.Companion.serializer(),
-                payeeData.get("compliance")
+                payeeData.get(CounterPartyDataKeys.COMPLIANCE)
         );
         assertNotNull(complianceData);
         assertNotNull(complianceData.getBackingSignatures());

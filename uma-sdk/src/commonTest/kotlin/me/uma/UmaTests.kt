@@ -124,9 +124,9 @@ class UmaTests {
             expiration = 1000000,
             isSubjectToTravelRule = true,
             requiredPayerData = mapOf(
-                "name" to CounterPartyDataOption(false),
-                "email" to CounterPartyDataOption(false),
-                "compliance" to CounterPartyDataOption(true),
+                CounterPartyDataKeys.NAME to CounterPartyDataOption(false),
+                CounterPartyDataKeys.EMAIL to CounterPartyDataOption(false),
+                CounterPartyDataKeys.COMPLIANCE to CounterPartyDataOption(true),
             ),
             commentCharsAllowed = null,
             senderUma = null,
@@ -154,9 +154,9 @@ class UmaTests {
                 travelRuleInfo = "travel rule info",
                 travelRuleFormat = TravelRuleFormat("someFormat", "1.0"),
                 requestedPayeeData = createCounterPartyDataOptions(
-                    "email" to true,
-                    "name" to false,
-                    "compliance" to true,
+                    CounterPartyDataKeys.EMAIL to true,
+                    CounterPartyDataKeys.NAME to false,
+                    CounterPartyDataKeys.COMPLIANCE to true,
                 ),
                 receiverUmaVersion = "1.0",
             )
@@ -338,9 +338,9 @@ class UmaTests {
     private fun createInvoice(timestamp: Long? = null): Invoice {
         val requiredPayerData =
             mapOf(
-                "name" to CounterPartyDataOption(false),
-                "email" to CounterPartyDataOption(false),
-                "compliance" to CounterPartyDataOption(true),
+                CounterPartyDataKeys.NAME to CounterPartyDataOption(false),
+                CounterPartyDataKeys.EMAIL to CounterPartyDataOption(false),
+                CounterPartyDataKeys.COMPLIANCE to CounterPartyDataOption(true),
             )
         val invoiceCurrency =
             InvoiceCurrency(

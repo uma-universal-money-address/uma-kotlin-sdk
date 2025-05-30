@@ -126,7 +126,7 @@ internal data class PayReqResponseV1(
         backingSignatures.add(BackingSignature(domain = domain, signature = signature))
         val updatedComplianceData = complianceData.copy(backingSignatures = backingSignatures)
         val updatedPayeeDataMap = payeeData.toMutableMap()
-        updatedPayeeDataMap["compliance"] =
+        updatedPayeeDataMap[CounterPartyDataKeys.COMPLIANCE] =
             serialFormat.encodeToJsonElement(CompliancePayeeData.serializer(), updatedComplianceData)
         return this.copy(payeeData = PayeeData(updatedPayeeDataMap))
     }
