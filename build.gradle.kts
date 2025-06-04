@@ -20,9 +20,39 @@ buildscript {
     }
 }
 
-apply(plugin = "com.dorongold.task-tree")
-apply(plugin = "org.jetbrains.dokka")
-apply(plugin = "org.jlleitschuh.gradle.ktlint")
+plugins {
+    alias(libs.plugins.spotless)
+    alias(libs.plugins.dokka)
+    alias(libs.plugins.taskTree)
+}
+
+configure<com.diffplug.gradle.spotless.SpotlessExtension> {
+    kotlin {
+        target("**/*.kt", "**/*.kts")
+        ktfmt().configure {
+            it.setMaxWidth(120)
+            it.setBlockIndent(4)
+            it.setContinuationIndent(2)
+            it.setManageTrailingCommas(true)
+            it.setRemoveUnusedImports(true)
+        }
+    }
+    kotlinGradle {
+        target("*.gradle.kts")
+        ktfmt().configure {
+            it.setMaxWidth(120)
+            it.setBlockIndent(4)
+            it.setContinuationIndent(2)
+            it.setManageTrailingCommas(true)
+            it.setRemoveUnusedImports(true)
+        }
+    }
+
+    java {
+        target("**/*.java")
+        googleJavaFormat()
+    }
+}
 
 subprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
