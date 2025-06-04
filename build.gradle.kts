@@ -2,7 +2,7 @@ import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
 import org.jetbrains.dokka.gradle.DokkaTaskPartial
-import java.net.URL
+import java.net.URI
 
 buildscript {
     dependencies {
@@ -30,10 +30,9 @@ subprojects {
         outputToConsole.set(true)
         debug.set(true)
         verbose.set(true)
-        disabledRules.set(setOf("no-wildcard-imports"))
     }
 
-    tasks.create<Exec>("bumpAndTagVersion") {
+    tasks.register<Exec>("bumpAndTagVersion") {
         group = "release"
         description = "Tags the current version in git."
         val cmd = mutableListOf("../scripts/versions.main.kts", "-f", "-t")
@@ -43,7 +42,7 @@ subprojects {
         commandLine(*cmd.toTypedArray())
     }
 
-    tasks.create<Exec>("bumpVersion") {
+    tasks.register<Exec>("bumpVersion") {
         group = "release"
         description = "Tags the current version in git."
         val cmd = mutableListOf("../scripts/versions.main.kts", "-f")
@@ -66,8 +65,8 @@ subprojects {
             }
             externalDocumentationLink {
                 // TODO: Update this link when API Reference docs are hosted publicly.
-                url.set(URL("https://app.lightspark.com/docs/reference/kotlin"))
-                packageListUrl.set(URL("https://app.lightspark.com/docs/reference/kotlin/package-list"))
+                url.set(URI("https://app.lightspark.com/docs/reference/kotlin").toURL())
+                packageListUrl.set(URI("https://app.lightspark.com/docs/reference/kotlin/package-list").toURL())
             }
         }
     }
