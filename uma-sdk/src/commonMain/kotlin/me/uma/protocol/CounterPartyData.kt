@@ -40,4 +40,10 @@ object CounterPartyDataKeys {
 
     /** The counterparty's nationality, in ISO 3166-1 alpha-2 format */
     const val NATIONALITY = "nationality"
+
+    /** The counterparty's country of residence, in ISO 3166-1 alpha-2 format */
+    const val COUNTRY_OF_RESIDENCE = "countryOfResidence"
+
+    /** The counterparty's phone number, in E.164 format */
+    const val PHONE_NUMBER = "phoneNumber"
 }
