@@ -10,30 +10,26 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Validate Gradle wrapper
-        uses: gradle/wrapper-validation-action@ccb4328a959376b642e027874838f60f8e596de3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
       - name: Build and lint
-        uses: gradle/gradle-build-action@v2.4.2
-        with:
-          arguments: uma-sdk:assemble
+        run: ./gradlew uma-sdk:assemble
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Validate Gradle wrapper
-        uses: gradle/wrapper-validation-action@ccb4328a959376b642e027874838f60f8e596de3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
       - name: Test and Lint
-        uses: gradle/gradle-build-action@v2.4.2
-        with:
-          arguments: check
+        run: ./gradlew check
