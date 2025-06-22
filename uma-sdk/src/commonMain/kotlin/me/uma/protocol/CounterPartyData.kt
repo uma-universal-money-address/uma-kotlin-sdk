@@ -22,6 +22,7 @@ fun createCounterPartyDataOptions(vararg pairs: Pair<String, Boolean>): CounterP
 /**
  * Common keys used in counterparty data exchanges between VASPs.
  */
+@Suppress("unused")
 object CounterPartyDataKeys {
     /** The UMA address of the counterparty */
     const val IDENTIFIER = "identifier"
@@ -46,4 +47,33 @@ object CounterPartyDataKeys {
 
     /** The counterparty's phone number, in E.164 format */
     const val PHONE_NUMBER = "phoneNumber"
+
+    /**
+     * The counterparty's postal address, formatted in JSON as described in
+     * [the documentation](https://docs.uma.me/uma-standard/counterparty-info#additional-information)
+     * example:
+     * ```json
+     * {
+     *   "streetName": "Main St",
+     *   "buildingNumber": "123",
+     *   "townName": "Anytown",
+     *   "countrySubdivision": "CA",
+     *   "country": "US",
+     *   "postCode": "12345"
+     * }
+     */
+    const val POSTAL_ADDRESS = "postalAddress"
+
+    /**
+     * Any stable account identifier for the counterparty, such as a bank account number, user ID,
+     * pseudo-anonymous identifier, or another unique identifier that can be used to identify the
+     * counterparty across transactions, even if their UMA address changes.
+     */
+    const val ACCOUNT_IDENTIFIER = "accountIdentifier"
+
+    /**
+     * The counterparty's legal entity identifier (LEI), a 20-character alphanumeric code that
+     * uniquely identifies legal entities participating in financial transactions. See ISO 17442.
+     */
+    const val FINANCIAL_INSTITUTION_LEI = "financialInstitutionLei"
 }
