@@ -5,6 +5,7 @@ import kotlinx.serialization.json.Json;
 import kotlinx.serialization.json.JsonElementKt;
 import kotlinx.serialization.json.JsonObject;
 import me.uma.*;
+import me.uma.generated.*;
 import me.uma.protocol.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -607,7 +608,7 @@ public class UmaTest {
     }
 
     @Test
-    public void testGetAndVerifyPostTransactionCallback() throws Exception {
+    public void testGetAndVerifyPostTransactionCallback_withoutStatus() throws Exception {
         PostTransactionCallback callback = umaProtocolHelper.getPostTransactionCallback(
                 Arrays.asList(
                         new UtxoWithAmount("utxo1", 1000),
@@ -615,6 +616,48 @@ public class UmaTest {
                 ),
                 /* vaspDomain */ "myvasp.com",
                 /* signingPrivateKey */ privateKeyBytes()
+        );
+        assertNotNull(callback);
+        System.out.println(callback);
+        String json = callback.toJson();
+        PostTransactionCallback parsedCallback = umaProtocolHelper.parseAsPostTransactionCallback(json);
+        assertTrue(umaProtocolHelper.verifyPostTransactionCallbackSignature(
+                parsedCallback, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
+                new InMemoryNonceCache(1L)));
+    }
+
+    @Test
+    public void testGetAndVerifyPostTransactionCallback_withCompletedStatus() throws Exception {
+        PostTransactionCallback callback = umaProtocolHelper.getPostTransactionCallback(
+                Arrays.asList(
+                        new UtxoWithAmount("utxo1", 1000),
+                        new UtxoWithAmount("utxo2", 2000)
+                ),
+                /* vaspDomain */ "myvasp.com",
+                /* signingPrivateKey */ privateKeyBytes(),
+                TransactionStatus.COMPLETED
+        );
+        assertNotNull(callback);
+        System.out.println(callback);
+        String json = callback.toJson();
+        PostTransactionCallback parsedCallback = umaProtocolHelper.parseAsPostTransactionCallback(json);
+        assertTrue(umaProtocolHelper.verifyPostTransactionCallbackSignature(
+                parsedCallback, new PubKeyResponse(publicKeyBytes(), publicKeyBytes()),
+                new InMemoryNonceCache(1L)));
+    }
+
+    @Test
+    public void testGetAndVerifyPostTransactionCallback_withFailedStatus() throws Exception {
+        PostTransactionCallback callback = umaProtocolHelper.getPostTransactionCallback(
+                Arrays.asList(
+                        new UtxoWithAmount("utxo1", 1000),
+                        new UtxoWithAmount("utxo2", 2000)
+                ),
+                /* vaspDomain */ "myvasp.com",
+                /* signingPrivateKey */ privateKeyBytes(),
+                TransactionStatus.FAILED,
+                ErrorCode.INTERNAL_ERROR.name(),
+                /* errorReason */ "An error occurred while executing the quote."
         );
         assertNotNull(callback);
         System.out.println(callback);
