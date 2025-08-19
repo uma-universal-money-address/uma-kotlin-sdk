@@ -1030,14 +1030,23 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param utxos UTXOs of the VASP sending the callback.
      * @param vaspDomain Domain name of the VASP sending the callback.
      * @param vaspPrivateKey The private signing key of the VASP sending the callback. Used to sign the message.
+     * @param transactionStatus The status of the transaction.
+     * @param errorCode The error code of the transaction. This should be one of the values in the [ErrorCode] enum.
+     *     This should only be set if the transaction status is [TransactionStatus.FAILED].
+     * @param errorReason The reason for the failure. This should only be set if the transaction status is
+     *     [TransactionStatus.FAILED].
      * @return the [PostTransactionCallback] to be sent to the counterparty.
      * @throws UmaException if there was an error creating the signed callback.
      */
+    @JvmOverloads
     @Throws(UmaException::class)
     fun getPostTransactionCallback(
         utxos: List<UtxoWithAmount>,
         vaspDomain: String,
         signingPrivateKey: ByteArray,
+        transactionStatus: TransactionStatus? = null,
+        errorCode: String? = null,
+        errorReason: String? = null,
     ): PostTransactionCallback {
         val nonce = generateNonce()
         val timestamp = System.currentTimeMillis() / 1000
@@ -1047,6 +1056,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
             signature = "",
             signatureNonce = nonce,
             signatureTimestamp = timestamp,
+            transactionStatus = transactionStatus,
+            errorCode = errorCode,
+            errorReason = errorReason,
         )
         val signature = signPayload(unsignedCallback.signablePayload(), signingPrivateKey)
         return unsignedCallback.signedWith(signature)
