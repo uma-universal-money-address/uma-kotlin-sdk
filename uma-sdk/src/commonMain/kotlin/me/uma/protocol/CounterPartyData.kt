@@ -54,12 +54,12 @@ object CounterPartyDataKeys {
      * example:
      * ```json
      * {
-     *   "streetName": "Main St",
-     *   "buildingNumber": "123",
-     *   "townName": "Anytown",
-     *   "countrySubdivision": "CA",
+     *   "line1": "123 Main St",
+     *   "line2": "Apt 4B",
+     *   "city": "Anytown",
+     *   "state": "CA",
      *   "country": "US",
-     *   "postCode": "12345"
+     *   "postalCode": "12345"
      * }
      */
     const val POSTAL_ADDRESS = "postalAddress"
