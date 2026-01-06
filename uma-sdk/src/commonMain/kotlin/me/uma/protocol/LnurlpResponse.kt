@@ -24,6 +24,8 @@ import kotlinx.serialization.*
  *     BIP-340 public key in hex format.
  * @property allowsNostr Should be set to true if the receiving VASP allows nostr zaps (NIP-57).
  * @property backingSignatures A list of backing signatures from VASPs that can attest to the authenticity of the message.
+ * @property settlementOptions Optional list of settlement layers and assets supported by the receiver. If not
+ *     specified, the payment will settle on Lightning using BTC as the settlement asset.
  */
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
@@ -47,6 +49,7 @@ data class LnurlpResponse(
     @EncodeDefault
     val tag: String = "payRequest",
     val backingSignatures: List<BackingSignature>? = null,
+    val settlementOptions: List<SettlementOption>? = null,
 ) {
     fun asUmaResponse(): UmaLnurlpResponse? = if (
         currencies != null &&
@@ -68,6 +71,7 @@ data class LnurlpResponse(
             allowsNostr,
             tag,
             backingSignatures,
+            settlementOptions,
         )
     } else {
         null
@@ -98,6 +102,7 @@ data class UmaLnurlpResponse(
     @EncodeDefault
     val tag: String = "payRequest",
     val backingSignatures: List<BackingSignature>?,
+    val settlementOptions: List<SettlementOption>? = null,
 ) {
     fun toJson() = serialFormat.encodeToString(this)
 

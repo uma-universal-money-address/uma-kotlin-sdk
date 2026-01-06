@@ -8,6 +8,7 @@ import me.uma.utils.serialFormat
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -382,5 +383,245 @@ class UmaTests {
         assertEquals(preEncodedInvoice.callback, decodedInvoice.callback)
         assertEquals(preEncodedInvoice.requiredPayerData, decodedInvoice.requiredPayerData)
         assertEquals(preEncodedInvoice.receivingCurrency, decodedInvoice.receivingCurrency)
+    }
+
+    @Test
+    fun `test serialize and deserialize SettlementAsset`() = runTest {
+        val asset = SettlementAsset(
+            identifier = "BTC",
+            multipliers = mapOf("USD" to 34150.0, "EUR" to 29000.0)
+        )
+        val serialized = serialFormat.encodeToString(asset)
+        val deserialized = serialFormat.decodeFromString<SettlementAsset>(serialized)
+        assertEquals(asset, deserialized)
+        assertEquals("BTC", deserialized.identifier)
+        assertEquals(34150.0, deserialized.multipliers["USD"])
+        assertEquals(29000.0, deserialized.multipliers["EUR"])
+    }
+
+    @Test
+    fun `test serialize and deserialize SettlementOption`() = runTest {
+        val option = SettlementOption(
+            settlementLayer = "ln",
+            assets = listOf(
+                SettlementAsset("BTC", mapOf("USD" to 34150.0)),
+                SettlementAsset("ETH", mapOf("USD" to 2500.0))
+            )
+        )
+        val serialized = serialFormat.encodeToString(option)
+        val deserialized = serialFormat.decodeFromString<SettlementOption>(serialized)
+        assertEquals(option, deserialized)
+        assertEquals("ln", deserialized.settlementLayer)
+        assertEquals(2, deserialized.assets.size)
+        assertEquals("BTC", deserialized.assets[0].identifier)
+        assertEquals("ETH", deserialized.assets[1].identifier)
+    }
+
+    @Test
+    fun `test serialize and deserialize SettlementInfo`() = runTest {
+        val info = SettlementInfo(
+            layer = "ln",
+            assetIdentifier = "BTC"
+        )
+        val serialized = serialFormat.encodeToString(info)
+        val deserialized = serialFormat.decodeFromString<SettlementInfo>(serialized)
+        assertEquals(info, deserialized)
+        assertEquals("ln", deserialized.layer)
+        assertEquals("BTC", deserialized.assetIdentifier)
+    }
+
+    @Test
+    fun `test LnurlpResponse with settlementOptions`() = runTest {
+        val settlementOptions = listOf(
+            SettlementOption(
+                settlementLayer = "ln",
+                assets = listOf(SettlementAsset("BTC", mapOf("USD" to 34150.0)))
+            ),
+            SettlementOption(
+                settlementLayer = "spark",
+                assets = listOf(SettlementAsset("USDC", mapOf("USD" to 1.0)))
+            )
+        )
+
+        val lnurlpUrl = UmaProtocolHelper().getSignedLnurlpRequestUrl(
+            keys.privateKey,
+            "\$bob@vasp2.com",
+            "https://vasp.com",
+            true
+        )
+        val request = UmaProtocolHelper().parseLnurlpRequest(lnurlpUrl)
+        assertNotNull(request)
+
+        val lnurlpResponse = UmaProtocolHelper().getLnurlpResponse(
+            request,
+            keys.privateKey,
+            true,
+            "https://vasp2.com/callback",
+            "encoded metadata",
+            1,
+            10_000_000,
+            createCounterPartyDataOptions(
+                CounterPartyDataKeys.NAME to false,
+                CounterPartyDataKeys.EMAIL to false
+            ),
+            listOf(
+                createCurrency(
+                    code = "USD",
+                    name = "US Dollar",
+                    symbol = "$",
+                    millisatoshiPerUnit = 34_150.0,
+                    decimals = 2,
+                    minSendable = 1,
+                    maxSendable = 10_000_000,
+                    senderUmaVersion = "1.0"
+                )
+            ),
+            KycStatus.VERIFIED,
+            null,
+            null,
+            settlementOptions
+        )
+
+        assertNotNull(lnurlpResponse)
+        val umaResponse = lnurlpResponse.asUmaResponse()
+        assertNotNull(umaResponse)
+        assertNotNull(umaResponse.settlementOptions)
+        assertEquals(2, umaResponse.settlementOptions?.size)
+        assertEquals("ln", umaResponse.settlementOptions?.get(0)?.settlementLayer)
+        assertEquals("spark", umaResponse.settlementOptions?.get(1)?.settlementLayer)
+
+        val json = lnurlpResponse.toJson()
+        val parsedResponse = UmaProtocolHelper().parseAsLnurlpResponse(json)
+        assertNotNull(parsedResponse)
+        val parsedUmaResponse = parsedResponse.asUmaResponse()
+        assertNotNull(parsedUmaResponse?.settlementOptions)
+        assertEquals(umaResponse.settlementOptions, parsedUmaResponse?.settlementOptions)
+    }
+
+    @Test
+    fun `test PayRequest with settlementInfo`() = runTest {
+        val settlementInfo = SettlementInfo(
+            layer = "spark",
+            assetIdentifier = "USDC"
+        )
+
+        val payreq = UmaProtocolHelper().getPayRequest(
+            receiverEncryptionPubKey = keys.publicKey,
+            sendingVaspPrivateKey = keys.privateKey,
+            receivingCurrencyCode = "USD",
+            amount = 100,
+            isAmountInReceivingCurrency = true,
+            payerIdentifier = "test@test.com",
+            payerKycStatus = KycStatus.VERIFIED,
+            utxoCallback = "https://example.com/utxo",
+            receiverUmaVersion = "1.0",
+            settlementInfo = settlementInfo
+        )
+
+        assertTrue(payreq is PayRequestV1)
+        assertEquals(settlementInfo, payreq.settlementInfo())
+
+        val json = payreq.toJson()
+        val decodedPayReq = UmaProtocolHelper().parseAsPayRequest(json)
+        assertTrue(decodedPayReq is PayRequestV1)
+        assertEquals(settlementInfo, decodedPayReq.settlementInfo())
+        assertEquals(payreq, decodedPayReq)
+    }
+
+    @Test
+    fun `test PayRequest without settlementInfo defaults to null`() = runTest {
+        val payreq = UmaProtocolHelper().getPayRequest(
+            receiverEncryptionPubKey = keys.publicKey,
+            sendingVaspPrivateKey = keys.privateKey,
+            receivingCurrencyCode = "USD",
+            amount = 100,
+            isAmountInReceivingCurrency = true,
+            payerIdentifier = "test@test.com",
+            payerKycStatus = KycStatus.VERIFIED,
+            utxoCallback = "https://example.com/utxo",
+            receiverUmaVersion = "1.0"
+        )
+
+        assertTrue(payreq is PayRequestV1)
+        assertNull(payreq.settlementInfo())
+
+        val json = payreq.toJson()
+        val decodedPayReq = UmaProtocolHelper().parseAsPayRequest(json)
+        assertNull(decodedPayReq.settlementInfo())
+    }
+
+    @Test
+    fun `test PayReqResponse exchangeFees field compatibility`() = runTest {
+        val paymentInfo = V1PayReqResponsePaymentInfo(
+            currencyCode = "USD",
+            decimals = 2,
+            multiplier = 34150.0,
+            exchangeFees = 100L,
+            amount = 1000L
+        )
+
+        assertEquals(100L, paymentInfo.exchangeFees)
+        assertEquals(100L, paymentInfo.exchangeFeesMillisatoshi)
+
+        val serialized = serialFormat.encodeToString(paymentInfo)
+        val deserialized = serialFormat.decodeFromString<V1PayReqResponsePaymentInfo>(serialized)
+        assertEquals(100L, deserialized.exchangeFees)
+        assertEquals(100L, deserialized.exchangeFeesMillisatoshi)
+    }
+
+    @Test
+    fun `test createUmaInvoiceForSettlementLayer defaults to createUmaInvoice`() = runTest {
+        val invoiceCreator = object : UmaInvoiceCreator {
+            override fun createUmaInvoice(amountMsats: Long, metadata: String, receiverIdentifier: String?) =
+                java.util.concurrent.CompletableFuture.completedFuture("lnbc_default_$amountMsats")
+        }
+
+        val result = invoiceCreator.createUmaInvoiceForSettlementLayer(
+            amount = 1000L,
+            metadata = "test metadata",
+            receiverIdentifier = "test@receiver.com",
+            settlementInfo = SettlementInfo("ln", "BTC")
+        ).await()
+
+        assertEquals("lnbc_default_1000", result)
+    }
+
+    @Test
+    fun `test createUmaInvoiceForSettlementLayer can be overridden`() = runTest {
+        val invoiceCreator = object : UmaInvoiceCreator {
+            override fun createUmaInvoice(amountMsats: Long, metadata: String, receiverIdentifier: String?) =
+                java.util.concurrent.CompletableFuture.completedFuture("lnbc_default_$amountMsats")
+
+            override fun createUmaInvoiceForSettlementLayer(
+                amount: Long,
+                metadata: String,
+                receiverIdentifier: String?,
+                settlementInfo: SettlementInfo?,
+            ) = if (settlementInfo != null && settlementInfo.layer == "spark") {
+                java.util.concurrent.CompletableFuture.completedFuture(
+                    "spark_invoice_${settlementInfo.assetIdentifier}_$amount",
+                )
+            } else {
+                createUmaInvoice(amount, metadata, receiverIdentifier)
+            }
+        }
+
+        val resultSpark = invoiceCreator.createUmaInvoiceForSettlementLayer(
+            amount = 1000L,
+            metadata = "test metadata",
+            receiverIdentifier = "test@receiver.com",
+            settlementInfo = SettlementInfo("spark", "USDC")
+        ).await()
+
+        assertEquals("spark_invoice_USDC_1000", resultSpark)
+
+        val resultLightning = invoiceCreator.createUmaInvoiceForSettlementLayer(
+            amount = 2000L,
+            metadata = "test metadata",
+            receiverIdentifier = "test@receiver.com",
+            settlementInfo = SettlementInfo("ln", "BTC")
+        ).await()
+
+        assertEquals("lnbc_default_2000", resultLightning)
     }
 }

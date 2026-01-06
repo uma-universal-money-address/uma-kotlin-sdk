@@ -201,18 +201,35 @@ sealed interface PayReqResponsePaymentInfo {
     val decimals: Int
 
     /**
-     * The conversion rate. It is the number of millisatoshis that the receiver will receive for 1
-     * unit of the specified currency (eg: cents in USD). In this context, this is just for convenience. The conversion
-     * rate is also baked into the invoice amount itself. Specifically:
-     * `invoiceAmount = amount * multiplier + exchangeFeesMillisatoshi`
+     * The conversion rate. In the default case (Lightning/BTC), it is the number of millisatoshis that the
+     * receiver will receive for 1 unit of the specified currency (eg: cents in USD). In this context, this
+     * is just for convenience. The conversionrate is also baked into the invoice amount itself. Specifically:
+     * `invoiceAmount = amount * multiplier + exchange_fees`
+     *
+     * For other settlement layers, this is the number of the smallest unit of the settlement asset that the
+     * receiver will receive for 1 unit of the specified currency.
      */
     val multiplier: Double
 
     /**
      * The fees charged (in millisats) by the receiving VASP for this transaction. This
      * is separate from the [multiplier].
+     *
+     * @deprecated Use [exchangeFees] instead. This field will be removed in the next major version.
      */
+    @Deprecated(
+        message = "Use exchangeFees instead. This field will be removed in the next major version.",
+        replaceWith = ReplaceWith("exchangeFees")
+    )
     val exchangeFeesMillisatoshi: Long
+        get() = exchangeFees
+
+    /**
+     * The fees charged by the receiving VASP for this transaction. In the default case (Lightning/BTC),
+     * this is in millisatoshis. For other settlement layers, this is in the smallest unit of the
+     * settlement asset. This is separate from the [multiplier].
+     */
+    val exchangeFees: Long
 }
 
 @Serializable
@@ -222,7 +239,7 @@ internal data class V1PayReqResponsePaymentInfo(
     override val decimals: Int,
     override val multiplier: Double,
     @SerialName("fee")
-    override val exchangeFeesMillisatoshi: Long,
+    override val exchangeFees: Long,
 ) : PayReqResponsePaymentInfo
 
 @Serializable
@@ -230,7 +247,7 @@ internal data class V0PayReqResponsePaymentInfo(
     override val currencyCode: String,
     override val decimals: Int,
     override val multiplier: Double,
-    override val exchangeFeesMillisatoshi: Long,
+    override val exchangeFees: Long,
 ) : PayReqResponsePaymentInfo {
     override val amount: Long? = null
 }
