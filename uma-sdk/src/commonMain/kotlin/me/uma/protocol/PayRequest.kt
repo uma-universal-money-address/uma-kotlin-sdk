@@ -32,8 +32,27 @@ sealed interface PayRequest {
     val payerData: PayerData?
 
     /**
-     * The currency code in which the amount field is specified. If null, the
-     * amount is assumed to be specified in msats.
+     * The currency code of the `amount` field. `null` indicates that `amount` is in the smallest
+     * unit of the settlement asset. For lightning, this is millisatoshis as in LNURL without LUD-21.
+     * If this is not `null`, then `amount` is in the smallest unit of the specified currency (e.g.
+     * cents for USD). This currency code can be any currency which the receiver can quote. However,
+     * there are two most common scenarios for UMA:
+     *
+     * 1. If the sender wants the receiver wants to receive a specific amount in their receiving
+     * currency, then this field should be the same as `receiving_currency_code`. This is useful
+     * for cases where the sender wants to ensure that the receiver receives a specific amount
+     * in that destination currency, regardless of the exchange rate, for example, when paying
+     * for some goods or services in a foreign currency.
+     *
+     * 2. If the sender has a specific amount in their own currency that they would like to send,
+     * then this field should be left as `None` to indicate that the amount is in the smallest
+     * unit of the settlement asset (ie. msats by default).
+     * This will lock the sent amount on the sender side, and the receiver will receive the
+     * equivalent amount in their receiving currency. NOTE: In this scenario, the sending VASP
+     * *should not* pass the sending currency code here, as it is not relevant to the receiver.
+     * Rather, by specifying an invoice amount in the settlement asset (for example, msats for
+     * lightning), the sending VASP can ensure that their user will be sending a fixed amount,
+     * regardless of the exchange rate on the receiving side.
      */
     fun sendingCurrencyCode(): String?
 
@@ -54,6 +73,8 @@ sealed interface PayRequest {
     fun comment(): String?
 
     fun invoiceUUID(): String?
+
+    fun settlementInfo(): SettlementInfo?
 
     fun toQueryParamMap(): Map<String, String>
 
@@ -82,6 +103,9 @@ sealed interface PayRequest {
                 }
             val comment = queryMap["comment"]?.firstOrNull()
             val invoiceUUID = queryMap["invoiceUUID"]?.firstOrNull()
+            val settlement = queryMap["settlement"]?.firstOrNull()?.let {
+                serialFormat.decodeFromString(SettlementInfo.serializer(), it)
+            }
             return PayRequestV1(
                 sendingCurrencyCode,
                 receivingCurrencyCode,
@@ -89,7 +113,8 @@ sealed interface PayRequest {
                 payerData,
                 requestedPayeeData,
                 comment,
-                invoiceUUID
+                invoiceUUID,
+                settlement,
             )
         }
     }
@@ -116,6 +141,11 @@ internal data class PayRequestV1(
      * This only exists in the v1 pay request since the v0 SDK won't support invoices.
      */
     val invoiceUUID: String? = null,
+    /**
+     * Settlement information including the layer and asset chosen by the sender.
+     * If not specified, the payment will settle on Lightning using BTC.
+     */
+    val settlementInfo: SettlementInfo? = null,
 ) : PayRequest {
     override fun receivingCurrencyCode() = receivingCurrencyCode
 
@@ -151,6 +181,8 @@ internal data class PayRequestV1(
 
     override fun invoiceUUID(): String? = invoiceUUID
 
+    override fun settlementInfo(): SettlementInfo? = settlementInfo
+
     override fun toQueryParamMap(): Map<String, String> {
         val amountStr =
             if (sendingCurrencyCode != null) {
@@ -169,6 +201,7 @@ internal data class PayRequestV1(
         }
         comment?.let { map["comment"] = it }
         invoiceUUID?.let { map["invoiceUUID"] = it }
+        settlementInfo?.let { map["settlement"] = serialFormat.encodeToString(it) }
         return map
     }
 
@@ -211,6 +244,8 @@ internal data class PayRequestV0(
 
     override fun invoiceUUID(): String? = null
 
+    override fun settlementInfo(): SettlementInfo? = null
+
     override fun signablePayload() = payerData.compliance()?.let {
         "${payerData.identifier()}|${it.signatureNonce}|${it.signatureTimestamp}".encodeToByteArray()
     } ?: payerData.identifier()?.encodeToByteArray()
@@ -237,6 +272,7 @@ internal object PayRequestV1Serializer : KSerializer<PayRequestV1> {
             element<CounterPartyDataOptions?>("payeeData", isOptional = true)
             element<String?>("comment", isOptional = true)
             element<String?>("invoiceUUID", isOptional = true)
+            element<SettlementInfo?>("settlement", isOptional = true)
         }
 
     override fun serialize(encoder: Encoder, value: PayRequestV1) {
@@ -260,6 +296,7 @@ internal object PayRequestV1Serializer : KSerializer<PayRequestV1> {
             )
             value.comment?.let { encodeStringElement(descriptor, 4, it) }
             value.invoiceUUID?.let { encodeStringElement(descriptor, 5, it) }
+            encodeNullableSerializableElement(descriptor, 6, SettlementInfo.serializer(), value.settlementInfo)
         }
     }
 
@@ -271,6 +308,7 @@ internal object PayRequestV1Serializer : KSerializer<PayRequestV1> {
         var requestedPayeeData: CounterPartyDataOptions? = null
         var comment: String? = null
         var invoiceUUID: String? = null
+        var settlementInfo: SettlementInfo? = null
 
         return decoder.decodeStructure(descriptor) {
             while (true) {
@@ -302,6 +340,9 @@ internal object PayRequestV1Serializer : KSerializer<PayRequestV1> {
                     5 ->
                         invoiceUUID =
                             decodeNullableSerializableElement(descriptor, index, String.serializer().nullable)
+                    6 ->
+                        settlementInfo =
+                            decodeNullableSerializableElement(descriptor, index, SettlementInfo.serializer().nullable)
                 }
             }
 
@@ -323,7 +364,8 @@ internal object PayRequestV1Serializer : KSerializer<PayRequestV1> {
                 payerData,
                 requestedPayeeData,
                 comment,
-                invoiceUUID
+                invoiceUUID,
+                settlementInfo,
             )
         }
     }

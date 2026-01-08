@@ -686,6 +686,274 @@ public class UmaTest {
         assertArrayEquals(UmaTest.hexToBytes(PUBKEY_HEX), parsedResponse.getEncryptionPublicKey());
     }
 
+    @Test
+    public void testSettlementAssetCreation() {
+        SettlementAsset asset = new SettlementAsset(
+                "BTC",
+                Map.of("USD", 34150.0, "EUR", 29000.0)
+        );
+        assertEquals("BTC", asset.getIdentifier());
+        assertEquals(34150.0, asset.getMultipliers().get("USD"));
+        assertEquals(29000.0, asset.getMultipliers().get("EUR"));
+    }
+
+    @Test
+    public void testSettlementOptionCreation() {
+        SettlementOption option = new SettlementOption(
+                "ln",
+                List.of(
+                        new SettlementAsset("BTC", Map.of("USD", 34150.0)),
+                        new SettlementAsset("ETH", Map.of("USD", 2500.0))
+                )
+        );
+        assertEquals("ln", option.getSettlementLayer());
+        assertEquals(2, option.getAssets().size());
+        assertEquals("BTC", option.getAssets().get(0).getIdentifier());
+        assertEquals("ETH", option.getAssets().get(1).getIdentifier());
+    }
+
+    @Test
+    public void testSettlementInfoCreation() {
+        SettlementInfo info = new SettlementInfo("ln", "BTC");
+        assertEquals("ln", info.getLayer());
+        assertEquals("BTC", info.getAssetIdentifier());
+    }
+
+    @Test
+    public void testGetLnurlpResponse_withSettlementOptions() throws Exception {
+        String lnurlpUrl = umaProtocolHelper.getSignedLnurlpRequestUrl(
+                privateKeyBytes(),
+                "$bob@vasp2.com",
+                "https://vasp.com",
+                true);
+        LnurlpRequest request = umaProtocolHelper.parseLnurlpRequest(lnurlpUrl);
+        assertNotNull(request);
+
+        List<SettlementOption> settlementOptions = List.of(
+                new SettlementOption(
+                        "ln",
+                        List.of(new SettlementAsset("BTC", Map.of("USD", 34150.0)))
+                ),
+                new SettlementOption(
+                        "spark",
+                        List.of(new SettlementAsset("USDC", Map.of("USD", 1.0)))
+                )
+        );
+
+        LnurlpResponse lnurlpResponse = umaProtocolHelper.getLnurlpResponse(
+                request,
+                privateKeyBytes(),
+                true,
+                "https://vasp2.com/callback",
+                "encoded metadata",
+                1,
+                10_000_000,
+                CounterPartyData.createCounterPartyDataOptions(
+                        Map.of(
+                                "name", false,
+                                "email", false
+                        )
+                ),
+                List.of(
+                        createCurrency(
+                                "USD",
+                                "US Dollar",
+                                "$",
+                                34_150,
+                                2,
+                                1,
+                                10_000_000,
+                                "1.0"
+                        )
+                ),
+                KycStatus.VERIFIED,
+                null,
+                null,
+                settlementOptions
+        );
+
+        assertNotNull(lnurlpResponse);
+        UmaLnurlpResponse umaResponse = lnurlpResponse.asUmaResponse();
+        assertNotNull(umaResponse);
+        assertNotNull(umaResponse.getSettlementOptions());
+        assertEquals(2, umaResponse.getSettlementOptions().size());
+        assertEquals("ln", umaResponse.getSettlementOptions().get(0).getSettlementLayer());
+        assertEquals("spark", umaResponse.getSettlementOptions().get(1).getSettlementLayer());
+
+        String responseJson = lnurlpResponse.toJson();
+        LnurlpResponse parsedResponse = umaProtocolHelper.parseAsLnurlpResponse(responseJson);
+        assertNotNull(parsedResponse);
+        UmaLnurlpResponse parsedUmaResponse = parsedResponse.asUmaResponse();
+        assertNotNull(parsedUmaResponse);
+        assertNotNull(parsedUmaResponse.getSettlementOptions());
+        assertEquals(umaResponse.getSettlementOptions(), parsedUmaResponse.getSettlementOptions());
+    }
+
+    @Test
+    public void testGetLnurlpResponse_withoutSettlementOptions() throws Exception {
+        String lnurlpUrl = umaProtocolHelper.getSignedLnurlpRequestUrl(
+                privateKeyBytes(),
+                "$bob@vasp2.com",
+                "https://vasp.com",
+                true);
+        LnurlpRequest request = umaProtocolHelper.parseLnurlpRequest(lnurlpUrl);
+        assertNotNull(request);
+
+        LnurlpResponse lnurlpResponse = umaProtocolHelper.getLnurlpResponse(
+                request,
+                privateKeyBytes(),
+                true,
+                "https://vasp2.com/callback",
+                "encoded metadata",
+                1,
+                10_000_000,
+                CounterPartyData.createCounterPartyDataOptions(
+                        Map.of(
+                                "name", false,
+                                "email", false
+                        )
+                ),
+                List.of(
+                        createCurrency(
+                                "USD",
+                                "US Dollar",
+                                "$",
+                                34_150,
+                                2,
+                                1,
+                                10_000_000,
+                                "1.0"
+                        )
+                ),
+                KycStatus.VERIFIED,
+                null,
+                null,
+                null
+        );
+
+        assertNotNull(lnurlpResponse);
+        UmaLnurlpResponse umaResponse = lnurlpResponse.asUmaResponse();
+        assertNotNull(umaResponse);
+        assertNull(umaResponse.getSettlementOptions());
+    }
+
+    @Test
+    public void testPayRequestWithSettlementInfoSerialization() throws Exception {
+        SettlementInfo settlementInfo = new SettlementInfo("spark", "USDC");
+
+        PayRequest baseRequest = umaProtocolHelper.getPayRequest(
+                publicKeyBytes(),
+                privateKeyBytes(),
+                "USD",
+                100L,
+                true,
+                "$alice@vasp1.com",
+                KycStatus.VERIFIED,
+                "",
+                null,
+                null,
+                null,
+                "payerName",
+                "payerEmail",
+                null,
+                null,
+                "comment",
+                "sample-uuid-string",
+                "1.0"
+        );
+
+        String requestJson = baseRequest.toJson();
+        String modifiedJson = requestJson.replace(
+                "\"amount\":\"100.USD\"",
+                "\"amount\":\"100.USD\",\"settlement\":{\"layer\":\"spark\",\"assetIdentifier\":\"USDC\"}"
+        );
+
+        PayRequest parsedRequest = umaProtocolHelper.parseAsPayRequest(modifiedJson);
+        assertNotNull(parsedRequest);
+        assertNotNull(parsedRequest.settlementInfo());
+        assertEquals("spark", parsedRequest.settlementInfo().getLayer());
+        assertEquals("USDC", parsedRequest.settlementInfo().getAssetIdentifier());
+    }
+
+    @Test
+    public void testPayRequestWithoutSettlementInfo() throws Exception {
+        PayRequest request = umaProtocolHelper.getPayRequest(
+                publicKeyBytes(),
+                privateKeyBytes(),
+                "USD",
+                100L,
+                true,
+                "$alice@vasp1.com",
+                KycStatus.VERIFIED,
+                ""
+        );
+
+        assertNotNull(request);
+        assertNull(request.settlementInfo());
+
+        String requestJson = request.toJson();
+        PayRequest parsedRequest = umaProtocolHelper.parseAsPayRequest(requestJson);
+        assertNotNull(parsedRequest);
+        assertNull(parsedRequest.settlementInfo());
+    }
+
+    @Test
+    public void testPayReqResponseExchangeFeesFieldCompatibility() throws Exception {
+        PayRequest request = umaProtocolHelper.getPayRequest(
+                publicKeyBytes(),
+                privateKeyBytes(),
+                "USD",
+                100L,
+                true,
+                "$alice@vasp1.com",
+                KycStatus.VERIFIED,
+                ""
+        );
+        PayReqResponse response = umaProtocolHelper.getPayReqResponseSync(
+                request,
+                new TestSyncUmaInvoiceCreator(),
+                encodedPayReqMetadata,
+                "USD",
+                2,
+                12345.0,
+                100L,
+                List.of(),
+                null,
+                "",
+                privateKeyBytes(),
+                PayeeData.createPayeeData(null, "$bob@vasp2.com"),
+                null,
+                null,
+                "1.0"
+        );
+
+        assertNotNull(response);
+        PayReqResponsePaymentInfo paymentInfo = response.getPaymentInfo();
+        assertNotNull(paymentInfo);
+        assertEquals(100L, paymentInfo.getExchangeFees());
+        assertEquals(100L, paymentInfo.getExchangeFeesMillisatoshi());
+
+        String responseJson = response.toJson();
+        PayReqResponse parsedResponse = umaProtocolHelper.parseAsPayReqResponse(responseJson);
+        assertNotNull(parsedResponse);
+        PayReqResponsePaymentInfo parsedPaymentInfo = parsedResponse.getPaymentInfo();
+        assertNotNull(parsedPaymentInfo);
+        assertEquals(100L, parsedPaymentInfo.getExchangeFees());
+        assertEquals(100L, parsedPaymentInfo.getExchangeFeesMillisatoshi());
+    }
+
+    @Test
+    public void testCreateUmaInvoiceForSettlementLayerDefaultBehavior() throws Exception {
+        TestUmaInvoiceCreator invoiceCreator = new TestUmaInvoiceCreator();
+        String invoice = invoiceCreator.createUmaInvoiceForSettlementLayer(
+                1000L,
+                "test metadata",
+                "test@receiver.com",
+                new SettlementInfo("ln", "BTC")
+        ).get();
+        assertEquals("lnbc12345", invoice);
+    }
+
     static byte[] hexToBytes(String hex) {
         byte[] bytes = new byte[hex.length() / 2];
         for (int i = 0; i < hex.length(); i += 2) {

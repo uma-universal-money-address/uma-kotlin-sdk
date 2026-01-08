@@ -10,6 +10,11 @@ kotlin {
     jvm {
         jvmToolchain(11)
         withJava()
+        compilations.all {
+            compilerOptions.configure {
+                freeCompilerArgs.add("-Xjvm-default=all-compatibility")
+            }
+        }
         testRuns.named("test") {
             executionTask.configure {
                 useJUnitPlatform()

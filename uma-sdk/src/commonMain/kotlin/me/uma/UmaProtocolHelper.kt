@@ -234,6 +234,8 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *    request.
      * @param nostrPubkey An optional nostr pubkey used for nostr zaps (NIP-57). If set, it should be a valid
      *    BIP-340 public key in hex format.
+     * @param settlementOptions Optional list of settlement layers and assets supported by the receiver. If not
+     *    specified, the payment will settle on Lightning using BTC as the settlement asset.
      * @return The [LnurlpResponse] that should be sent to the sender for the given [LnurlpRequest].
      * @throws UmaException if there was an error creating the response.
      */
@@ -252,6 +254,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         receiverKycStatus: KycStatus?,
         commentCharsAllowed: Int? = null,
         nostrPubkey: String? = null,
+        settlementOptions: List<SettlementOption>? = null,
     ): LnurlpResponse {
         val umaRequest = query.asUmaRequest() ?: return LnurlpResponse(
             callback = callback,
@@ -262,6 +265,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             requiredPayerData = payerDataOptions,
             compliance = null,
             umaVersion = null,
+            settlementOptions = null,
         )
         if (receiverKycStatus == null) {
             throw UmaException("Receiver KYC status is required for UMA", ErrorCode.INTERNAL_ERROR)
@@ -306,6 +310,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
             commentCharsAllowed = commentCharsAllowed,
             nostrPubkey = nostrPubkey,
             allowsNostr = nostrPubkey != null,
+            settlementOptions = settlementOptions,
         )
     }
 
@@ -403,9 +408,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
      *     the request.
      * @param receivingCurrencyCode The code of the currency that the receiver will receive for this payment.
      * @param amount The amount that the receiver will receive in either the smallest unit of the receiving currency
-     *     (if `isAmountInReceivingCurrency` is True), or in msats (if false).
+     *     (if `isAmountInReceivingCurrency` is True), or in the smallest unit of the settlement asset (if false).
      * @param isAmountInReceivingCurrency Whether the amount field is specified in the smallest unit of the receiving
-     *     currency or in msats (if false).
+     *     currency or in the smallest unit of the settlement asset (if false).
      * @param payerIdentifier The identifier of the sender. For example, $alice@vasp1.com
      * @param payerKycStatus Indicates whether VASP1 has KYC information about the sender.
      * @param utxoCallback The URL that the receiver will call to send UTXOs of the channel that the receiver used to
@@ -425,6 +430,8 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param receiverUmaVersion The UMA version of the receiver VASP. This information can be obtained from the [LnurlpResponse]
      * @param payerData The data that the sender must send to the receiver to identify themselves. This should
      *    include the mandatory fields requested by the receiver in the [LnurlpResponse].
+     * @param settlementInfo Optional settlement information including the layer and asset chosen by the sender. If not
+     *    specified, the payment will settle on Lightning using BTC.
      * @return The [PayRequest] that should be sent to the receiver.
      * @throws UmaException if there was an error creating the request.
      */
@@ -450,6 +457,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
         invoiceUUID: String? = null,
         receiverUmaVersion: String = UMA_VERSION_STRING,
         payerData: PayerData = PayerData(mapOf()),
+        settlementInfo: SettlementInfo? = null,
     ): PayRequest {
         val compliancePayerData = getSignedCompliancePayerData(
             receiverEncryptionPubKey,
@@ -486,7 +494,8 @@ class UmaProtocolHelper @JvmOverloads constructor(
                 amount = amount,
                 requestedPayeeData = requestedPayeeData,
                 comment = comment,
-                invoiceUUID = invoiceUUID
+                invoiceUUID = invoiceUUID,
+                settlementInfo = settlementInfo,
             )
         }
     }
@@ -773,8 +782,9 @@ class UmaProtocolHelper @JvmOverloads constructor(
      * @param conversionRate The conversion rate. It is the number of milli-satoshis per the smallest unit of the
      *     specified currency (for example: cents in USD). This rate is committed to by the receiving VASP until the
      *     invoice expires.
-     * @param receiverFeesMillisats The fees charged (in millisats) by the receiving VASP for this transaction. This
-     *     is separate from the [conversionRate].
+     * @param receiverFeesMsats Fees charged by receiver in smallest units of settlement asset ((e.g. millisatoshis for
+     *     Lightning/BTC, token units for Spark USDC). This is separate from the [conversionRate]. Note: this argument
+     *     will be renamed to `receiverFees` in the next major version.
      * @param receiverChannelUtxos The list of UTXOs of the receiver's channels that might be used to fund the payment.
      * @param receiverNodePubKey If known, the public key of the receiver's node. If supported by the sending VASP's
      *     compliance provider, this will be used to pre-screen the receiver's UTXOs for compliance purposes.
@@ -846,8 +856,8 @@ class UmaProtocolHelper @JvmOverloads constructor(
         } else {
             query.amount
         }
-        val invoice = invoiceCreator.createUmaInvoice(
-            amountMsats = if (isAmountInMsats) {
+        val invoice = invoiceCreator.createUmaInvoiceForSettlementLayer(
+            amount = if (isAmountInMsats) {
                 query.amount
             } else {
                 (query.amount.toDouble() * (conversionRate ?: 1.0) + (receiverFeesMillisats ?: 0)).roundToLong()
@@ -889,7 +899,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
                     currencyCode = receivingCurrencyCode!!,
                     decimals = receivingCurrencyDecimals!!,
                     multiplier = conversionRate!!,
-                    exchangeFeesMillisatoshi = receiverFeesMillisats ?: 0,
+                    exchangeFees = receiverFeesMillisats ?: 0,
                 ),
             )
         }
@@ -901,7 +911,7 @@ class UmaProtocolHelper @JvmOverloads constructor(
                     currencyCode = receivingCurrencyCode!!,
                     decimals = receivingCurrencyDecimals!!,
                     multiplier = conversionRate!!,
-                    exchangeFeesMillisatoshi = receiverFeesMillisats ?: 0,
+                    exchangeFees = receiverFeesMillisats ?: 0,
                     amount = receivingCurrencyAmount,
                 )
             } else {
@@ -1170,6 +1180,31 @@ class UmaProtocolHelper @JvmOverloads constructor(
 
 interface UmaInvoiceCreator {
     /**
+     * Creates an invoice with the given amount for the settlement layer and asset.
+     *
+     * @param amount The amount of the invoice in the smallest unit of the settlement asset. In the default case
+     *     (Lightning/BTC), this is millisatoshis. For other settlement layers, this is the smallest unit of the
+     *     settlement asset.
+     * @param metadata The metadata that will be added to the invoice's metadata hash field.
+     * @param receiverIdentifier Optional identifier of the receiver.
+     * @param settlementInfo The settlement layer and asset information for this invoice. If null, defaults to
+     *     Lightning/BTC.
+     * @return The encoded invoice (e.g., BOLT-11 for Lightning) wrapped in a [CompletableFuture].
+     */
+    fun createUmaInvoiceForSettlementLayer(
+        amount: Long,
+        metadata: String,
+        receiverIdentifier: String?,
+        settlementInfo: SettlementInfo? = null,
+    ): CompletableFuture<String> {
+        return createUmaInvoice(
+            amountMsats = amount,
+            metadata = metadata,
+            receiverIdentifier = receiverIdentifier,
+        )
+    }
+
+    /**
      * Creates an invoice with the given amount and encoded LNURL metadata.
      *
      * @param amountMsats The amount of the invoice in millisatoshis.
@@ -1183,9 +1218,32 @@ interface UmaInvoiceCreator {
 
 interface SyncUmaInvoiceCreator {
     /**
-     * Synchronously creates an invoice with the given amount and encoded LNURL metadata.
+     * Synchronously creates an invoice with the given amount for the settlement layer and asset.
      *
-     * This method is synchronous and should only be used in cases where the caller is already on a background thread.
+     * @param amount The amount of the invoice in the smallest unit of the settlement asset. In the default case
+     *     (Lightning/BTC), this is millisatoshis. For other settlement layers, this is the smallest unit of the
+     *     settlement asset.
+     * @param metadata The metadata that will be added to the invoice's metadata hash field.
+     * @param receiverIdentifier Optional identifier of the receiver.
+     * @param settlementInfo The settlement layer and asset information for this invoice. If null, defaults to
+     *     Lightning/BTC.
+     * @return The encoded BOLT-11 invoice.
+     */
+    fun createUmaInvoiceForSettlementLayer(
+        amount: Long,
+        metadata: String,
+        receiverIdentifier: String?,
+        settlementInfo: SettlementInfo? = null,
+    ): String {
+        return createUmaInvoice(
+            amountMsats = amount,
+            metadata = metadata,
+            receiverIdentifier = receiverIdentifier,
+        )
+    }
+
+    /**
+     * Synchronously creates an invoice with the given amount and encoded LNURL metadata.
      *
      * @param amountMsats The amount of the invoice in millisatoshis.
      * @param metadata The metadata that will be added to the invoice's metadata hash field.
