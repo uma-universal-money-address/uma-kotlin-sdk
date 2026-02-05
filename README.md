@@ -1,6 +1,7 @@
-# UMA Kotlin SDK
+# Universal Money Address (UMA) Kotlin SDK
 
-The UMA protocol implementation for Kotlin and Java!
+The Universal Money Address (UMA) SDK for Kotlin and Java. UMA is an open protocol that makes sending money as easy as sending an email, using human-readable addresses like $alice@bank.com.
+
 See [this repository](https://github.com/lightsparkdev/kotlin-sdk/tree/develop/umaserverdemo) for a sample
 implementation and check out the [full documentation](https://docs.uma.me) for more info.
 
